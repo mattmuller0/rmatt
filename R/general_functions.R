@@ -1,0 +1,254 @@
+#' @title General functions
+#' @description General functions for data manipulation and analysis
+#' @name general_functions
+#' @docType package
+#' @importFrom dplyr %>% filter pull add_row mutate select summarise_all
+#' @importFrom tibble rownames_to_column
+#' @importFrom SummarizedExperiment SummarizedExperiment colData rowData assay
+#' @importFrom BiocGenerics DataFrame
+#' @importFrom edgeR cpm calcNormFactors
+#' @importFrom DESeq2 counts varianceStabilizingTransformation rlog
+#' @importFrom singscore rankGenes
+#' @importFrom glue glue
+#' @importFrom tidyr drop_na
+#' @importFrom utils write.csv
+
+#' Function to summarize results more generally
+#' 
+#' @param results results of differential expression analysis
+#' @param logFC_column column to use for logFC
+#' @param pvalue_column column to use for pvalue
+#' @param padj_column column to use for padj
+#' @param padj_cutoffs list of padj cutoffs to use
+#' @param pvalue_cutoffs list of pvalue cutoffs to use
+#' @param logFC_cutoff logFC cutoff to use
+#' @return summary of results
+#' @export
+summarize_experiment <- function(
+  results, 
+  logFC_column = "log2FoldChange",
+  pvalue_column = "pvalue",
+  padj_column = "padj",
+  pvalue_cutoffs = c(0.01, 0.05, 0.1), 
+  padj_cutoffs = c(0.05, 0.1, 0.2), 
+  logFC_cutoff = 0
+  ) {
+  summary <- data.frame(
+    variable = character(),
+    p_cutoff = numeric(),
+    fc_cutoff = numeric(),
+    n_sig = numeric(),
+    n_up = numeric(),
+    n_down = numeric()
+  )
+  lapply(pvalue_cutoffs, function(pvalue_cutoff) {
+    summary <<- summary %>% 
+      add_row(
+        variable = "pvalue",
+        p_cutoff = pvalue_cutoff,
+        fc_cutoff = logFC_cutoff,
+        n_sig = sum(results[[pvalue_column]] < pvalue_cutoff),
+        n_up = sum(results[[pvalue_column]] < pvalue_cutoff & results[[logFC_column]] > logFC_cutoff),
+        n_down = sum(results[[pvalue_column]] < pvalue_cutoff & results[[logFC_column]] < -logFC_cutoff)
+      )
+  })
+  lapply(padj_cutoffs, function(padj_cutoff) {
+    summary <<- summary %>% 
+      add_row(
+        variable = "padj",
+        p_cutoff = padj_cutoff,
+        fc_cutoff = logFC_cutoff,
+        n_sig = sum(results[[padj_column]] < padj_cutoff),
+        n_up = sum(results[[padj_column]] < padj_cutoff & results[[logFC_column]] > logFC_cutoff),
+        n_down = sum(results[[padj_column]] < padj_cutoff & results[[logFC_column]] < -logFC_cutoff)
+      )
+  })
+  return(summary)
+}
+
+#' Function to get genes from a results table
+#' 
+#' @param results results table
+#' @param pval p-value cutoff
+#' @param log2fc log2 fold change cutoff
+#' @param gene_col gene column name
+#' @param pval_col p-value column name
+#' @param log2fc_col log2 fold change column name
+#' @return dataframe of genes separated by up and down
+#' @export
+getGenes <- function(results, pval = 0.05, metric = 0, name_col = "rownames", pval_col = "padj", metric_col = "log2FoldChange") {
+    if (name_col == "rownames") {results <- rownames_to_column(results, var = name_col)}
+    up <- results %>%
+        filter(!!sym(pval_col) < pval & !!sym(metric_col) > metric) %>%
+        pull(!!sym(name_col))
+    down <- results %>%
+        filter(!!sym(pval_col) < pval & !!sym(metric_col) < metric) %>%
+        pull(!!sym(name_col))
+    out <- data.frame(features = c(up, down), direction = c(rep("up", length(up)), rep("down", length(down))))
+    return(out)
+}
+
+#' Function to add missing rows to a matrix
+#' 
+#' @param df matrix, rows = genes, cols = samples
+#' @param rows vector of rownames to add
+#' @param sorted logical, whether to sort the rows alphabetically
+#' @return df matrix, rows = genes, cols = samples
+#' @export
+add_missing_rows <- function(
+    df, 
+    rows, 
+    sorted = TRUE ) {
+  missingRowNames <-  rows[which(!rows %in% rownames(df))]
+  print(missingRowNames)
+  df_tmp <- as.data.frame(matrix(0, nrow = length(missingRowNames), ncol = dim(df)[2]))
+  colnames(df_tmp) <- colnames(df)
+  rownames(df_tmp) <- missingRowNames
+  df <- rbind(df_tmp, df)
+  if (sorted) {
+    df <- df[order(rownames(df)),]
+  }
+  return(df)
+}
+
+#' Function to make a SummarizedExperiment object
+#' 
+#' @param countsMatr matrix of counts, rows = genes, cols = samples
+#' @param colData data.frame of sample metadata, rows = samples
+#' @return SummarizedExperiment object
+#' @export
+make_se <- function(countsMatr, colData) {
+  sample_ids <- intersect(colnames(countsMatr), row.names(colData))
+  se <- SummarizedExperiment(assays = list(counts = as.matrix(countsMatr[,sample_ids])), colData = colData[sample_ids,])
+  return(se)
+}
+
+#' Function to save a SummarizedExperiment object into multiple files if the slots are filled in the object
+#' 
+#' @param se SummarizedExperiment object
+#' @param path path to save files
+#' @param normalize how to normalize the counts
+#' @export
+save_se <- function(se, path, normalize = 'mor') {
+  dir.create(path, showWarnings = F, recursive = T)
+  counts <- normalize_counts(se, method = normalize)
+  colData <- as.data.frame(colData(se))
+  rowData <- as.data.frame(rowData(se))
+  write.csv(counts, file = file.path(path, paste0('counts_', normalize,'.csv')), quote = F, row.names = T)
+  if (!is.null(colData)) {
+    write.csv(colData, file = file.path(path, 'metadata.csv'), quote = T, row.names = T)
+  }
+  if (!is.null(rowData)) {
+    write.csv(rowData, file = file.path(path, 'rowData.csv'), quote = T, row.names = T)
+  }
+}
+
+#' Function to summarize a dataframe
+#' 
+#' @param df dataframe to summarize
+#' @return dataframe with summary statistics
+#' @export
+summarize_df <- function(df) {
+  df %>%
+    summary() %>%
+    as.data.frame() %>%
+    rownames_to_column() %>%
+    rename('variable' = 'rowname') %>%
+    mutate(variable = as.character(variable))
+  return(df)
+}
+
+#' Function to turn list of lists into a dataframe
+#' 
+#' @param list list of lists
+#' @return dataframe
+#' @export
+list_of_lists_to_df <- function(list) {
+  df <- do.call(rbind, lapply(list, function(x) data.frame(x)))
+  return(df)
+}
+
+#' Function to remove NA variables from a summarized experiment object
+#' 
+#' @param se SummarizedExperiment object
+#' @param columns list of columns to remove NAs from
+#' @return DESeqDataSet object with NAs removed
+#' @export
+remove_na_variables <- function(se, columns) {
+  col_data <- as.data.frame(colData(se))
+  assay_data <- assay(se)
+  col_data <- drop_na(col_data, any_of(columns))
+  col_data <- DataFrame(col_data)
+  new_se <- make_se(assay_data, col_data)
+  return(new_se)
+}
+
+#' Function to get the number of samples in each group
+#' 
+#' @param metadata dataframe, metadata
+#' @param id character, column name of the sample ID
+#' @param events_term character, prefix of the events columns
+#' @param subset character, column name of the grouping variable
+#' @return dataframe with the number of samples in each group
+#' @export
+get_events_breakdown <- function(metadata, id = 'PATNUM', events_term = 'C_', subset = NULL) {
+    metadata_patnums <- metadata[,id]
+    if (!is.null(subset)) {
+        patnum_match <- metadata_patnums[metadata[,subset] == 1]
+    } else {
+        patnum_match <- metadata_patnums
+    }
+    if (is.na(patnum_match[1])) {
+        stop('No matches found from the PATNUMs provided')
+    }
+    subtype_breakdown <- metadata[patnum_match,] %>% 
+        select(starts_with(events_term)) %>%
+        summarise_all(~ sum(., na.rm = TRUE)) %>%
+        mutate(total = rowSums(.))
+    return(subtype_breakdown)
+}
+
+#' Function to get make pairwise combinations
+#' 
+#' @param vec vector of values
+#' @return list of pairwise combinations
+#' @export
+pairwise_combos <- function(vec) {
+    unique_vals <- unique(vec)
+    combos <- combn(unique_vals, 2)
+    list_of_combos <- list()
+    for (i in 1:ncol(combos)) {
+        list_of_combos[[i]] <- combos[, i]
+    }
+    return(list_of_combos)
+}
+
+#' Function to get the variable name
+#' 
+#' @param var variable name
+#' @return character, variable name
+#' @export
+varName <- function(var) {
+  deparse(substitute(var))
+}
+
+#' Function to one hot encode dataframe column
+#' 
+#' @param df dataframe
+#' @param column character, column name
+#' @param binary logical, whether to make the column binary
+#' @return dataframe with one hot encoded column
+#' @export
+one_hot_encode_ovr <- function(df, column, binary = TRUE) {
+  unique_vals <- unique(df[[column]])
+  for (val in unique_vals) {
+    new_col_name <- paste0(column, "_", val)
+    message(glue("Creating column: {new_col_name}"))
+    if (binary) {
+      df[[new_col_name]] <- ifelse(df[[column]] == val, 1, 0)
+    } else {
+      df[[new_col_name]] <- factor(ifelse(df[[column]] == val, val, 'rest'), levels = c('rest', val))
+    }
+  }
+  return(df)
+}

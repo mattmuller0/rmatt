@@ -1,0 +1,12 @@
+---
+title: "A Collection of R Tools"
+author: "Matthew Muller"
+date: \today
+output: pdf_document
+bibliography: references.bib
+vignette: >
+  %\VignetteIndexEntry{ A Collection of R Tools }
+  %\VignetteEngine{knitr::rmarkdown}
+  %\usepackage[utf8]{inputenc} 
+---
+

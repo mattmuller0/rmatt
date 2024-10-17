@@ -1,0 +1,18 @@
+Package: rmatt
+Title: A Collection of R Tools
+Version: 0.0.1
+Maintainer: Matthew Muller <mm12865@nyu.edu>
+Description: This package contains a collection of all the R tools I've made during my PhD. It covers mainly multiomic analyses, statistical methods, and data wrangling.
+Author: Matthew Muller
+Depends: R (>= 4.3.2)
+Imports:
+Suggests:
+    testthat,
+    knitr,
+    rmarkdown
+VignetteBuilder: knitr
+License: Artistic-2.0
+Encoding: UTF-8
+LazyData: true
+URL: https://github.com/mattmuller0/rmatt
+BugReports: https://github.com/mattmuller0/rmatt/issues
