@@ -1,22 +1,19 @@
 #' @title Olink proteomics functions
 #' @description Functions for analyzing Olink proteomics data.
 #' @name olink_functions
-#' @docType package
-#' @importFrom dplyr %>% filter mutate select group_by summarise pull bind_rows
-#' @importFrom tidyr pivot_wider
-#' @importFrom ggplot2 ggplot aes geom_histogram facet_wrap theme_bw theme ggsave
+#' @import dplyr
+#' @import tidyr
 #' @importFrom glue glue
-#' @importFrom purrr map
-#' @importFrom broom tidy
-#' @importFrom stats glm binomial
-#' @importFrom utils write.csv
-#' @importFrom AnnotationDbi
-#' @importFrom clusterProfiler
-#' @importFrom OlinkAnalyze
+#' @import purrr
+#' @import broom
+#' @import AnnotationDbi
+#' @import clusterProfiler
+#' @import OlinkAnalyze
+#' @import ggplot2
 
-# LOAD FUNCTIONS
-#' @importFrom utils source
-source('https://raw.githubusercontent.com/mattmuller0/Rtools/main/general_functions.R')
+# # LOAD FUNCTIONS
+# #' @importFrom utils source
+# source('https://raw.githubusercontent.com/mattmuller0/Rtools/main/general_functions.R')
 
 #======================== CODE ========================#
 

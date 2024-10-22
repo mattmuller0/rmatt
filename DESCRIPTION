@@ -16,3 +16,4 @@ Encoding: UTF-8
 LazyData: true
 URL: https://github.com/mattmuller0/rmatt
 BugReports: https://github.com/mattmuller0/rmatt/issues
+RoxygenNote: 7.3.2

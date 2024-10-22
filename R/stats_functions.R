@@ -6,21 +6,9 @@
 #' @importFrom tibble tibble
 #' @importFrom tableone CreateTableOne
 #' @importFrom glue glue
-#' @importFrom stats fisher.test chisq.test cor.test
 #' @importFrom purrr map
 
-# LOAD FUNCTIONS
-# space reserved for sourcing in functions
-source('https://raw.githubusercontent.com/mattmuller0/Rtools/main/general_functions.R')
-
-###########################################################################
-#
-#                                 CODE
-#
-###########################################################################
-
 #' Create a Table 1
-#'
 #' @param data data.frame, data to make table 1 from
 #' @param groups character, groups to stratify by
 #' @param vars character, variables to include in table 1
@@ -63,12 +51,10 @@ stats_table <- function(
 }
 
 #' Hypergeometric Scoring
-#'
 #' @param gse gse object from hypergeometric enrichment analysis in clusterProfiler
 #' @param method character, method to use ('fisher' or 'chisq')
 #' @param ... other arguments to pass to the test function
 #' @return gse object with odds ratio and p-value added
-#' @export
 hypergeometric_scoring <- function(
   gse,
   method = 'fisher',
@@ -123,7 +109,6 @@ hypergeometric_scoring <- function(
 }
 
 #' Create a Correlation Matrix
-#'
 #' @param data data.frame, data to make correlation matrix from
 #' @param vars1 character, variables to correlate
 #' @param vars2 character, variables to correlate
@@ -166,7 +151,6 @@ softmax <- function(x) {
 }
 
 #' Min-Max Normalize a Vector
-#'
 #' @param x numeric, vector to min-max normalize
 #' @return numeric, min-max normalized vector
 #' @export

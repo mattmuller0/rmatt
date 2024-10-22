@@ -1,41 +1,25 @@
 #' @title RNA Functions
 #' @description A collection of functions for RNA analysis.
 #' @name rna_functions
-#' @docType package
-#' @importFrom AnnotationDbi select
-#' @importFrom forcats fct_reorder
-#' @importFrom ggplot2 ggplot aes geom_point
-#' @importFrom msigdbr msigdbr
-#' @importFrom ggpubr ggarrange
-#' @importFrom DESeq2 DESeqDataSetFromMatrix DESeq results
+#' @importFrom dplyr select mutate inner_join
+#' @importFrom purrr map reduce
+#' @importFrom DESeq2 counts colData DESeq results lfcShrink plotMA DESeqDataSet
+#' @importFrom SummarizedExperiment assay colData
+#' @importFrom ggplot2 ggsave
+#' @importFrom EnhancedVolcano EnhancedVolcano
 #' @importFrom edgeR DGEList calcNormFactors cpm
 #' @importFrom limma lmFit eBayes topTable
-#' @importFrom ggbiplot ggbiplot
-#' @importFrom tidyverse %>% select mutate filter
-#' @importFrom purrr map reduce
-#' @importFrom dplyr inner_join
-#' @importFrom ComplexHeatmap Heatmap
-#' @importFrom clusterProfiler enrichGO
-#' @importFrom DOSE enrichDO
 #' @importFrom rstatix wilcox_test
-#' @importFrom SummarizedExperiment assay colData
-#' @importFrom EnhancedVolcano EnhancedVolcano
-#' @importFrom ggplot2 ggsave
-#' @importFrom utils write.csv
-#' @importFrom stats cor.test
-#' @importFrom methods as
-#' @importFrom base stop message file.exists basename dir.create
-#' @importFrom graphics pdf dev.off
-#' @importFrom grDevices pdf dev.off
 NULL
 
-# Source external functions
-source("https://raw.githubusercontent.com/mattmuller0/Rtools/main/general_functions.R")
-source("https://raw.githubusercontent.com/mattmuller0/Rtools/main/plotting_functions.R")
-source("https://raw.githubusercontent.com/mattmuller0/Rtools/main/enrichment_functions.R")
-source("https://raw.githubusercontent.com/mattmuller0/Rtools/main/converting_functions.R")
-source("https://raw.githubusercontent.com/mattmuller0/Rtools/main/filtering_functions.R")
-source("https://raw.githubusercontent.com/mattmuller0/Rtools/main/stats_functions.R")
+# # Source external functions
+# source("https://raw.githubusercontent.com/mattmuller0/Rtools/main/general_functions.R")
+# source("https://raw.githubusercontent.com/mattmuller0/Rtools/main/plotting_functions.R")
+# source("https://raw.githubusercontent.com/mattmuller0/Rtools/main/enrichment_functions.R")
+# source("https://raw.githubusercontent.com/mattmuller0/Rtools/main/converting_functions.R")
+# source("https://raw.githubusercontent.com/mattmuller0/Rtools/main/filtering_functions.R")
+# source("https://raw.githubusercontent.com/mattmuller0/Rtools/main/stats_functions.R")
+
 #======================== Reading Functions ========================
 #' @title Read Feature Counts
 #' @description Function to read a feature counts output file.

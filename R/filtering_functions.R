@@ -1,7 +1,6 @@
 #' @title RNA-seq filtering and preprocessing functions
 #' @description Functions for filtering and preprocessing RNA-seq data.
 #' @name expr_filtering_functions
-#' @docType package
 #' @import dplyr
 #' @import tidyverse
 #' @import ggplot2
@@ -9,30 +8,13 @@
 #' @import SummarizedExperiment
 #' @import DESeq2
 #' @import edgeR
-NULL
-
-#======================== LIBRARIES ========================#
-#' @importFrom DESeq2 DESeqDataSetFromMatrix
-#' @importFrom SummarizedExperiment assay
-#' @importFrom ggplot2 ggsave
-#' @importFrom ggpubr plot_grid
-#' @importFrom edgeR filterByExpr
-#' @importFrom stats hclust dist prcomp
-#' @importFrom ggrepel geom_text_repel
-#' @importFrom ggtree ggtree
-#' @importFrom ggbiplot ggbiplot
-#' @importFrom utils write.csv
-#' @importFrom methods saveRDS
-
-# LOAD FUNCTIONS
-# space reserved for sourcing in functions
-source('https://raw.githubusercontent.com/mattmuller0/Rtools/main/general_functions.R')
-source('https://raw.githubusercontent.com/mattmuller0/Rtools/main/plotting_functions.R')
+#' @import ggrepel
+#' @import ggtree
+#' @import ggbiplot
 
 #======================== CODE ========================#
 
 #' Get percent of genes detected
-#'
 #' @param dds DESeq2 object
 #' @param min_value Minimum value to consider a gene detected
 #' @return Data frame of percent of genes detected
@@ -44,7 +26,6 @@ percentGenesDetected <- function(dds, min_value = 0) {
 }
 
 #' Run general preprocessing on a DESeq2 object
-#'
 #' @param dds DESeq2 object
 #' @param outpath Path to output directory
 #' @param depth_filter Minimum library depth to keep
@@ -141,7 +122,6 @@ rna_preprocessing <- function(
 }
 
 #' Filter a DESeq2 object by expression and make plots of the filtering
-#'
 #' @param dds DESeq2 object
 #' @param outpath Path to output directory
 #' @param group Column of interest
@@ -215,14 +195,13 @@ filter_edgeR <- function(
 }
 
 #' Detect WBC contamination in platelet RNA-seq
-#'
 #' @param dds DESeq2 object
 #' @param outpath Path to output directory
 #' @param group Column of interest
 #' @param normalize Normalization method
 #' @return DESeq2 object after detecting WBC contamination
 #' @export
-detect_wbc <- function(dds, outpath, group = NULL, normalize = "mor") {
+detect_wbc <- function(dds, outpath, group = NULL, normalize = "vst") {
 
   dir.create(outpath, showWarnings = FALSE, recursive = TRUE)
 

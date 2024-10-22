@@ -8,8 +8,6 @@
 #' @importFrom tibble rownames_to_column
 #' @importFrom glue glue
 #' @importFrom stringr str_split
-#' @importFrom stats median
-#' @importFrom utils head
 #' @import org.Hs.eg.db
 NULL
 

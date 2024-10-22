@@ -1,42 +1,31 @@
 #' @title Enrichment Functions
 #' @description Functions for gene set enrichment analysis.
 #' @name enrichment_functions
-#' @docType package
-#' @importFrom dplyr %>% select unlist set_names arrange filter group_by mutate pull slice
-#' @importFrom ggplot2 ggplot aes geom_col labs theme_classic2 ggsave
-#' @importFrom forcats fct_reorder
-#' @importFrom stringr str_wrap
-#' @importFrom purrr map map_dfr
-#' @importFrom clusterProfiler enrichGO gseGO GSEA
-#' @importFrom enrichplot dotplot cnetplot ridgeplot heatplot
-#' @importFrom org.Hs.eg.db org.Hs.eg.db
-#' @importFrom AnnotationDbi select
-#' @importFrom enrichR enrichr
-#' @importFrom msigdbr msigdbr
-#' @importFrom SummarizedExperiment SummarizedExperiment
-#' @importFrom ggpubr theme_classic2
+#' @import dplyr
+#' @import ggplot2
+#' @import forcats
+#' @import stringr
+#' @import purrr
+#' @import clusterProfiler
+#' @import enrichplot
+#' @import org.Hs.eg.db
+#' @import AnnotationDbi
+#' @import enrichR
+#' @import msigdbr
+#' @import SummarizedExperiment
+#' @import ggpubr
+#' @import tidyverse
 NULL
 
-#======================== LIBRARIES ========================#
-#' @import tidyverse
-#' @import clusterProfiler
-#' @import org.Hs.eg.db
-#' @import enrichplot
-#' @import forcats
-#' @import ggplot2
-#' @import msigdbr
-#' @import ggpubr
-
-# LOAD FUNCTIONS
-#' @importFrom utils source
-source("https://raw.githubusercontent.com/mattmuller0/Rtools/main/general_functions.R")
-source("https://raw.githubusercontent.com/mattmuller0/Rtools/main/plotting_functions.R")
-source("https://raw.githubusercontent.com/mattmuller0/Rtools/main/converting_functions.R")
+# # LOAD FUNCTIONS
+# #' @importFrom utils source
+# source("https://raw.githubusercontent.com/mattmuller0/Rtools/main/general_functions.R")
+# source("https://raw.githubusercontent.com/mattmuller0/Rtools/main/plotting_functions.R")
+# source("https://raw.githubusercontent.com/mattmuller0/Rtools/main/converting_functions.R")
 
 #======================== CODE ========================#
 
 #' Get the fold change list
-#'
 #' @param res Data frame of results.
 #' @param fc_col Column of fold change values.
 #' @param names Column of names (if NULL, defaults to rownames).
@@ -59,7 +48,6 @@ get_fc_list <- function(res, fc_col = "log2FoldChange", names = NULL) {
 }
 
 #' Run simple enrichment with enrichGO or gseGO
-#'
 #' @param geneList List of genes to run enrichment on.
 #' @param outpath Path to save results.
 #' @param keyType Key type for gene list.
@@ -100,7 +88,6 @@ rna_enrichment <- function(
 }
 
 #' Save and plot gse object
-#'
 #' @param gse GSE object.
 #' @param outpath Path to save to.
 #' @param ... Additional arguments to pass to ggsave.
@@ -265,7 +252,6 @@ gsea_analysis <- function(
 }
 
 #' Perform up and down overrepresentation analysis
-#'
 #' @param gene_dataframe Data frame with features and direction.
 #' @param outpath Path to save results.
 #' @param method Enrichment method (default is "enrichGO").
@@ -329,7 +315,6 @@ stratified_ora <- function(
 }
 
 #' Perform up and down overrepresentation analysis using enrichR
-#'
 #' @param gene_dataframe Data frame with features and direction.
 #' @param outpath Path to save results.
 #' @param dbs List of databases to use for enrichment.

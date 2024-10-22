@@ -2,12 +2,10 @@
 #' @description Functions for preparing data and performing clustering using NMF, k-means, and hierarchical clustering.
 #' @details This script contains functions to prepare a counts matrix for NMF, estimate the rank of a matrix using NMF, plot the results of NMF, estimate k-means clustering using the elbow method, and estimate hierarchical clustering.
 #' @name clustering_functions
-#' @docType package
 #' @import tidyverse ggplot2 NMF
 NULL
 
 #' Prepare a counts matrix for NMF
-#'
 #' @param counts_matr A matrix with rows as genes and columns as samples.
 #' @return A combined matrix with positive and negative values separated.
 #' @export
@@ -25,7 +23,6 @@ prep_nmf_data <- function(counts_matr) {
 }
 
 #' Estimate the rank of a matrix using NMF
-#'
 #' @param counts_matr A matrix with rows as genes and columns as samples.
 #' @param outfile A file to save the output to.
 #' @param ranks A vector of ranks to test. Default is 2:8.
@@ -44,7 +41,6 @@ nmf_estimator <- function(counts_matr, outfile, ranks = 2:8, runs = 30, options 
 }
 
 #' Plot the results of NMF estimation
-#'
 #' @param nmf_out Output from \code{nmf_estimator}.
 #' @return A ggplot object.
 #' @export
@@ -75,7 +71,6 @@ nmf_plotter <- function(nmf_out) {
 }
 
 #' Estimate k-means clustering using the elbow method
-#'
 #' @param counts_matr A matrix with rows as genes and columns as samples.
 #' @param ks A vector of ks to test. Default is 2:8.
 #' @param outfile A file to save the output to.
@@ -93,7 +88,6 @@ kmeans_estimator <- function(counts_matr, ks = 2:8, outfile, ...) {
 }
 
 #' Estimate hierarchical clustering of a matrix
-#'
 #' @param counts_matr A matrix with rows as genes and columns as samples.
 #' @param clusters A vector of clusters to test. Default is 2:8.
 #' @param outfile A file to save the output to.

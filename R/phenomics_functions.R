@@ -1,12 +1,10 @@
 #' @title Phenomics Functions
 #' @description Functions for EHR / Biobank data processing.
 #' @name phenomics_functions
-#' @docType package
 #' @importFrom dplyr filter mutate group_by summarise
 #' @importFrom glue glue
 #' @importFrom purrr map
 #' @importFrom tidyr pivot_longer
-#' @importFrom utils read.csv
 NULL
 
 #' @title Make Composite Coding CSV

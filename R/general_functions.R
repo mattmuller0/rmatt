@@ -1,7 +1,6 @@
 #' @title General functions
 #' @description General functions for data manipulation and analysis
 #' @name general_functions
-#' @docType package
 #' @importFrom dplyr %>% filter pull add_row mutate select summarise_all
 #' @importFrom tibble rownames_to_column
 #' @importFrom SummarizedExperiment SummarizedExperiment colData rowData assay
@@ -11,10 +10,8 @@
 #' @importFrom singscore rankGenes
 #' @importFrom glue glue
 #' @importFrom tidyr drop_na
-#' @importFrom utils write.csv
 
 #' Function to summarize results more generally
-#' 
 #' @param results results of differential expression analysis
 #' @param logFC_column column to use for logFC
 #' @param pvalue_column column to use for pvalue
@@ -67,7 +64,6 @@ summarize_experiment <- function(
 }
 
 #' Function to get genes from a results table
-#' 
 #' @param results results table
 #' @param pval p-value cutoff
 #' @param log2fc log2 fold change cutoff
@@ -89,7 +85,6 @@ getGenes <- function(results, pval = 0.05, metric = 0, name_col = "rownames", pv
 }
 
 #' Function to add missing rows to a matrix
-#' 
 #' @param df matrix, rows = genes, cols = samples
 #' @param rows vector of rownames to add
 #' @param sorted logical, whether to sort the rows alphabetically
@@ -112,7 +107,6 @@ add_missing_rows <- function(
 }
 
 #' Function to make a SummarizedExperiment object
-#' 
 #' @param countsMatr matrix of counts, rows = genes, cols = samples
 #' @param colData data.frame of sample metadata, rows = samples
 #' @return SummarizedExperiment object
@@ -124,7 +118,6 @@ make_se <- function(countsMatr, colData) {
 }
 
 #' Function to save a SummarizedExperiment object into multiple files if the slots are filled in the object
-#' 
 #' @param se SummarizedExperiment object
 #' @param path path to save files
 #' @param normalize how to normalize the counts
@@ -144,7 +137,6 @@ save_se <- function(se, path, normalize = 'mor') {
 }
 
 #' Function to summarize a dataframe
-#' 
 #' @param df dataframe to summarize
 #' @return dataframe with summary statistics
 #' @export
@@ -159,7 +151,6 @@ summarize_df <- function(df) {
 }
 
 #' Function to turn list of lists into a dataframe
-#' 
 #' @param list list of lists
 #' @return dataframe
 #' @export
@@ -169,7 +160,6 @@ list_of_lists_to_df <- function(list) {
 }
 
 #' Function to remove NA variables from a summarized experiment object
-#' 
 #' @param se SummarizedExperiment object
 #' @param columns list of columns to remove NAs from
 #' @return DESeqDataSet object with NAs removed
@@ -184,7 +174,6 @@ remove_na_variables <- function(se, columns) {
 }
 
 #' Function to get the number of samples in each group
-#' 
 #' @param metadata dataframe, metadata
 #' @param id character, column name of the sample ID
 #' @param events_term character, prefix of the events columns
@@ -209,7 +198,6 @@ get_events_breakdown <- function(metadata, id = 'PATNUM', events_term = 'C_', su
 }
 
 #' Function to get make pairwise combinations
-#' 
 #' @param vec vector of values
 #' @return list of pairwise combinations
 #' @export
@@ -224,7 +212,6 @@ pairwise_combos <- function(vec) {
 }
 
 #' Function to get the variable name
-#' 
 #' @param var variable name
 #' @return character, variable name
 #' @export
@@ -233,7 +220,6 @@ varName <- function(var) {
 }
 
 #' Function to one hot encode dataframe column
-#' 
 #' @param df dataframe
 #' @param column character, column name
 #' @param binary logical, whether to make the column binary

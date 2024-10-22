@@ -1,13 +1,7 @@
-###########################################################################
-#
-#                            rna_functions
-#
-###########################################################################
-# Author: Matthew Muller
-# Date: 2023-12-28
-# Script Name: rna_functions
-
-#======================== LIBRARIES ========================
+#' @title Signature Functions
+#' @description This script contains functions for signature analysis.
+#' @details The functions include selecting top genes by variance, filtering genes by expression, filtering genes by lasso regression, and aligning a signature by average correlation with the derivation values.
+#' @name signature_functions
 #' @import ggplot2
 #' @import ggpubr
 #' @import ggrepel
@@ -15,19 +9,9 @@
 #' @import tidyverse
 NULL
 
-# LOAD FUNCTIONS
-#' @importFrom utils suppressMessages
-#' @importFrom utils source
-suppressMessages({
-    utils::source("https://raw.githubusercontent.com/mattmuller0/Rtools/main/general_functions.R")
-    utils::source("https://raw.githubusercontent.com/mattmuller0/Rtools/main/plotting_functions.R")
-    utils::source("https://raw.githubusercontent.com/mattmuller0/Rtools/main/stats_functions.R")
-})
-
 #======================== Data Preprocessing Functions ========================
 
 #' Select top genes by variance
-#'
 #' @param df data frame [samples x genes]
 #' @param n number of top genes to select
 #' @return data frame with columns [genes, variance]
@@ -39,7 +23,6 @@ select_top_variability <- function(df, n = 1000) {
 }
 
 #' Filter genes by expression
-#'
 #' @param df data frame [samples x genes]
 #' @param min_expr minimum expression value
 #' @return data frame with filtered genes [genes, expression]
@@ -51,7 +34,6 @@ select_top_expression <- function(df, min_expr = 1) {
 }
 
 #' Filter genes by lasso regression
-#'
 #' @param df data frame [samples x genes]
 #' @param y response variable
 #' @param lambda lambda value for lasso regression
@@ -71,7 +53,6 @@ select_top_lasso <- function(df, y, lambda = NULL, nfolds = 10, ...) {
 }
 
 #' Align a signature by average correlation with the derivation values
-#'
 #' @param sig signature vector
 #' @param dat data matrix
 #' @param by method to align by (default is "mean")
@@ -86,7 +67,6 @@ align_signature <- function(sig, dat, by = "mean"){
 #======================== Testing Functions ========================
 
 #' Compare one column to many columns
-#'
 #' @param df data frame
 #' @param col column to compare
 #' @param cols columns to compare to
@@ -187,7 +167,6 @@ eigen_pca <- function(df, outdir, pcs = 1, align = TRUE, ...) {
 }
 
 #' Calculate eigengenes by singular value decomposition (WIP)
-#'
 #' @param df data frame [samples x genes]
 #' @param outdir output directory
 #' @param pcs number of principal components to return
@@ -212,7 +191,6 @@ eigen_svd <- function(df, outdir, pcs = 1, align = FALSE, ...) {
 }
 
 #' Calculate eigengenes by regularized singular value decomposition (WIP)
-#'
 #' @param M data matrix [samples x genes]
 #' @param samples number of samples
 #' @param vectors number of eigenvectors to return
@@ -249,7 +227,6 @@ eigen_reg_svd <- function(M, samples = nrow(M), vectors = 1:3, tau = 1, lap = FA
 }
 
 #' Calculate eigengenes by non-negative matrix factorization (WIP)
-#'
 #' @param df data frame [samples x genes]
 #' @param outdir output directory
 #' @param pcs number of principal components to return
@@ -277,7 +254,6 @@ eigen_nmf <- function(df, outdir, pcs = 1, align = FALSE, ...) {
 }
 
 #' Calculate eigengenes by independent component analysis (WIP)
-#'
 #' @param df data frame [samples x genes]
 #' @param outdir output directory
 #' @param n.comp number of components to return

@@ -13,8 +13,8 @@ log_rank_test <- function(
   data, 
   comparisons, 
   censors,
-  censor_prefix = 'C_',
-  time_prefix = 'T_'
+  censor_prefix = 'censor_',
+  time_prefix = 'time_to_'
 ) {
   # Create an empty dataframe to store the p-values
   p_values <- data.frame(matrix(ncol = length(comparisons), nrow = length(censors)))
@@ -70,8 +70,8 @@ survival_analysis <- function(
   censors, 
   outdir,
   image_type = 'pdf',
-  censor_prefix = 'C_',
-  time_prefix = 'T_'
+  censor_prefix = 'censor_',
+  time_prefix = 'time_to_'
 ) {
   dir.create(file.path(outdir, 'survival_plots'), showWarnings = FALSE, recursive = TRUE)
   censors_basenames <- gsub(censor_prefix, '', censors)

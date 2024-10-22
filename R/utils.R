@@ -1,22 +1,11 @@
 #' @title Utility functions
 #' @description Utility functions for general tasks.
 #' @name utility_functions
-#' @docType package
-#' @importFrom utils readLines install.packages
 #' @importFrom BiocManager install
 #' @importFrom jsonlite write_json
 #' @importFrom parallel detectCores
 #' @importFrom dplyr rowwise filter ungroup select where
 #' @importFrom tidyr drop_na
-
-# LOAD FUNCTIONS
-# space reserved for sourcing in functions
-
-###########################################################################
-#
-#                                 CODE
-#
-###########################################################################
 
 #' Install all required packages from a script
 #'
