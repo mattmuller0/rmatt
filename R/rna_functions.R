@@ -3,7 +3,7 @@
 #' @name rna_functions
 #' @importFrom dplyr select mutate inner_join
 #' @importFrom purrr map reduce
-#' @importFrom DESeq2 counts colData DESeq results lfcShrink plotMA DESeqDataSet
+#' @importFrom DESeq2 counts DESeq results lfcShrink plotMA DESeqDataSet
 #' @importFrom SummarizedExperiment assay colData
 #' @importFrom ggplot2 ggsave
 #' @importFrom EnhancedVolcano EnhancedVolcano
