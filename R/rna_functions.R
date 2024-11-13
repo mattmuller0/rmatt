@@ -1,24 +1,16 @@
 #' @title RNA Functions
 #' @description A collection of functions for RNA analysis.
 #' @name rna_functions
-#' @importFrom dplyr select mutate inner_join
-#' @importFrom purrr map reduce
-#' @importFrom DESeq2 counts DESeq results lfcShrink plotMA DESeqDataSet
-#' @importFrom SummarizedExperiment assay colData
-#' @importFrom ggplot2 ggsave
-#' @importFrom EnhancedVolcano EnhancedVolcano
-#' @importFrom edgeR DGEList calcNormFactors cpm
-#' @importFrom limma lmFit eBayes topTable
-#' @importFrom rstatix wilcox_test
+#' @import dplyr
+#' @import purrr
+#' @import DESeq2
+#' @import SummarizedExperiment
+#' @import ggplot2
+#' @import EnhancedVolcano
+#' @import edgeR
+#' @import limma
+#' @import rstatix
 NULL
-
-# # Source external functions
-# source("https://raw.githubusercontent.com/mattmuller0/Rtools/main/general_functions.R")
-# source("https://raw.githubusercontent.com/mattmuller0/Rtools/main/plotting_functions.R")
-# source("https://raw.githubusercontent.com/mattmuller0/Rtools/main/enrichment_functions.R")
-# source("https://raw.githubusercontent.com/mattmuller0/Rtools/main/converting_functions.R")
-# source("https://raw.githubusercontent.com/mattmuller0/Rtools/main/filtering_functions.R")
-# source("https://raw.githubusercontent.com/mattmuller0/Rtools/main/stats_functions.R")
 
 #======================== Reading Functions ========================
 #' @title Read Feature Counts
@@ -505,7 +497,7 @@ deseq_analysis <- function(dds, conditions, controls = NULL, outpath, ...) {
       res <- ovr_deseq_results(dds_, condition, file.path(outpath, condition), ...)
 
       # Summarize results
-      summary <- lapply(res, summarize_deseq_experiment)
+      summary <- lapply(res, summarize_experiment)
       for (i in 1:length(summary)) {
         summary[[i]]$condition <- names(res)[i]
       }
@@ -521,7 +513,7 @@ deseq_analysis <- function(dds, conditions, controls = NULL, outpath, ...) {
       res <- run_deseq(dds_, file.path(outpath, condition), contrast = contrast, ...)
 
       # Summarize results
-      summary <- summarize_deseq_experiment(res, padj_cutoffs = c(0.05, 0.1, 0.2), pvalue_cutoffs = c(0.01, 0.05, 0.1))
+      summary <- summarize_experiment(res, padj_cutoffs = c(0.05, 0.1, 0.2), pvalue_cutoffs = c(0.01, 0.05, 0.1))
       summary$condition <- condition
       summary <- summary[, c(ncol(summary), 1:(ncol(summary) - 1))]
       summary_df <- rbind(summary_df, summary)
@@ -630,6 +622,7 @@ test_dds <- function(formula, dds, rstatix_test = rstatix::wilcox_test, ...) {
   # return the dataframe
   return(df_out)
 }
+
 #======================== Summary Functions ========================
 #' Compare DESeq Results
 #' 
