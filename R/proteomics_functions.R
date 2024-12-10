@@ -10,15 +10,12 @@
 #' @import clusterProfiler
 #' @import OlinkAnalyze
 #' @import ggplot2
-
-# # LOAD FUNCTIONS
-# #' @importFrom utils source
-# source('https://raw.githubusercontent.com/mattmuller0/Rtools/main/general_functions.R')
+NULL
 
 #======================== CODE ========================#
 
 #' Get Olink sample info
-#'
+#' @description Get sample IDs, plates, proteins, and panels from Olink data
 #' @param data Data frame of Olink data
 #' @return List containing sample IDs, plates, proteins, and panels
 #' @export
@@ -38,7 +35,7 @@ olink_info <- function(data) {
 }
 
 #' Get Olink PCA outliers and plot
-#'
+#' @description Get PCA outliers from Olink data
 #' @param data Data frame of Olink data
 #' @param outdir Output directory
 #' @param outlierDefX Outlier definition for x axis
@@ -63,7 +60,7 @@ olink_pca_outliers <- function(data, outdir, outlierDefX = 2.5, outlierDefY = 4,
 }
 
 #' Get Olink UMAP outliers and plot
-#'
+#' @description Get UMAP outliers from Olink data
 #' @param data Data frame of Olink data
 #' @param outdir Output directory
 #' @param outlierDefX Outlier definition for x axis
@@ -88,7 +85,7 @@ olink_umap_outliers <- function(data, outdir, outlierDefX = 2.5, outlierDefY = 4
 }
 
 #' Test level of detection (LOD) for each protein
-#'
+#' @description Test if the NPX value is greater than the LOD
 #' @param data Data frame of Olink data
 #' @param outdir Output directory
 #' @param plot Boolean to indicate if plots should be generated
@@ -115,7 +112,7 @@ olink_lod_qc <- function(data, outdir, plot = TRUE) {
 }
 
 #' Convert Olink data to count table
-#'
+#' @description Convert Olink data to a count table
 #' @param data Data frame of Olink data
 #' @param sampleID Sample ID column
 #' @param assay Assay column
@@ -131,7 +128,7 @@ olink_count_table <- function(data, sampleID = 'SampleID', assay = 'Assay', valu
 }
 
 #' Perform Olink filtering
-#'
+#' @description Perform PCA, UMAP, and LOD filtering on Olink data
 #' @param data Data frame of Olink data
 #' @param outdir Output directory
 #' @param pca_args List of arguments to pass to PCA function
@@ -182,7 +179,7 @@ olink_filtering <- function(data, outdir, pca_args = list(), umap_args = list(),
 }
 
 #' Run differential expression and pathway analysis
-#'
+#' @description Run differential expression and pathway analysis on Olink data
 #' @param data Data frame of Olink data
 #' @param conditions Condition column
 #' @param outdir Output directory
@@ -244,7 +241,7 @@ olink_analysis <- function(
 }
 
 #' Calculate odds ratios for Olink data
-#'
+#' @description Calculate odds ratios for Olink data
 #' @param data Data frame of Olink data
 #' @param proteins Vector of proteins to calculate odds ratios for
 #' @param events Vector of events to calculate odds ratios for

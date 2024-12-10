@@ -30,5 +30,5 @@ olink_pca_outliers(
 List containing PCA results and outliers
 }
 \description{
-Get Olink PCA outliers and plot
+Get PCA outliers from Olink data
 }

@@ -30,5 +30,5 @@ olink_umap_outliers(
 List containing UMAP results and outliers
 }
 \description{
-Get Olink UMAP outliers and plot
+Get UMAP outliers from Olink data
 }

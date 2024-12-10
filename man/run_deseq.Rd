@@ -8,10 +8,10 @@ run_deseq(
   dds,
   outpath,
   contrast = NA,
-  ...,
   pvalue = "padj",
   pCutoff = 0.05,
-  FCcutoff = 0
+  FCcutoff = 0,
+  ...
 )
 }
 \arguments{
@@ -21,17 +21,17 @@ run_deseq(
 
 \item{contrast}{Contrast to run}
 
-\item{...}{Additional arguments to pass to DESeq2}
-
 \item{pvalue}{p-value column name}
 
 \item{pCutoff}{p-value cutoff for volcano plot}
 
 \item{FCcutoff}{Fold change cutoff for volcano plot}
+
+\item{...}{Additional arguments to pass to DESeq2}
 }
 \value{
 Results of differential expression analysis
 }
 \description{
-Run Simple Deseq analysis
+Function to run a simple DESeq analysis on a summarized experiment object
 }

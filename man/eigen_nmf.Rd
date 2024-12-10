@@ -21,5 +21,5 @@ eigen_nmf(df, outdir, pcs = 1, align = FALSE, ...)
 dataframe with eigengenes
 }
 \description{
-Calculate eigengenes by non-negative matrix factorization (WIP)
+Calculate eigengenes by non-negative matrix factorization
 }

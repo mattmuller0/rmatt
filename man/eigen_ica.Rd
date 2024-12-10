@@ -21,5 +21,5 @@ eigen_ica(df, outdir, n.comp = 1, align = FALSE, ...)
 dataframe with eigengenes
 }
 \description{
-Calculate eigengenes by independent component analysis (WIP)
+Calculate eigengenes by independent component analysis
 }

@@ -13,5 +13,5 @@ min_max_norm(x)
 numeric, min-max normalized vector
 }
 \description{
-Min-Max Normalize a Vector
+Min-max normalize a vector
 }

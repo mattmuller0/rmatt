@@ -27,5 +27,5 @@ olink_filtering(
 List containing filtered data, count table, and outliers
 }
 \description{
-Perform Olink filtering
+Perform PCA, UMAP, and LOD filtering on Olink data
 }

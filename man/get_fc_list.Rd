@@ -2,20 +2,21 @@
 % Please edit documentation in R/enrichment_functions.R
 \name{get_fc_list}
 \alias{get_fc_list}
-\title{Get the fold change list}
+\title{Create a sorted fold change vector from results}
 \usage{
 get_fc_list(res, fc_col = "log2FoldChange", names = NULL)
 }
 \arguments{
-\item{res}{Data frame of results.}
+\item{res}{Data frame containing differential expression or similar results}
 
-\item{fc_col}{Column of fold change values.}
+\item{fc_col}{Character string specifying the column containing fold change values}
 
-\item{names}{Column of names (if NULL, defaults to rownames).}
+\item{names}{Character string specifying the column to use for names. If NULL, uses rownames}
 }
 \value{
-Vector of sorted fold change values.
+Named numeric vector of sorted fold changes
 }
 \description{
-Get the fold change list
+Takes a results data frame and creates a named vector of fold changes sorted in
+descending order. Useful for preparing data for enrichment analysis.
 }

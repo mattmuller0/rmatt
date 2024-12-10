@@ -2,19 +2,7 @@
 % Please edit documentation in R/filtering_functions.R
 \name{expr_filtering_functions}
 \alias{expr_filtering_functions}
-\alias{percentGenesDetected}
 \title{RNA-seq filtering and preprocessing functions}
-\usage{
-percentGenesDetected(dds, min_value = 0)
-}
-\arguments{
-\item{dds}{DESeq2 object}
-
-\item{min_value}{Minimum value to consider a gene detected}
-}
-\value{
-Data frame of percent of genes detected
-}
 \description{
 Functions for filtering and preprocessing RNA-seq data.
 }

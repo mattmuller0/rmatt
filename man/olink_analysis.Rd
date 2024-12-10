@@ -36,5 +36,5 @@ olink_analysis(
 List of differential expression and pathway analysis results
 }
 \description{
-Run differential expression and pathway analysis
+Run differential expression and pathway analysis on Olink data
 }

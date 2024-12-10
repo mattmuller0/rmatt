@@ -7,8 +7,10 @@
 #' @importFrom tableone CreateTableOne
 #' @importFrom glue glue
 #' @importFrom purrr map
+NULL
 
 #' Create a Table 1
+#' @description Create a stats table from a data.frame
 #' @param data data.frame, data to make table 1 from
 #' @param groups character, groups to stratify by
 #' @param vars character, variables to include in table 1
@@ -51,6 +53,7 @@ stats_table <- function(
 }
 
 #' Hypergeometric Scoring
+#' @description Add odds ratio and p-value to a gse object from hypergeometric enrichment analysis
 #' @param gse gse object from hypergeometric enrichment analysis in clusterProfiler
 #' @param method character, method to use ('fisher' or 'chisq')
 #' @param ... other arguments to pass to the test function
@@ -109,6 +112,7 @@ hypergeometric_scoring <- function(
 }
 
 #' Create a Correlation Matrix
+#' @description Create a correlation matrix from a data.frame
 #' @param data data.frame, data to make correlation matrix from
 #' @param vars1 character, variables to correlate
 #' @param vars2 character, variables to correlate
@@ -142,7 +146,7 @@ correlation_matrix <- function(data, vars1, vars2, method = 'pearson', use = 'pa
 }
 
 #' Softmax a Vector
-#'
+#' @description Softmax a vector
 #' @param x numeric, vector to softmax
 #' @return numeric, softmaxed vector
 #' @export
@@ -151,6 +155,7 @@ softmax <- function(x) {
 }
 
 #' Min-Max Normalize a Vector
+#' @description Min-max normalize a vector
 #' @param x numeric, vector to min-max normalize
 #' @return numeric, min-max normalized vector
 #' @export

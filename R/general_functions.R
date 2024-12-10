@@ -4,12 +4,13 @@
 #' @importFrom dplyr %>% filter pull add_row mutate select summarise_all
 #' @importFrom tibble rownames_to_column
 #' @importFrom SummarizedExperiment SummarizedExperiment colData rowData assay
-#' @importFrom BiocGenerics DataFrame
+#' @importFrom S4Vectors DataFrame
 #' @importFrom edgeR cpm calcNormFactors
 #' @importFrom DESeq2 counts varianceStabilizingTransformation rlog
 #' @importFrom singscore rankGenes
 #' @importFrom glue glue
 #' @importFrom tidyr drop_na
+NULL
 
 #' Function to summarize results more generally
 #' @param results results of differential expression analysis

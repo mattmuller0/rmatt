@@ -24,7 +24,7 @@ map_gene_ids(
 
 \item{remove_missing}{logical, keep unmatched gene IDs.}
 
-\item{...}{additional arguments to pass to `mapIds`.}
+\item{...}{additional arguments to pass to `AnnotationDbi::mapIds`.}
 }
 \value{
 list, converted gene IDs.

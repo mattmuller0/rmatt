@@ -2,17 +2,7 @@
 % Please edit documentation in R/proteomics_functions.R
 \name{olink_functions}
 \alias{olink_functions}
-\alias{olink_info}
 \title{Olink proteomics functions}
-\usage{
-olink_info(data)
-}
-\arguments{
-\item{data}{Data frame of Olink data}
-}
-\value{
-List containing sample IDs, plates, proteins, and panels
-}
 \description{
 Functions for analyzing Olink proteomics data.
 }

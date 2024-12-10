@@ -25,24 +25,53 @@ NULL
 
 #======================== CODE ========================#
 
-#' Get the fold change list
-#' @param res Data frame of results.
-#' @param fc_col Column of fold change values.
-#' @param names Column of names (if NULL, defaults to rownames).
-#' @return Vector of sorted fold change values.
+#' Create a sorted fold change vector from results
+#'
+#' @description
+#' Takes a results data frame and creates a named vector of fold changes sorted in
+#' descending order. Useful for preparing data for enrichment analysis.
+#'
+#' @param res Data frame containing differential expression or similar results
+#' @param fc_col Character string specifying the column containing fold change values
+#' @param names Character string specifying the column to use for names. If NULL, uses rownames
+#'
+#' @return Named numeric vector of sorted fold changes
+#' 
+#' @importFrom dplyr select
+#' @importFrom rlang sym !!
 #' @export
 get_fc_list <- function(res, fc_col = "log2FoldChange", names = NULL) {
+  # Input validation
+  if (!is.data.frame(res)) {
+    stop("'res' must be a data frame")
+  }
+  if (!fc_col %in% colnames(res)) {
+    stop(sprintf("Column '%s' not found in input data frame", fc_col))
+  }
+  
+  # Handle names
   if (is.null(names)) {
-    res[, "rownames"] <- rownames(res)
+    if (length(rownames(res)) == 0) {
+      stop("No rownames found in input data frame")
+    }
+    res[["rownames"]] <- rownames(res)
     names <- "rownames"
+  } else if (!names %in% colnames(res)) {
+    stop(sprintf("Names column '%s' not found in input data frame", names))
   }
 
-  fc <- res %>% 
+  # Create sorted fold change vector
+  fc <- res %>%
     as.data.frame() %>%
-    dplyr::select(!!sym(fc_col)) %>% 
+    dplyr::select(!!sym(fc_col)) %>%
     unlist() %>%
-    set_names(res[, names]) %>%
+    stats::setNames(res[[names]]) %>%
     sort(decreasing = TRUE)
+  
+  # Validate output
+  if (any(is.na(fc))) {
+    warning("NA values present in fold changes")
+  }
   
   return(fc)
 }

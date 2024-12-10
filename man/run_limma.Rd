@@ -33,5 +33,5 @@ run_limma(
 Data frame of p-values and adjusted p-values
 }
 \description{
-Function to run limma voom on a summarized experiment object with TMM normalization
+Function to run limma on a summarized experiment object with TMM normalization
 }

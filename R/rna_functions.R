@@ -12,21 +12,21 @@
 #' @import rstatix
 NULL
 
-#======================== Reading Functions ========================
+# ======================== Reading Functions ========================
 #' @title Read Feature Counts
 #' @description Function to read a feature counts output file.
 #' @param f File path to the feature counts output.
 #' @param idx Columns to extract for (1) gene name and (2) counts.
 #' @param ... Additional arguments to pass to read.table.
 #' @return Data frame of counts.
-#' @importFrom dplyr select
-#' @importFrom utils read.table
 #' @export
 ReadFeatureCounts <- function(f, idx, ...) {
-  if (missing(f)) 
+  if (missing(f)) {
     stop("f is missing")
-  if (!file.exists(f)) 
+  }
+  if (!file.exists(f)) {
     stop("file not found")
+  }
   message("reading ", f, " ...")
   a <- utils::read.table(f, header = TRUE, ...)
   a <- dplyr::select(a, 1, idx)
@@ -40,22 +40,22 @@ ReadFeatureCounts <- function(f, idx, ...) {
 #' @param idx Columns to extract for (1) gene name and (2) counts.
 #' @param ... Additional arguments to pass to ReadFeatureCounts.
 #' @return Data frame of counts.
-#' @importFrom purrr map reduce
-#' @importFrom dplyr inner_join
-#' @importFrom utils basename
 #' @export
-CountTableFromFeatureCounts <- function(directory = ".", pattern = "featureCounts.txt$", idx = 7, ... ) {
-  if (missing(directory)) 
+CountTableFromFeatureCounts <- function(directory = ".", pattern = "featureCounts.txt$", idx = 7, ...) {
+  if (missing(directory)) {
     stop("directory is missing")
+  }
   fl <- list.files(directory, pattern = pattern, full.names = TRUE, recursive = TRUE)
   message("reading ", length(fl), " samples ...")
   sample_names <- utils::basename(fl)
   l <- purrr::map(fl, ReadFeatureCounts, idx = idx, ...)
-  tbl <- purrr::reduce(l, dplyr::inner_join) 
+  tbl <- purrr::reduce(l, dplyr::inner_join)
   return(tbl)
 }
-#======================== Testing Functions ========================
+
+# ======================== Testing Functions ========================
 #' Wilcoxon Ranked Sum testing on genes in two summarized experiments
+#' @description Function to run a wilcoxon ranked sum test on genes in two summarized experiments
 #' @param dds DESeq2 object
 #' @param outpath Output path for results
 #' @param condition Column of interest
@@ -63,61 +63,36 @@ CountTableFromFeatureCounts <- function(directory = ".", pattern = "featureCount
 #' @param FCcutoff Fold change cutoff for volcano plot
 #' @param ... Additional arguments to pass to wilcox.test
 #' @return Data frame of p-values and adjusted p-values
-#' @importFrom DESeq2 counts
-#' @importFrom DESeq2 colData
-#' @importFrom DESeq2 DESeq
-#' @importFrom DESeq2 results
-#' @importFrom DESeq2 lfcShrink
-#' @importFrom DESeq2 plotMA
-#' @importFrom SummarizedExperiment assay
-#' @importFrom ggplot2 ggsave
-#' @importFrom EnhancedVolcano EnhancedVolcano
-#' @importFrom dplyr select
-#' @importFrom purrr map
-#' @importFrom stats wilcox.test
-#' @importFrom utils write.csv
 #' @export
 gene_wilcox_test <- function(
-  dds, outpath,
-  condition,
-  pCutoff = 0.05, FCcutoff = 0.5,
-  ...) {
-  requireNamespace("DESeq2")
-  requireNamespace("EnhancedVolcano")
-  requireNamespace("ggplot2")
-  requireNamespace("dplyr")
-  requireNamespace("purrr")
-  requireNamespace("stats")
-  requireNamespace("utils")
-
+    dds, outpath,
+    condition,
+    pCutoff = 0.05, FCcutoff = 0.5,
+    ...) {
   # make the outpath
   dir.create(outpath, showWarnings = FALSE, recursive = TRUE)
 
   # Extract count data from the DESeq object
-  count_data_raw <- DESeq2::counts(dds, normalize = TRUE) %>% 
-    t() %>% 
-    as.data.frame()
-  count_data <- log2(count_data_raw + 1)
   counts_data_raw <- normalize_counts(dds, method = "log2-mor")
-  
+
   # Extract metadata from the DESeq object
-  meta <- as.data.frame(SummarizedExperiment::colData(dds)) %>% 
+  meta <- as.data.frame(SummarizedExperiment::colData(dds)) %>%
     dplyr::select(all_of(condition))
-  
+
   # get the conditions
   conditions <- unique(meta[, condition])
-  
+
   # Run the wilcoxon test for each gene using map
   test_res <- purrr::map(
-    count_data, 
+    count_data,
     function(x) {
       # run the test
       test <- stats::wilcox.test(
         x[meta[, condition] == conditions[1]],
         x[meta[, condition] == conditions[2]],
         ...
-        )
-      
+      )
+
       # get the pvalue
       pvalue <- test$p.value
 
@@ -126,27 +101,28 @@ gene_wilcox_test <- function(
 
       # get the log2FC
       log2FoldChange <- mean(x[meta[, condition] == conditions[2]]) - mean(x[meta[, condition] == conditions[1]])
-      
+
       # return the test
       return(list(basemean = basemean, log2FoldChange = log2FoldChange, pvalue = pvalue))
     }
-    )
+  )
   names(test_res) <- colnames(count_data)
 
   # Extract p-values and adjust for multiple testing using the Benjamini-Hochberg method
   res <- list_of_lists_to_df(test_res)
-  res <- res %>% mutate(padj = p.adjust(pvalue, method="BH"))
+  res <- res %>% mutate(padj = p.adjust(pvalue, method = "BH"))
 
   # wrote the results to a csv
   utils::write.csv(res, file.path(outpath, "wilcox_results.csv"))
 
   # make a volcano plot
   volcanoP <- EnhancedVolcano::EnhancedVolcano(
-    res, lab=rownames(res), 
-    x = "log2FoldChange", y = "pvalue", 
+    res,
+    lab = rownames(res),
+    x = "log2FoldChange", y = "pvalue",
     title = "Volcano Plot", subtitle = "",
     pCutoff = pCutoff, FCcutoff = FCcutoff
-    )
+  )
   ggplot2::ggsave(file.path(outpath, "volcanoPlot.pdf"), volcanoP)
 
   # get the fc list
@@ -154,12 +130,13 @@ gene_wilcox_test <- function(
 
   # run enrichment
   gse <- rna_enrichment(fc, outpath)
-  
+
   # View results
   return(res)
 }
 
 #' Function to run limma voom on a summarized experiment object with TMM normalization
+#' @description Function to run limma on a summarized experiment object with TMM normalization
 #' @param se SummarizedExperiment object
 #' @param outpath Output path for results
 #' @param condition Vector of conditions
@@ -168,69 +145,58 @@ gene_wilcox_test <- function(
 #' @param FCcutoff Fold change cutoff for volcano plot
 #' @param ... Additional arguments to pass to voom
 #' @return Data frame of p-values and adjusted p-values
-#' @importFrom edgeR DGEList calcNormFactors cpm
-#' @importFrom limma lmFit eBayes topTable
-#' @importFrom ggplot2 ggsave
-#' @importFrom utils write.csv
 #' @export
 run_limma <- function(
     se, outpath,
     condition, controls = NULL,
     pCutoff = 0.05, FCcutoff = 0.5,
     ...) {
-    requireNamespace("edgeR")
-    requireNamespace("limma")
-    requireNamespace("ggplot2")
-    requireNamespace("utils")
+  # make the directory if it doesn"t exist
+  dir.create(outpath, showWarnings = FALSE, recursive = TRUE)
 
-    # make the directory if it doesn"t exist
-    dir.create(outpath, showWarnings = FALSE, recursive = TRUE)
+  # Convert the counts matrix to a matrix if it"s not already
+  counts <- SummarizedExperiment::assay(se)
+  if (!is.matrix(counts)) {
+    counts <- as.matrix(counts)
+  }
 
-    # Convert the counts matrix to a matrix if it"s not already
-    counts <- SummarizedExperiment::assay(se)
-    if (!is.matrix(counts)) {
-        counts <- as.matrix(counts)
-    }
+  condition <- se[[condition]]
 
-    condition <- se[[condition]]
+  if (!is.null(controls)) {
+    controls <- se[[controls]]
+  }
 
-    if (!is.null(controls)) {
-        controls <- se[[controls]]
-    }
+  # Normalize the counts matrix using TMM normalization
+  norm_conuts <- normalize_counts(norm_counts, method = "TMM", log2 = TRUE)
 
-    # Normalize the counts matrix using TMM
-    counts <- edgeR::DGEList(counts = counts, group = condition)
-    counts <- edgeR::calcNormFactors(counts, method = "TMM")
-    norm_counts <- edgeR::cpm(counts, log = TRUE)
+  # Create the design matrix
+  if (is.null(controls)) {
+    design <- model.matrix(~condition)
+  } else {
+    design <- model.matrix(~ condition + controls)
+  }
 
-    # Create the design matrix
-    if (is.null(controls)) {
-        design <- model.matrix(~ condition)
-    } else {
-        design <- model.matrix(~ condition + controls)
-    }
+  # Perform differential expression analysis
+  fit <- limma::lmFit(norm_counts, design)
+  fit <- limma::eBayes(fit)
 
-    # Perform differential expression analysis
-    fit <- limma::lmFit(norm_counts, design)
-    fit <- limma::eBayes(fit)
+  # Get the differential expression results
+  results <- limma::topTable(fit, coef = 2, number = Inf, ...)
 
-    # Get the differential expression results
-    results <- limma::topTable(fit, coef = 2, number = Inf, ...)
+  # make a volcano plot
+  volcanoP <- plot_volcano(results, title = "limma", color = "adj.P.Val", pCutoff = pCutoff)
+  ggplot2::ggsave(file.path(outpath, "volcanoPlot.pdf"), volcanoP)
 
-    # make a volcano plot
-    volcanoP <- plot_volcano(results, title = "limma", color = "adj.P.Val", pCutoff = pCutoff)
-    ggplot2::ggsave(file.path(outpath, "volcanoPlot.pdf"), volcanoP)
+  # save the results
+  utils::write.csv(results, file.path(outpath, "limma_results.csv"))
 
-    # save the results
-    utils::write.csv(results, file.path(outpath, "limma_results.csv"))
+  # get the fc list
+  fc <- get_fc_list(results, "logFC")
 
-    # get the fc list
-    fc <- get_fc_list(results, "logFC")
+  # run enrichment
+  gse <- gsea_analysis(fc, outpath)
 
-    # run enrichment
-    gse <- gsea_analysis(fc, outpath)
-
-    return(results)
+  return(results)
 }
 
 #' Calculate Correlations
@@ -240,60 +206,46 @@ run_limma <- function(
 #' @param method Correlation method to use
 #' @param ... Additional arguments to pass to cor.test
 #' @return Correlation results for each gene
-#' @importFrom DESeq2 colData
-#' @importFrom SummarizedExperiment assay
-#' @importFrom stats cor.test
 #' @export
-calculate_correlations <- function(dds, condition, normalize = "mor", method="spearman", ...) {
-  requireNamespace("DESeq2")
-  requireNamespace("SummarizedExperiment")
-  requireNamespace("stats")
-
+calculate_correlations <- function(dds, condition, normalize = "mor", method = "spearman", ...) {
   # Extract the condition vector
   condition <- as.numeric(SummarizedExperiment::colData(dds)[, condition])
-  
+
   # Extract the gene expression data
   gene_expression <- normalize_counts(dds, method = normalize)
-  
+
   # Apply the cor() function to each row of the gene_expression matrix
   gene_expression_correlations <- apply(gene_expression, 1, function(x) {
-    correlation <- stats::cor.test(x, condition, method=method, ...)
-    return(list(correlation=correlation$estimate, pvalue=correlation$p.value))
+    correlation <- stats::cor.test(x, condition, method = method, ...)
+    return(list(correlation = correlation$estimate, pvalue = correlation$p.value))
   })
-  
+
   # Convert the correlations to a data frame
-  gene_expression_correlations_df <- data.frame(row.names = rownames(dds),
-                                                correlation=sapply(gene_expression_correlations, function(x) x$correlation),
-                                                pvalue=sapply(gene_expression_correlations, function(x) x$pvalue)
+  gene_expression_correlations_df <- data.frame(
+    row.names = rownames(dds),
+    correlation = sapply(gene_expression_correlations, function(x) x$correlation),
+    pvalue = sapply(gene_expression_correlations, function(x) x$pvalue)
   )
   # Return the data frame of gene expression correlations
   return(gene_expression_correlations_df)
 }
 
 #' Run Simple Deseq analysis
+#' @description Function to run a simple DESeq analysis on a summarized experiment object
 #' @param dds DESeq2 object
 #' @param outpath Output path for results
 #' @param contrast Contrast to run
-#' @param ... Additional arguments to pass to DESeq2
 #' @param pvalue p-value column name
 #' @param pCutoff p-value cutoff for volcano plot
 #' @param FCcutoff Fold change cutoff for volcano plot
+#' @param ... Additional arguments to pass to DESeq2
 #' @return Results of differential expression analysis
-#' @importFrom DESeq2 DESeq results lfcShrink plotMA
-#' @importFrom SummarizedExperiment assay
-#' @importFrom ggplot2 ggsave
-#' @importFrom utils write.csv
 #' @export
 run_deseq <- function(
-  dds, outpath,
-  contrast = NA, ...,
-  pvalue = "padj", pCutoff = 0.05, FCcutoff = 0
-  ) {
-  requireNamespace("DESeq2")
-  requireNamespace("SummarizedExperiment")
-  requireNamespace("ggplot2")
-  requireNamespace("utils")
-
+    dds, outpath,
+    contrast = NA,
+    pvalue = "padj", pCutoff = 0.05, FCcutoff = 0,
+    ...) {
   # This function will run differential expression on a premade dds object.
   # Gives most metrics you"ll need, and also returns the results
   dir.create(outpath, showWarnings = FALSE, recursive = TRUE)
@@ -302,11 +254,11 @@ run_deseq <- function(
 
   # Get results names
   res <- DESeq2::results(dds)
-  
+
   if (is.vector(contrast)) {
     name <- paste0(contrast[1], "__", contrast[2], "_vs_", contrast[3])
-    res <- DESeq2::results(dds, contrast=contrast)
-    resLFC <- DESeq2::lfcShrink(dds, coef=length(DESeq2::resultsNames(dds)), type="apeglm")
+    res <- DESeq2::results(dds, contrast = contrast)
+    resLFC <- DESeq2::lfcShrink(dds, coef = length(DESeq2::resultsNames(dds)), type = "apeglm")
     pdf(file.path(outpath, "MAplot.pdf"))
     DESeq2::plotMA(resLFC)
     dev.off()
@@ -316,16 +268,19 @@ run_deseq <- function(
     ggplot2::ggsave(file.path(outpath, "volcanoPlot.pdf"), volcanoP)
 
     # make a heatmap of the significant genes
-    tryCatch({
-      sign_genes <- res[, pvalue] < pCutoff & abs(res[, "log2FoldChange"]) > FCcutoff
-      is.na(sign_genes) <- FALSE # some error handing for outliers as NA
-      heatmapP <- plot_gene_heatmap(dds[sign_genes, ], title = name, annotations = contrast[1], normalize = "vst", show_row_names = FALSE, show_column_names = FALSE)
-      pdf(file.path(outpath, "dge_heatmap.pdf"))
-      print(heatmapP)
-      dev.off()
-    }, error = function(e) {
-      message("An error occurred while generating the heatmap: ", conditionMessage(e))
-    })
+    tryCatch(
+      {
+        sign_genes <- res[, pvalue] < pCutoff & abs(res[, "log2FoldChange"]) > FCcutoff
+        sign_genes[is.na(sign_genes)] <- FALSE # some error handing for outliers as NA
+        heatmapP <- plot_gene_heatmap(dds[sign_genes, ], title = name, annotations = contrast[1], normalize = "vst", show_row_names = FALSE, show_column_names = FALSE)
+        pdf(file.path(outpath, "dge_heatmap.pdf"))
+        print(heatmapP)
+        dev.off()
+      },
+      error = function(e) {
+        message("An error occurred while generating the heatmap: ", conditionMessage(e))
+      }
+    )
 
     # make gene list
     geneList <- get_fc_list(res)
@@ -333,16 +288,16 @@ run_deseq <- function(
 
     message("Results Summary:")
     summary(res)
-    
+
     message("Writing results to outpath")
     utils::write.csv(res, file.path(outpath, "deseq_results.csv"))
-    saveRDS(dds, file = file.path(outpath,"dds.rds"))
+    saveRDS(dds, file = file.path(outpath, "dds.rds"))
     return(res)
   }
 
   name <- DESeq2::resultsNames(dds)[length(DESeq2::resultsNames(dds))]
-  res <- DESeq2::results(dds, contrast=contrast)
-  resLFC <- DESeq2::lfcShrink(dds, coef=name, type="apeglm")
+  res <- DESeq2::results(dds, contrast = contrast)
+  resLFC <- DESeq2::lfcShrink(dds, coef = name, type = "apeglm")
   pdf(file.path(outpath, "MAplot.pdf"))
   DESeq2::plotMA(resLFC)
   dev.off()
@@ -365,46 +320,39 @@ run_deseq <- function(
   # make gene list
   geneList <- get_fc_list(res)
   gse_list <- gsea_analysis(geneList, outpath)
-  
+
   message("Results Summary:")
   summary(res)
-  
+
   message("Writing results to outpath")
   utils::write.csv(res, file.path(outpath, "deseq_results.csv"))
-  saveRDS(dds, file = file.path(outpath,"dds.rds"))
+  saveRDS(dds, file = file.path(outpath, "dds.rds"))
   return(res)
 }
 
 #' OVR Deseq Results Function
+#' @description Function to run OVR differential expression analysis on a DESeq2 object
 #' @param dds DESeq2 object
 #' @param column Column of interest for OVR analysis
 #' @param outpath Output path for results
 #' @param controls Control groups
 #' @param ... Additional arguments to pass to DESeq2
 #' @return OVR results for each level of column of interest
-#' @importFrom DESeq2 DESeq results lfcShrink plotMA
-#' @importFrom SummarizedExperiment assay
-#' @importFrom utils write.csv
 #' @export
 ovr_deseq_results <- function(dds, column, outpath, controls = NULL, ...) {
-  requireNamespace("DESeq2")
-  requireNamespace("SummarizedExperiment")
-  requireNamespace("utils")
-
   dir.create(outpath, showWarnings = FALSE, recursive = TRUE)
 
   # This function takes in a DDS or SE object, the condition column of interest
   # and the out directory path to push results to. It will run OVR differential
   # expression analysis on each level within the condition column.
   counts <- SummarizedExperiment::assay(dds)
-  lvls <- levels(SummarizedExperiment::colData(dds)[,column])
-  cond <- as.character(SummarizedExperiment::colData(dds)[,column])
+  lvls <- levels(SummarizedExperiment::colData(dds)[, column])
+  cond <- as.character(SummarizedExperiment::colData(dds)[, column])
 
   # loop over condition levels in a one versus rest manner
-  list_out <- list()
-  for (lvl in lvls) {
+  list_out <- purrr::map(lvls, function(lvl) {
     print(paste0("Testing ", column, " ", lvl, " versus rest"))
-    path <- file.path(outpath, paste0(column, "__",lvl,"_v_rest"))
+    path <- file.path(outpath, paste0(column, "__", lvl, "_v_rest"))
     dir.create(path, showWarnings = FALSE, recursive = TRUE)
 
     # Set our OVR analysis
@@ -414,31 +362,24 @@ ovr_deseq_results <- function(dds, column, outpath, controls = NULL, ...) {
 
     input_ <- ifelse(is.null(controls), "condition", paste0(append(controls, "condition"), collapse = " + "))
     fmla <- as.formula(paste0("~ ", input_))
-    design(dds) <- fmla 
+    design(dds) <- fmla
     res <- run_deseq(dds, path, contrast = c("condition", lvl, "rest"))
-    
-    list_out[[lvl]] <- res
-  }
+
+    return(res)
+  })
+  names(list_out) <- lvls
   return(list_out)
 }
+
+
 #' Function to run DESeq2 analysis on a variety of conditions
-#' 
+#' @description Function to run DESeq2 analysis on a variety of conditions with optional controls
 #' @param dds DESeq2 object
 #' @param conditions List of conditions to run DESeq2 on
 #' @param controls List of controls to run DESeq2 on
 #' @param outpath Path to save results
 #' @param ... Additional arguments to pass to DESeq2 for volcano plots
 #' @return List of results of differential expression analysis
-#' @importFrom DESeq2 DESeqDataSet
-#' @importFrom DESeq2 DESeq
-#' @importFrom DESeq2 results
-#' @importFrom DESeq2 plotMA
-#' @importFrom SummarizedExperiment colData
-#' @importFrom SummarizedExperiment assay
-#' @importFrom ggplot2 ggsave
-#' @importFrom ggbiplot ggbiplot
-#' @importFrom dplyr filter
-#' @importFrom utils write.csv
 #' @export
 deseq_analysis <- function(dds, conditions, controls = NULL, outpath, ...) {
   # Create output directory
@@ -484,13 +425,16 @@ deseq_analysis <- function(dds, conditions, controls = NULL, outpath, ...) {
     message(paste0("Running Analysis on ", condition))
 
     # PCA plot
-    tryCatch({
-      pcs <- prcomp(scale(t(normalize_counts(dds_, method = "vst"))))
-      pca_plot <- ggbiplot::ggbiplot(pcs, groups = SummarizedExperiment::colData(dds_)[, condition], ellipse = TRUE, var.axes = FALSE)
-      ggplot2::ggsave(file.path(outpath, condition, "pca_plot.pdf"), pca_plot)
-    }, error = function(e) {
-      message("An error occurred while generating the PCA plot: ", conditionMessage(e))
-    })
+    tryCatch(
+      {
+        pcs <- prcomp(scale(t(normalize_counts(dds_, method = "vst"))))
+        pca_plot <- ggbiplot::ggbiplot(pcs, groups = SummarizedExperiment::colData(dds_)[, condition], ellipse = TRUE, var.axes = FALSE)
+        ggplot2::ggsave(file.path(outpath, condition, "pca_plot.pdf"), pca_plot)
+      },
+      error = function(e) {
+        message("An error occurred while generating the PCA plot: ", conditionMessage(e))
+      }
+    )
 
     # One-vs-Rest (OVR) analysis for conditions with more than 2 levels
     if (length(levels) > 2) {
@@ -540,30 +484,26 @@ deseq_analysis <- function(dds, conditions, controls = NULL, outpath, ...) {
   utils::write.csv(summary_df, file.path(outpath, "deseq_analysis_summary.csv"), row.names = FALSE)
   return(analysis_list)
 }
+
 #' Function to run statistical tests on a DESeq2 object using rstatix functions
-#'
+#' @description Function to run statistical tests on a DESeq2 object using rstatix functions
 #' @param formula Formula to use for the test.
 #' @param dds DESeq2 object.
 #' @param rstatix_test rstatix test to use.
 #' @param ... Additional arguments to pass to rstatix_test.
 #' @return Data frame of p-values and adjusted p-values.
-#' @importFrom DESeq2 assay colData
-#' @importFrom dplyr select mutate
-#' @importFrom purrr map
-#' @importFrom rstatix wilcox_test
-#' @importFrom stats reformulate terms
 #' @export
 test_dds <- function(formula, dds, rstatix_test = rstatix::wilcox_test, ...) {
   message("Extracting data from DESeq object")
   # Extract count data from the DESeq object
-  count_data_raw <- DESeq2::assay(dds) %>% 
-    t() %>% 
+  count_data_raw <- DESeq2::assay(dds) %>%
+    t() %>%
     as.data.frame()
   count_data <- log2(count_data_raw + 1)
-  
+
   message("Extracting metadata from DESeq object")
   # Extract metadata from the DESeq object
-  meta <- DESeq2::colData(dds) %>% 
+  meta <- DESeq2::colData(dds) %>%
     as.data.frame() %>%
     dplyr::select(all_of(attr(stats::terms(formula), "term.labels")))
 
@@ -572,65 +512,64 @@ test_dds <- function(formula, dds, rstatix_test = rstatix::wilcox_test, ...) {
   test_res <- purrr::map(
     count_data,
     function(x) {
-    # combine the metadata and count data on the gene
-    data <- meta %>% dplyr::mutate(x = x)
+      # combine the metadata and count data on the gene
+      data <- meta %>% dplyr::mutate(x = x)
 
-    # add the gene to the formula as the response using reformulate
-    formula <- stats::reformulate(
-      response = "x",
-      termlabels = attr(stats::terms(formula), "term.labels")
+      # add the gene to the formula as the response using reformulate
+      formula <- stats::reformulate(
+        response = "x",
+        termlabels = attr(stats::terms(formula), "term.labels")
       )
 
-    # get the condition as the last term in the formula
-    condition <- attr(stats::terms(formula), "term.labels")[length(attr(stats::terms(formula), "term.labels"))]
-    conditions <- unique(meta[, condition])
-    
-    # run the test
-    test <- rstatix_test(
-      data,
-      formula,
-      ...
+      # get the condition as the last term in the formula
+      condition <- attr(stats::terms(formula), "term.labels")[length(attr(stats::terms(formula), "term.labels"))]
+      conditions <- unique(meta[, condition])
+
+      # run the test
+      test <- rstatix_test(
+        data,
+        formula,
+        ...
       )
 
-    # get the stats
-    basemean <- 2^mean(x)
-    log2FC <- mean(x[meta[, condition] == conditions[2]]) - mean(x[meta[, condition] == conditions[1]])
-    test$basemean <- basemean
-    test$log2FC <- log2FC
-    
-    # return the test
-    return(test)
+      # get the stats
+      basemean <- 2^mean(x)
+      log2FC <- mean(x[meta[, condition] == conditions[2]]) - mean(x[meta[, condition] == conditions[1]])
+      test$basemean <- basemean
+      test$log2FC <- log2FC
+
+      # return the test
+      return(test)
     }
-    )
+  )
 
-    # add the gene names
-    names(test_res) <- colnames(count_data)
+  # add the gene names
+  names(test_res) <- colnames(count_data)
 
   # convert to dataframe
   df_out <- list_of_lists_to_df(test_res) %>%
     dplyr::mutate(
-    pvalue = p,
-    padj = p.adjust(p, method = "fdr")
+      pvalue = p,
+      padj = p.adjust(p, method = "fdr")
     ) %>%
     dplyr::select(
-    basemean,
-    log2FC,
-    pvalue,
-    padj
+      basemean,
+      log2FC,
+      pvalue,
+      padj
     )
 
   # return the dataframe
   return(df_out)
 }
 
-#======================== Summary Functions ========================
+# ======================== Summary Functions ========================
 #' Compare DESeq Results
-#' 
 #' @description Function to compare different DESeq results.
 #' @param res1 Results of differential expression analysis 1.
 #' @param res2 Results of differential expression analysis 2.
 #'  data frame of comparison results
-compare_results <-  function(res1, res2, metric = "log2FoldChange", by = "rowname", suffix = c("_1", "_2")) {
+compare_results <- function(res1, res2, metric = "log2FoldChange", by = "rowname", suffix = c("_1", "_2")) {
   res1 <- as.data.frame(res1)
   res2 <- as.data.frame(res2)
   # ensure the metric and labels are in the results
@@ -642,7 +581,7 @@ compare_results <-  function(res1, res2, metric = "log2FoldChange", by = "rownam
     res2 %>% rownames_to_column("rowname"),
     by = by,
     suffix = suffix
-    )
+  )
   # return the data frame
   return(out)
 }

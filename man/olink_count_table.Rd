@@ -19,5 +19,5 @@ olink_count_table(data, sampleID = "SampleID", assay = "Assay", value = "NPX")
 Count table
 }
 \description{
-Convert Olink data to count table
+Convert Olink data to a count table
 }
