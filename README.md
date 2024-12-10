@@ -13,7 +13,6 @@ devtools::install_github("mattmuller0/rmatt")
 
 * general_functions.R: General functions
 * plotting_functions.R: Functions for plotting (mainly ggplot2)
-* stats_functions.R: Functions for statistics and survival analysis
 * utils.R: Utility functions
 
 ## Omics Functions #
@@ -26,7 +25,8 @@ devtools::install_github("mattmuller0/rmatt")
 * enrichment_functions.R: Functions for enrichment analysis
 * signature_functions.R: Functions for -omics signature analysis
 
-## Miscellaneous Functions #
+## Stats Functions #
 
+* stats_functions.R: Functions for statistics and survival analysis
 * clustering_functions.R: Functions for clustering analysis
 * survival_functions.R: Functions for survival analysis
