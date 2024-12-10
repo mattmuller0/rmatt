@@ -23,5 +23,5 @@ gene_wilcox_test(dds, outpath, condition, pCutoff = 0.05, FCcutoff = 0.5, ...)
 Data frame of p-values and adjusted p-values
 }
 \description{
-Wilcoxon Ranked Sum testing on genes in two summarized experiments
+Function to run a wilcoxon ranked sum test on genes in two summarized experiments
 }

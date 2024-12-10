@@ -21,5 +21,5 @@ deseq_analysis(dds, conditions, controls = NULL, outpath, ...)
 List of results of differential expression analysis
 }
 \description{
-Function to run DESeq2 analysis on a variety of conditions
+Function to run DESeq2 analysis on a variety of conditions with optional controls
 }

@@ -17,5 +17,5 @@ hypergeometric_scoring(gse, method = "fisher", ...)
 gse object with odds ratio and p-value added
 }
 \description{
-Hypergeometric Scoring
+Add odds ratio and p-value to a gse object from hypergeometric enrichment analysis
 }

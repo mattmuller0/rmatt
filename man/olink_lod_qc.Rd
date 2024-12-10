@@ -17,5 +17,5 @@ olink_lod_qc(data, outdir, plot = TRUE)
 List containing LOD results and outliers
 }
 \description{
-Test level of detection (LOD) for each protein
+Test if the NPX value is greater than the LOD
 }

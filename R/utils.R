@@ -1,14 +1,16 @@
 #' @title Utility functions
 #' @description Utility functions for general tasks.
 #' @name utility_functions
-#' @importFrom BiocManager install
-#' @importFrom jsonlite write_json
-#' @importFrom parallel detectCores
-#' @importFrom dplyr rowwise filter ungroup select where
-#' @importFrom tidyr drop_na
+#' @import BiocManager
+#' @import jsonlite
+#' @import parallel
+#' @import dplyr
+#' @import tidyr
+NULL
 
 #' Install all required packages from a script
 #'
+#' @description Install all required packages from a script
 #' @param script character, path to script
 #' @return none
 #' @export
@@ -54,37 +56,9 @@ install_packages_from_script <- function(script) {
   return(output)
 }
 
-#' Set up a directory for output
-#'
-#' @param outpath path to output directory
-#' @param overwrite logical, whether to overwrite the directory if it already exists
-#' @return outpath path to output directory
-#' @export
-setup_output_dir <- function(outpath, overwrite = FALSE) {
-  if (dir.exists(outpath)) {
-    if (overwrite) {
-      dir.create(outpath, showWarnings = FALSE, recursive = TRUE)
-    } else {
-      stop("Output directory already exists. Set overwrite = TRUE to overwrite.")
-    }
-  } else {
-    dir.create(outpath, showWarnings = FALSE, recursive = TRUE)
-  }
-  return(outpath)
-}
-
-#' Set the seed for reproducibility
-#'
-#' @param seed integer, seed to set
-#' @return seed integer, seed that was set
-#' @export
-set_seed <- function(seed) {
-  set.seed(seed)
-  return(seed)
-}
-
 #' Time a function
 #'
+#' @description Time a function
 #' @param func function to time
 #' @return time time it took to run the function
 #' @export
@@ -96,50 +70,9 @@ time_function <- function(func) {
   return(time)
 }
 
-#' Detect the number of cores on a machine
-#'
-#' @return cores integer, number of cores on the machine
-#' @export
-detect_cores <- function() {
-  cores <- parallel::detectCores()
-  return(cores)
-}
-
-#' Detect the number of threads on a machine
-#'
-#' @return threads integer, number of threads on the machine
-#' @export
-detect_threads <- function() {
-  threads <- parallel::detectCores(logical = FALSE)
-  return(threads)
-}
-
-#' Generate a JSON file from a list
-#'
-#' @param list list, list to convert to JSON
-#' @param filename character, name of the file to write
-#' @return none
-#' @export
-list_to_json <- function(list, filename) {
-  jsonlite::write_json(list, filename)
-}
-
-#' Search a vector for a string
-#'
-#' @param vector vector, vector to search
-#' @param string character, string to search for
-#' @param ... additional arguments passed to grep
-#' @return named vector of indices
-#' @export
-search_vector <- function(vector, string, ...) {
-  idx <- grep(string, vector, ...)
-  vector <- vector[idx]
-  names(idx) <- vector
-  return(idx)
-}
-
 #' Drop rows with NA values based on a threshold
 #'
+#' @description Drop rows with NA values based on a threshold
 #' @param data data frame
 #' @param percent_allowed_missing numeric, threshold for allowed missing values
 #' @return data frame with rows dropped
@@ -157,6 +90,7 @@ drop_na_rows <- function(data, percent_allowed_missing) {
 
 #' Drop columns with NA values based on a threshold
 #'
+#' @description Drop columns with NA values based on a threshold
 #' @param data data frame
 #' @param percent_allowed_missing numeric, threshold for allowed missing values
 #' @return data frame with columns dropped

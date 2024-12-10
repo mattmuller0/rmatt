@@ -13,5 +13,5 @@ softmax(x)
 numeric, softmaxed vector
 }
 \description{
-Softmax a Vector
+Softmax a vector
 }

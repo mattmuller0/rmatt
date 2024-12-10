@@ -1,7 +1,7 @@
 #' @title Plotting Functions
 #' @description Functions for plotting data.
+#' @name plotting_functions
 #' @author Matthew Muller
-#' 
 #' @import ggplot2
 #' @import SummarizedExperiment
 #' @import DESeq2
@@ -12,7 +12,8 @@
 #' @import ggsci
 #' @import ggrepel
 #' @import tidyverse
-#' @import circlize
+#' @import circlize 
+NULL
 
 #======================== Plotting Functions ========================
 #' @title Plot Library Depth

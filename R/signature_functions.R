@@ -7,11 +7,16 @@
 #' @import ggrepel
 #' @import singscore
 #' @import tidyverse
+#' @import glue
+#' @import rstatix
+#' @import glmnet
+#' @import tidyr
 NULL
 
 #======================== Data Preprocessing Functions ========================
 
 #' Select top genes by variance
+#' @description Select top genes by variance
 #' @param df data frame [samples x genes]
 #' @param n number of top genes to select
 #' @return data frame with columns [genes, variance]
@@ -23,6 +28,7 @@ select_top_variability <- function(df, n = 1000) {
 }
 
 #' Filter genes by expression
+#' @description Filter genes by expression
 #' @param df data frame [samples x genes]
 #' @param min_expr minimum expression value
 #' @return data frame with filtered genes [genes, expression]
@@ -34,6 +40,7 @@ select_top_expression <- function(df, min_expr = 1) {
 }
 
 #' Filter genes by lasso regression
+#' @description Filter genes by lasso regression
 #' @param df data frame [samples x genes]
 #' @param y response variable
 #' @param lambda lambda value for lasso regression
@@ -53,6 +60,7 @@ select_top_lasso <- function(df, y, lambda = NULL, nfolds = 10, ...) {
 }
 
 #' Align a signature by average correlation with the derivation values
+#' @description Align a signature by average correlation with the derivation values
 #' @param sig signature vector
 #' @param dat data matrix
 #' @param by method to align by (default is "mean")
@@ -67,6 +75,7 @@ align_signature <- function(sig, dat, by = "mean"){
 #======================== Testing Functions ========================
 
 #' Compare one column to many columns
+#' @description Compare one column to many columns
 #' @param df data frame
 #' @param col column to compare
 #' @param cols columns to compare to
@@ -132,7 +141,7 @@ compare_one_to_many <- function(df, col, cols, outdir, plot = TRUE, method = "sp
 #======================== Eigengene Functions ========================
 
 #' Calculate eigengenes by principal component analysis
-#'
+#' @description Calculate eigengenes by principal component analysis
 #' @param df data frame [samples x genes]
 #' @param outdir output directory
 #' @param pcs number of principal components to return
@@ -167,13 +176,13 @@ eigen_pca <- function(df, outdir, pcs = 1, align = TRUE, ...) {
 }
 
 #' Calculate eigengenes by singular value decomposition (WIP)
+#' @description Calculate eigengenes by singular value decomposition
 #' @param df data frame [samples x genes]
 #' @param outdir output directory
 #' @param pcs number of principal components to return
 #' @param align logical, align eigengenes by average expression
 #' @param ... additional arguments to pass to stats functions
 #' @return dataframe with eigengenes
-#' @export
 eigen_svd <- function(df, outdir, pcs = 1, align = FALSE, ...) {
     dir.create(outdir, showWarnings = FALSE, recursive = TRUE)
     
@@ -191,6 +200,7 @@ eigen_svd <- function(df, outdir, pcs = 1, align = FALSE, ...) {
 }
 
 #' Calculate eigengenes by regularized singular value decomposition (WIP)
+#' @description Calculate eigengenes by regularized singular value decomposition
 #' @param M data matrix [samples x genes]
 #' @param samples number of samples
 #' @param vectors number of eigenvectors to return
@@ -199,7 +209,6 @@ eigen_svd <- function(df, outdir, pcs = 1, align = FALSE, ...) {
 #' @param method distance method
 #' @param verbose logical, print verbose output
 #' @return dataframe with eigengenes
-#' @export
 eigen_reg_svd <- function(M, samples = nrow(M), vectors = 1:3, tau = 1, lap = FALSE, method = "euclidian", verbose = FALSE){
     A <- as.matrix(stats::dist(M, method = method))
     if(verbose) message(glue::glue("Average degree: {mean(colSums(A))}"))
@@ -227,13 +236,13 @@ eigen_reg_svd <- function(M, samples = nrow(M), vectors = 1:3, tau = 1, lap = FA
 }
 
 #' Calculate eigengenes by non-negative matrix factorization (WIP)
+#' @description Calculate eigengenes by non-negative matrix factorization
 #' @param df data frame [samples x genes]
 #' @param outdir output directory
 #' @param pcs number of principal components to return
 #' @param align logical, align eigengenes by average expression
 #' @param ... additional arguments to pass to stats functions
 #' @return dataframe with eigengenes
-#' @export
 eigen_nmf <- function(df, outdir, pcs = 1, align = FALSE, ...) {
     if (!requireNamespace("NMF", quietly = TRUE)) {
         stop("Package 'NMF' is required but not installed.")
@@ -254,13 +263,13 @@ eigen_nmf <- function(df, outdir, pcs = 1, align = FALSE, ...) {
 }
 
 #' Calculate eigengenes by independent component analysis (WIP)
+#' @description Calculate eigengenes by independent component analysis
 #' @param df data frame [samples x genes]
 #' @param outdir output directory
 #' @param n.comp number of components to return
 #' @param align logical, align eigengenes by average expression
 #' @param ... additional arguments to pass to stats functions
 #' @return dataframe with eigengenes
-#' @export
 eigen_ica <- function(df, outdir, n.comp = 1, align = FALSE, ...) {
     if (!requireNamespace("fastICA", quietly = TRUE)) {
         stop("Package 'fastICA' is required but not installed.")

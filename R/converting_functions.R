@@ -2,12 +2,6 @@
 #' @description This script contains functions for converting gene IDs and normalizing data.
 #' @details The functions include mapping gene IDs using `AnnotationDbi`, converting gene IDs using `biomaRt`, detecting gene ID types, and normalizing data.
 #' @name converting_functions
-#' @importFrom AnnotationDbi mapIds
-#' @importFrom biomaRt useMart getBM
-#' @importFrom dplyr mutate filter rowMeans
-#' @importFrom tibble rownames_to_column
-#' @importFrom glue glue
-#' @importFrom stringr str_split
 #' @import org.Hs.eg.db
 NULL
 
@@ -19,7 +13,7 @@ NULL
 #' @param to character, type of gene ID to convert to.
 #' @param orgDb OrgDb object, organism database to use (default is `org.Hs.eg.db`).
 #' @param remove_missing logical, keep unmatched gene IDs.
-#' @param ... additional arguments to pass to `mapIds`.
+#' @param ... additional arguments to pass to `AnnotationDbi::mapIds`.
 #' @return list, converted gene IDs.
 #' @export
 map_gene_ids <- function(geneList, from = NULL, to, orgDb = org.Hs.eg.db, remove_missing = FALSE, ...) {
@@ -30,7 +24,7 @@ map_gene_ids <- function(geneList, from = NULL, to, orgDb = org.Hs.eg.db, remove
   geneList_copy <- geneList
 
   if (grepl("\\.", geneList[1])) {
-    geneList <- sapply(geneList, function(x) str_split(x, "\\.", simplify = TRUE)[1])
+    geneList <- sapply(geneList, function(x) stringr::str_split(x, "\\.", simplify = TRUE)[1])
   }
 
   out_list <- AnnotationDbi::mapIds(orgDb, keys = geneList, column = to, keytype = from, ...)
@@ -76,16 +70,16 @@ detect_gene_id_type <- function(geneList, strip = TRUE) {
   )
 
   if (grepl("\\.", geneList[1]) && strip) {
-    geneList <- sapply(geneList, function(x) str_split(x, "\\.", simplify = TRUE)[1])
+    geneList <- sapply(geneList, function(x) stringr::str_split(x, "\\.", simplify = TRUE)[1])
     message("Gene ID version numbers have been stripped.")
   }
 
   matches <- sapply(id_types, function(x) grepl(x, geneList))
 
-  type <- colnames(matches)[which(matches[1,] == TRUE)]
+  type <- colnames(matches)[which(matches[1, ] == TRUE)]
 
   if (length(type) > 1) {
-    warning(glue("Multiple gene ID types detected. Returning first match: {type[1]}"))
+    warning(glue::glue("Multiple gene ID types detected. Returning first match: {type[1]}"))
     type <- type[1]
   }
 
@@ -97,30 +91,52 @@ detect_gene_id_type <- function(geneList, strip = TRUE) {
 }
 
 #' Function to normalize dds object and return counts
-#' 
+#'
 #' @param dds DESeq2 object
 #' @param method normalization method
 #' @param log2 logical, whether to log2 transform the counts
 #' @return normalized counts
 #' @export
-normalize_counts <- function(dds, method = 'mor', log2 = FALSE) {
-  options <- c('mor', 'vst', 'vsd', 'log2', 'rld', 'cpm', 'rlog', 'rpkm', 'none', 'tmm', 'log2-mor', 'rank')
+normalize_counts <- function(dds, method = "mor", log2 = FALSE) {
+  options <- c("mor", "vst", "vsd", "log2", "rld", "cpm", "rlog", "rpkm", "none", "tmm", "log2-mor", "rank")
   if (method %in% options) {
     normalize <- method
   } else {
-    stop('Invalid normalization method. Please choose from: log2-mor, mor, vst, vsd, log2, rld, cpm, rlog, rpkm, tmm, rank, none')
+    stop("Invalid normalization method. Please choose from: log2-mor, mor, vst, vsd, log2, rld, cpm, rlog, rpkm, tmm, rank, none")
   }
-  if (normalize == "mor") {counttable <- counts(dds, normalize = T)}
-  if (normalize %in% c("vsd", "vst")) {counttable <- assay(varianceStabilizingTransformation(dds))}
-  if (normalize == "log2") {counttable <- log2(assay(dds)+1)}
-  if (normalize == "log2-mor") {counttable <- log2(counts(dds, normalize = T)+1)}
-  if (normalize == "rld") {counttable <- rlog(dds)}
-  if (normalize == "cpm") {counttable <- cpm(dds)}
-  if (normalize == "rlog") {counttable <- rlog(dds)}
-  if (normalize == "rpkm") {counttable <- rpkm(dds)}
-  if (normalize == "none") {counttable <- counts(dds)}
-  if (normalize == "tmm") {counttable <- cpm(calcNormFactors(dds, method = "TMM"))}
-  if (normalize == "rank") {counttable <- rankGenes(dds)}
+  if (normalize == "mor") {
+    if (is.null(DESeq2::sizeFactors(dds))) {
+      dds <- DESeq2::estimateSizeFactors(dds)
+    }
+    counttable <- DESeq2::counts(dds, normalize = TRUE)
+  }
+  if (normalize %in% c("vsd", "vst")) {
+    counttable <- SummarizedExperiment::assay(DESeq2::varianceStabilizingTransformation(dds))
+  }
+  if (normalize == "log2") {
+    counttable <- log2(SummarizedExperiment::assay(dds) + 1)
+  }
+  if (normalize == "log2-mor") {
+    counttable <- log2(DESeq2::counts(dds, normalize = TRUE) + 1)
+  }
+  if (normalize %in% c("rld", "rlog")) {
+    counttable <- DESeq2::rlog(dds)
+  }
+  if (normalize == "cpm") {
+    counttable <- edgeR::cpm(dds)
+  }
+  if (normalize == "rpkm") {
+    counttable <- edgeR::rpkm(dds)
+  }
+  if (normalize == "tmm") {
+    counttable <- edgeR::cpm(edgeR::calcNormFactors(dds, method = "TMM"))
+  }
+  if (normalize == "rank") {
+    counttable <- singscore::rankGenes(dds)
+  }
+  if (normalize == "none") {
+    counttable <- SummarizedExperiment::assay(dds)
+  }
   counts <- as.data.frame(counttable)
   if (log2) {
     counts <- log2(counts + 1)

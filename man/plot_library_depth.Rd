@@ -2,7 +2,7 @@
 % Please edit documentation in R/plotting_functions.R
 \name{plot_library_depth}
 \alias{plot_library_depth}
-\title{Plotting Functions}
+\title{Plot Library Depth}
 \usage{
 plot_library_depth(dds, title, bins = 30)
 }
@@ -17,10 +17,5 @@ plot_library_depth(dds, title, bins = 30)
 ggplot object of library depth
 }
 \description{
-Functions for plotting data.
-
 Function to plot library depth of summarized experiment object
-}
-\author{
-Matthew Muller
 }

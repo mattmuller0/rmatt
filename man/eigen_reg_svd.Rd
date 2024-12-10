@@ -33,5 +33,5 @@ eigen_reg_svd(
 dataframe with eigengenes
 }
 \description{
-Calculate eigengenes by regularized singular value decomposition (WIP)
+Calculate eigengenes by regularized singular value decomposition
 }

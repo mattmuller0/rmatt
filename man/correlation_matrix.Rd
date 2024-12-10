@@ -30,5 +30,5 @@ correlation_matrix(
 list with correlation matrix, p-value matrix, and filtered correlation matrix
 }
 \description{
-Create a Correlation Matrix
+Create a correlation matrix from a data.frame
 }

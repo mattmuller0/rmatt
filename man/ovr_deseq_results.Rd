@@ -21,5 +21,5 @@ ovr_deseq_results(dds, column, outpath, controls = NULL, ...)
 OVR results for each level of column of interest
 }
 \description{
-OVR Deseq Results Function
+Function to run OVR differential expression analysis on a DESeq2 object
 }

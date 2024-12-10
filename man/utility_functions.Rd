@@ -2,17 +2,7 @@
 % Please edit documentation in R/utils.R
 \name{utility_functions}
 \alias{utility_functions}
-\alias{install_packages_from_script}
 \title{Utility functions}
-\usage{
-install_packages_from_script(script)
-}
-\arguments{
-\item{script}{character, path to script}
-}
-\value{
-none
-}
 \description{
 Utility functions for general tasks.
 }

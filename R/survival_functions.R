@@ -1,3 +1,12 @@
+#' @import ggsurvfit 
+#' @import survival
+#' @import ggplot2
+#' @import glue
+#' @import broom
+#' @import purrr
+#' @import dplyr
+NULL
+
 #' @title Log Rank Test
 #' @description Perform a log rank test on a dataframe.
 #' @param data data.frame, data to perform log rank test on.
@@ -6,8 +15,6 @@
 #' @param censor_prefix character, prefix for censor columns. Default is 'C_'.
 #' @param time_prefix character, prefix for time columns. Default is 'T_'.
 #' @return data.frame, p-values from log rank test.
-#' @importFrom survival survdiff Surv
-#' @importFrom glue glue
 #' @export
 log_rank_test <- function(
   data, 
@@ -36,8 +43,8 @@ log_rank_test <- function(
     for (i in seq_along(comparisons)) {
       comparison <- comparisons[i]
       # Perform the log rank test
-      fmla <- as.formula(glue::glue("survival::Surv({time}, {censor}) ~ {comparison}"))
-      fit <- do.call(survival::survdiff, list(fmla, data = data))
+      fmla <- as.formula(glue::glue("Surv({time}, {censor}) ~ {comparison}"))
+      fit <- do.call(survdiff, list(fmla, data = data))
       p_value <- fit$p
       
       # Store the p-value in the p_values dataframe
@@ -59,10 +66,6 @@ log_rank_test <- function(
 #' @param censor_prefix character, prefix for censor columns. Default is 'C_'.
 #' @param time_prefix character, prefix for time columns. Default is 'T_'.
 #' @return list, list of survival plots and HR plots.
-#' @importFrom ggsurvfit ggsurvfit add_confidence_interval
-#' @importFrom survival survfit survdiff coxph
-#' @importFrom ggplot2 ggsave
-#' @importFrom glue glue
 #' @export
 survival_analysis <- function(
   df, 

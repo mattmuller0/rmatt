@@ -31,11 +31,11 @@ prep_nmf_data <- function(counts_matr) {
 #' @param ... Other arguments to pass to NMF.
 #' @return A list of NMF and random NMF results.
 #' @export
-nmf_estimator <- function(counts_matr, outfile, ranks = 2:8, runs = 30, options = 'v', ...) {
+nmf_estimator <- function(counts_matr, outfile, ranks = 2:8, runs = 30, options = "v", ...) {
   require(NMF)
-  nmf_ranks_out <- nmf(counts_matr, ranks, nrun = runs, .opt = options, ...) 
-  rng_ranks_out <- nmf(randomize(counts_matr), ranks, nrun = runs, .opt = options, ...) 
-  output <- list('nmf_ranks_out' = nmf_ranks_out, 'rng_ranks_out' = rng_ranks_out)
+  nmf_ranks_out <- nmf(counts_matr, ranks, nrun = runs, .opt = options, ...)
+  rng_ranks_out <- nmf(randomize(counts_matr), ranks, nrun = runs, .opt = options, ...)
+  output <- list("nmf_ranks_out" = nmf_ranks_out, "rng_ranks_out" = rng_ranks_out)
   saveRDS(output, file = outfile)
   return(output)
 }
@@ -52,20 +52,24 @@ nmf_plotter <- function(nmf_out) {
   rng_cophenetic_correlation <- nmf_out$rng_ranks_out$cophenetic
   rng_dispersion <- nmf_out$rng_ranks_out$dispersion
   rng_cophenetic_dispersion <- rng_cophenetic_correlation * rng_dispersion
-  cophenetic_df <- data.frame('rank' = nmf_out$nmf_ranks_out$rank,
-                              'cophenetic' = cophenetic_correlation,
-                              'dispersion' = dispersion,
-                              'cophenetic_dispersion' = cophenetic_dispersion,
-                              'type' = 'nmf')
-  rng_cophenetic_df <- data.frame('rank' = nmf_out$rng_ranks_out$rank,
-                                  'cophenetic' = rng_cophenetic_correlation,
-                                  'dispersion' = rng_dispersion,
-                                  'cophenetic_dispersion' = rng_cophenetic_dispersion,
-                                  'type' = 'random')
+  cophenetic_df <- data.frame(
+    "rank" = nmf_out$nmf_ranks_out$rank,
+    "cophenetic" = cophenetic_correlation,
+    "dispersion" = dispersion,
+    "cophenetic_dispersion" = cophenetic_dispersion,
+    "type" = "nmf"
+  )
+  rng_cophenetic_df <- data.frame(
+    "rank" = nmf_out$rng_ranks_out$rank,
+    "cophenetic" = rng_cophenetic_correlation,
+    "dispersion" = rng_dispersion,
+    "cophenetic_dispersion" = rng_cophenetic_dispersion,
+    "type" = "random"
+  )
   combined_df <- rbind(cophenetic_df, rng_cophenetic_df)
   cophenetic_plot <- ggplot(combined_df, aes(x = rank, y = cophenetic_dispersion, color = type)) +
-    geom_point() + 
-    labs(x = "Rank", y = "Cophenetic Dispersion") + 
+    geom_point() +
+    labs(x = "Rank", y = "Cophenetic Dispersion") +
     theme_bw()
   return(cophenetic_plot)
 }
@@ -79,10 +83,10 @@ nmf_plotter <- function(nmf_out) {
 #' @export
 kmeans_estimator <- function(counts_matr, ks = 2:8, outfile, ...) {
   km_list <- list()
-  for (k in ks){
+  for (k in ks) {
     km_list[[k]] <- kmeans(counts_matr, k, ...)
   }
-  output <- list('km_list' = km_list)
+  output <- list("km_list" = km_list)
   saveRDS(output, file = outfile)
   return(output)
 }
@@ -96,10 +100,10 @@ kmeans_estimator <- function(counts_matr, ks = 2:8, outfile, ...) {
 #' @export
 hclust_estimator <- function(counts_matr, clusters = 2:8, outfile, ...) {
   hclust_list <- list()
-  for (k in clusters){
+  for (k in clusters) {
     hclust_list[[k]] <- hclust(dist(counts_matr), ...)
   }
-  output <- list('hclust_list' = hclust_list)
+  output <- list("hclust_list" = hclust_list)
   saveRDS(output, file = outfile)
   return(output)
 }

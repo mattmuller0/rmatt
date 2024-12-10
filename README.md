@@ -14,6 +14,7 @@ devtools::install_github("mattmuller0/rmatt")
 * general_functions.R: General functions
 * plotting_functions.R: Functions for plotting (mainly ggplot2)
 * utils.R: Utility functions
+* exports.R: Exports of some common functions from other packages
 
 ## Omics Functions #
 

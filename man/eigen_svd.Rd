@@ -21,5 +21,5 @@ eigen_svd(df, outdir, pcs = 1, align = FALSE, ...)
 dataframe with eigengenes
 }
 \description{
-Calculate eigengenes by singular value decomposition (WIP)
+Calculate eigengenes by singular value decomposition
 }
