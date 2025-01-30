@@ -11,7 +11,7 @@ create_mock_counts <- function(n_genes = 100, n_samples = 6) {
   counts <- matrix(rpois(n_genes * n_samples, lambda = 10),
     nrow = n_genes, ncol = n_samples
   )
-  rownames(counts) <- paste0("gene", 1:n_genes)
+  rownames(counts) <- paste0("ABA", 1:n_genes)
   colnames(counts) <- paste0("sample", 1:n_samples)
   return(counts)
 }
@@ -122,7 +122,7 @@ test_that("run_deseq handles basic workflow", {
 #     column = "condition",
 #     outpath = temp_dir
 #   )
-  
+
 #   expect_type(result, "list")
 #   expect_equal(length(result), length(levels(dds$condition)))
 #   expect_true(all(sapply(result, function(x) is(x, "DESeqResults"))))
