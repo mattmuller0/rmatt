@@ -269,7 +269,7 @@ gsea_analysis <- function(
   dir.create(outpath, showWarnings = FALSE, recursive = TRUE)
 
   msigdb <- msigdbr(species = "Homo sapiens")
-  gse_go <- gseGO(geneList, org.Hs.eg.db, keyType = keyType, ont = ontology, pvalueCutoff = Inf)
+  gse_go <- gseGO(geneList = geneList, OrgDb = org.Hs.eg.db, keyType = keyType, ont = ontology, pvalueCutoff = Inf)
 
   H_t2g <- msigdb %>%
     filter(gs_cat == "H") %>%
