@@ -23,14 +23,13 @@ NULL
 #' @return summary of results
 #' @export
 summarize_experiment <- function(
-  results, 
-  logFC_column = "log2FoldChange",
-  pvalue_column = "pvalue",
-  padj_column = "padj",
-  pvalue_cutoffs = c(0.01, 0.05, 0.1), 
-  padj_cutoffs = c(0.05, 0.1, 0.2), 
-  logFC_cutoff = 0
-  ) {
+    results,
+    logFC_column = "log2FoldChange",
+    pvalue_column = "pvalue",
+    padj_column = "padj",
+    pvalue_cutoffs = c(0.01, 0.05, 0.1),
+    padj_cutoffs = c(0.05, 0.1, 0.2),
+    logFC_cutoff = 0) {
   summary <- data.frame(
     variable = character(),
     p_cutoff = numeric(),
@@ -40,7 +39,7 @@ summarize_experiment <- function(
     n_down = numeric()
   )
   lapply(pvalue_cutoffs, function(pvalue_cutoff) {
-    summary <<- summary %>% 
+    summary <<- summary %>%
       add_row(
         variable = "pvalue",
         p_cutoff = pvalue_cutoff,
@@ -51,7 +50,7 @@ summarize_experiment <- function(
       )
   })
   lapply(padj_cutoffs, function(padj_cutoff) {
-    summary <<- summary %>% 
+    summary <<- summary %>%
       add_row(
         variable = "padj",
         p_cutoff = padj_cutoff,
@@ -74,15 +73,17 @@ summarize_experiment <- function(
 #' @return dataframe of genes separated by up and down
 #' @export
 getGenes <- function(results, pval = 0.05, metric = 0, name_col = "rownames", pval_col = "padj", metric_col = "log2FoldChange") {
-    if (name_col == "rownames") {results <- rownames_to_column(results, var = name_col)}
-    up <- results %>%
-        filter(!!sym(pval_col) < pval & !!sym(metric_col) > metric) %>%
-        pull(!!sym(name_col))
-    down <- results %>%
-        filter(!!sym(pval_col) < pval & !!sym(metric_col) < metric) %>%
-        pull(!!sym(name_col))
-    out <- data.frame(features = c(up, down), direction = c(rep("up", length(up)), rep("down", length(down))))
-    return(out)
+  if (name_col == "rownames") {
+    results <- rownames_to_column(results, var = name_col)
+  }
+  up <- results %>%
+    filter(!!sym(pval_col) < pval & !!sym(metric_col) > metric) %>%
+    pull(!!sym(name_col))
+  down <- results %>%
+    filter(!!sym(pval_col) < pval & !!sym(metric_col) < metric) %>%
+    pull(!!sym(name_col))
+  out <- data.frame(features = c(up, down), direction = c(rep("up", length(up)), rep("down", length(down))))
+  return(out)
 }
 
 #' Function to add missing rows to a matrix
@@ -92,17 +93,17 @@ getGenes <- function(results, pval = 0.05, metric = 0, name_col = "rownames", pv
 #' @return df matrix, rows = genes, cols = samples
 #' @export
 add_missing_rows <- function(
-    df, 
-    rows, 
-    sorted = TRUE ) {
-  missingRowNames <-  rows[which(!rows %in% rownames(df))]
+    df,
+    rows,
+    sorted = TRUE) {
+  missingRowNames <- rows[which(!rows %in% rownames(df))]
   print(missingRowNames)
   df_tmp <- as.data.frame(matrix(0, nrow = length(missingRowNames), ncol = dim(df)[2]))
   colnames(df_tmp) <- colnames(df)
   rownames(df_tmp) <- missingRowNames
   df <- rbind(df_tmp, df)
   if (sorted) {
-    df <- df[order(rownames(df)),]
+    df <- df[order(rownames(df)), ]
   }
   return(df)
 }
@@ -114,7 +115,7 @@ add_missing_rows <- function(
 #' @export
 make_se <- function(countsMatr, colData) {
   sample_ids <- intersect(colnames(countsMatr), row.names(colData))
-  se <- SummarizedExperiment(assays = list(counts = as.matrix(countsMatr[,sample_ids])), colData = colData[sample_ids,])
+  se <- SummarizedExperiment(assays = list(counts = as.matrix(countsMatr[, sample_ids])), colData = colData[sample_ids, ])
   return(se)
 }
 
@@ -123,17 +124,17 @@ make_se <- function(countsMatr, colData) {
 #' @param path path to save files
 #' @param normalize how to normalize the counts
 #' @export
-save_se <- function(se, path, normalize = 'mor') {
+save_se <- function(se, path, normalize = "mor") {
   dir.create(path, showWarnings = F, recursive = T)
   counts <- normalize_counts(se, method = normalize)
   colData <- as.data.frame(colData(se))
   rowData <- as.data.frame(rowData(se))
-  write.csv(counts, file = file.path(path, paste0('counts_', normalize,'.csv')), quote = F, row.names = T)
+  write.csv(counts, file = file.path(path, paste0("counts_", normalize, ".csv")), quote = F, row.names = T)
   if (!is.null(colData)) {
-    write.csv(colData, file = file.path(path, 'metadata.csv'), quote = T, row.names = T)
+    write.csv(colData, file = file.path(path, "metadata.csv"), quote = T, row.names = T)
   }
   if (!is.null(rowData)) {
-    write.csv(rowData, file = file.path(path, 'rowData.csv'), quote = T, row.names = T)
+    write.csv(rowData, file = file.path(path, "rowData.csv"), quote = T, row.names = T)
   }
 }
 
@@ -157,21 +158,21 @@ remove_na_variables <- function(se, columns) {
 #' @param subset character, column name of the grouping variable
 #' @return dataframe with the number of samples in each group
 #' @export
-get_events_breakdown <- function(metadata, id = 'PATNUM', events_term = 'C_', subset = NULL) {
-    metadata_patnums <- metadata[,id]
-    if (!is.null(subset)) {
-        patnum_match <- metadata_patnums[metadata[,subset] == 1]
-    } else {
-        patnum_match <- metadata_patnums
-    }
-    if (is.na(patnum_match[1])) {
-        stop('No matches found from the PATNUMs provided')
-    }
-    subtype_breakdown <- metadata[patnum_match,] %>% 
-        select(starts_with(events_term)) %>%
-        summarise_all(~ sum(., na.rm = TRUE)) %>%
-        mutate(total = rowSums(.))
-    return(subtype_breakdown)
+get_events_breakdown <- function(metadata, id = "PATNUM", events_term = "C_", subset = NULL) {
+  metadata_patnums <- metadata[, id]
+  if (!is.null(subset)) {
+    patnum_match <- metadata_patnums[metadata[, subset] == 1]
+  } else {
+    patnum_match <- metadata_patnums
+  }
+  if (is.na(patnum_match[1])) {
+    stop("No matches found from the PATNUMs provided")
+  }
+  subtype_breakdown <- metadata[patnum_match, ] %>%
+    select(starts_with(events_term)) %>%
+    summarise_all(~ sum(., na.rm = TRUE)) %>%
+    mutate(total = rowSums(.))
+  return(subtype_breakdown)
 }
 
 #' Function to get make pairwise combinations
@@ -179,13 +180,13 @@ get_events_breakdown <- function(metadata, id = 'PATNUM', events_term = 'C_', su
 #' @return list of pairwise combinations
 #' @export
 pairwise_combos <- function(vec) {
-    unique_vals <- unique(vec)
-    combos <- combn(unique_vals, 2)
-    list_of_combos <- list()
-    for (i in 1:ncol(combos)) {
-        list_of_combos[[i]] <- combos[, i]
-    }
-    return(list_of_combos)
+  unique_vals <- unique(vec)
+  combos <- combn(unique_vals, 2)
+  list_of_combos <- list()
+  for (i in 1:ncol(combos)) {
+    list_of_combos[[i]] <- combos[, i]
+  }
+  return(list_of_combos)
 }
 
 #' Function to get the variable name
@@ -209,7 +210,7 @@ one_hot_encode_ovr <- function(df, column, binary = TRUE) {
     if (binary) {
       df[[new_col_name]] <- ifelse(df[[column]] == val, 1, 0)
     } else {
-      df[[new_col_name]] <- factor(ifelse(df[[column]] == val, val, 'rest'), levels = c('rest', val))
+      df[[new_col_name]] <- factor(ifelse(df[[column]] == val, val, "rest"), levels = c("rest", val))
     }
   }
   return(df)

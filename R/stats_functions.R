@@ -17,34 +17,33 @@ NULL
 #' @return data.frame, table 1
 #' @export
 stats_table <- function(
-  data,
-  groups,
-  vars = NULL,
-  printArgs = list(
-    showAllLevels = FALSE,
-    printToggle = FALSE
-  ),
-  ...
-) {
+    data,
+    groups,
+    vars = NULL,
+    printArgs = list(
+      showAllLevels = FALSE,
+      printToggle = FALSE
+    ),
+    ...) {
   if (!requireNamespace("tableone", quietly = TRUE)) {
-  stop("Package 'tableone' is required but not installed.")
+    stop("Package 'tableone' is required but not installed.")
   }
-  
+
   # Get all the variables if none are specified
   if (is.null(vars)) {
-  vars <- colnames(data)
-  vars <- vars[!vars %in% groups]
+    vars <- colnames(data)
+    vars <- vars[!vars %in% groups]
   }
 
   # Make a table 1
   table1 <- tableone::CreateTableOne(
-  vars = vars,
-  strata = groups,
-  data = data,
-  addOverall = TRUE,
-  ...
+    vars = vars,
+    strata = groups,
+    data = data,
+    addOverall = TRUE,
+    ...
   )
-  
+
   # Make a nice table 1
   table1 <- do.call(print, c(list(table1), printArgs))
   return(table1)
@@ -57,10 +56,9 @@ stats_table <- function(
 #' @param ... other arguments to pass to the test function
 #' @return gse object with odds ratio and p-value added
 hypergeometric_scoring <- function(
-  gse,
-  method = 'fisher',
-  ...
-) {
+    gse,
+    method = "fisher",
+    ...) {
   # Get the geneset
   geneset <- gse@gene
 
@@ -81,25 +79,25 @@ hypergeometric_scoring <- function(
   }
 
   # Error handling on the method
-  if (!method %in% c('fisher', 'chisq')) {
-    stop('method must be either fisher or chisq')
+  if (!method %in% c("fisher", "chisq")) {
+    stop("method must be either fisher or chisq")
   }
-  
+
   # Let's do the OR test for each enrichment set
-  if (method == 'fisher') {
+  if (method == "fisher") {
     ORs <- sapply(
-      df[, -1], 
-      function(x) stats::fisher.test(table(x, df[, 'in_geneset']), ...)$estimate
+      df[, -1],
+      function(x) stats::fisher.test(table(x, df[, "in_geneset"]), ...)$estimate
     )
-  } else if (method == 'chisq') {
+  } else if (method == "chisq") {
     ORs <- sapply(
-      df[, -1], 
-      function(x) stats::chisq.test(table(x, df[, 'in_geneset']), ...)$estimate
+      df[, -1],
+      function(x) stats::chisq.test(table(x, df[, "in_geneset"]), ...)$estimate
     )
   }
 
   # Fix the names
-  names(ORs) <- gsub('\\..*', '', names(ORs))
+  names(ORs) <- gsub("\\..*", "", names(ORs))
 
   # Add the ORs to the enrichment results
   results_pathways <- rownames(gse@result)
@@ -119,23 +117,23 @@ hypergeometric_scoring <- function(
 #' @param ... other arguments to pass to cor.test
 #' @return list with correlation matrix, p-value matrix, and filtered correlation matrix
 #' @export
-correlation_matrix <- function(data, vars1, vars2, method = 'pearson', use = 'pairwise.complete.obs', ...) {
+correlation_matrix <- function(data, vars1, vars2, method = "pearson", use = "pairwise.complete.obs", ...) {
   # Make a placeholder for the correlation matrix
   cor_mat <- data.frame()
   p_mat <- data.frame()
   # Map the correlation function over the data
   cor_res <- purrr::map(
-  vars1,
-  function(x) {
-    purrr::map(
-    vars2,
-    function(y) {
-      res <- stats::cor.test(data[, x], data[, y], method = method, use = use, ...)
-      cor_mat[x, y] <<- res$estimate
-      p_mat[x, y] <<- res$p.value
+    vars1,
+    function(x) {
+      purrr::map(
+        vars2,
+        function(y) {
+          res <- stats::cor.test(data[, x], data[, y], method = method, use = use, ...)
+          cor_mat[x, y] <<- res$estimate
+          p_mat[x, y] <<- res$p.value
+        }
+      )
     }
-    )
-  }
   )
   # Make a correlation matrix filtered by p-value
   cor_mat_filtr <- cor_mat

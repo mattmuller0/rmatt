@@ -13,7 +13,7 @@
 #' @import tidyr
 NULL
 
-#======================== Data Preprocessing Functions ========================
+# ======================== Data Preprocessing Functions ========================
 
 #' Select top genes by variance
 #' @description Select top genes by variance
@@ -66,13 +66,13 @@ select_top_lasso <- function(df, y, lambda = NULL, nfolds = 10, ...) {
 #' @param by method to align by (default is "mean")
 #' @return aligned signature
 #' @export
-align_signature <- function(sig, dat, by = "mean"){
+align_signature <- function(sig, dat, by = "mean") {
     corrs <- apply(dat, 2, function(x) stats::cor(x, sig, use = "pairwise.complete.obs"))
     aln <- do.call(by, list(corrs))
     return(sig * sign(aln))
 }
 
-#======================== Testing Functions ========================
+# ======================== Testing Functions ========================
 
 #' Compare one column to many columns
 #' @description Compare one column to many columns
@@ -99,7 +99,8 @@ compare_one_to_many <- function(df, col, cols, outdir, plot = TRUE, method = "sp
         }
 
         data_type <- class(df[[x]])
-        base_plot <- ggplot2::ggplot(tidyr::drop_na(df, dplyr::any_of(c(col, x))), ggplot2::aes(!!rlang::sym(x), !!rlang::sym(col))) + ggplot2::labs(title = glue::glue("{col} vs {x}"), x = x, y = col)
+        base_plot <- ggplot2::ggplot(tidyr::drop_na(df, dplyr::any_of(c(col, x))), ggplot2::aes(!!rlang::sym(x), !!rlang::sym(col))) +
+            ggplot2::labs(title = glue::glue("{col} vs {x}"), x = x, y = col)
         if (data_type %in% c("integer", "numeric")) {
             # numeric data
             stats_results <- df %>%
@@ -108,7 +109,11 @@ compare_one_to_many <- function(df, col, cols, outdir, plot = TRUE, method = "sp
             plot_results <- base_plot + ggplot2::geom_point() + ggplot2::geom_smooth(method = "lm") + ggpubr::stat_cor(method = method)
         } else if (data_type %in% c("character", "factor")) {
             # get the number of unique values
-            n_unique <- df %>% dplyr::pull(x) %>% stats::na.omit() %>% unique() %>% length()
+            n_unique <- df %>%
+                dplyr::pull(x) %>%
+                stats::na.omit() %>%
+                unique() %>%
+                length()
             if (n_unique == 2) {
                 # categorical data with < 2 unique values
                 stats_results <- df %>%
@@ -129,7 +134,9 @@ compare_one_to_many <- function(df, col, cols, outdir, plot = TRUE, method = "sp
             stop(glue::glue("Data type {data_type} not supported."))
         }
         # save results
-        if (plot) {ggplot2::ggsave(glue::glue("{outdir}/{col}_vs_{x}.pdf"), plot_results)}
+        if (plot) {
+            ggplot2::ggsave(glue::glue("{outdir}/{col}_vs_{x}.pdf"), plot_results)
+        }
         stats_list[[x]] <- stats_results
         plot_list[[x]] <- plot_results
     }
@@ -138,7 +145,7 @@ compare_one_to_many <- function(df, col, cols, outdir, plot = TRUE, method = "sp
     return(list(stats = stats_list, plots = plot_list))
 }
 
-#======================== Eigengene Functions ========================
+# ======================== Eigengene Functions ========================
 
 #' Calculate eigengenes by principal component analysis
 #' @description Calculate eigengenes by principal component analysis
@@ -153,7 +160,7 @@ eigen_pca <- function(df, outdir, pcs = 1, align = TRUE, ...) {
         stop("Package 'ggbiplot' is required but not installed.")
     }
     dir.create(outdir, showWarnings = FALSE, recursive = TRUE)
-    
+
     # run PCA
     pca_res <- stats::prcomp(df, ...)
 
@@ -163,12 +170,14 @@ eigen_pca <- function(df, outdir, pcs = 1, align = TRUE, ...) {
     # save the loading vectors
     loadings <- as.data.frame(pca_res$rotation)
     utils::write.csv(loadings, glue::glue("{outdir}/loadings.csv"))
-    
+
     eigengenes <- as.data.frame(pca_res$x[, pcs])
     colnames(eigengenes) <- glue::glue("PC{pcs}")
 
     # align average expression
-    if (align) {eigengenes <- apply(eigengenes, 2, function(x) align_signature(x, df))}
+    if (align) {
+        eigengenes <- apply(eigengenes, 2, function(x) align_signature(x, df))
+    }
 
     utils::write.csv(eigengenes, glue::glue("{outdir}/eigengenes.csv"))
     return(eigengenes)
@@ -184,7 +193,7 @@ eigen_pca <- function(df, outdir, pcs = 1, align = TRUE, ...) {
 #' @return dataframe with eigengenes
 eigen_svd <- function(df, outdir, pcs = 1, align = FALSE, ...) {
     dir.create(outdir, showWarnings = FALSE, recursive = TRUE)
-    
+
     # run SVD
     svd_res <- base::svd(df, nu = min(1, pcs), nv = min(1, pcs), ...)
 
@@ -192,7 +201,9 @@ eigen_svd <- function(df, outdir, pcs = 1, align = FALSE, ...) {
     colnames(eigengenes) <- glue::glue("eigen_{pcs}")
 
     # align average expression
-    if (align) {eigengenes <- apply(eigengenes, 2, function(x) align_signature(x, df))}
+    if (align) {
+        eigengenes <- apply(eigengenes, 2, function(x) align_signature(x, df))
+    }
 
     utils::write.csv(eigengenes, glue::glue("{outdir}/eigengenes.csv"))
     return(eigengenes)
@@ -208,19 +219,19 @@ eigen_svd <- function(df, outdir, pcs = 1, align = FALSE, ...) {
 #' @param method distance method
 #' @param verbose logical, print verbose output
 #' @return dataframe with eigengenes
-eigen_reg_svd <- function(M, samples = nrow(M), vectors = 1:3, tau = 1, lap = FALSE, method = "euclidian", verbose = FALSE){
+eigen_reg_svd <- function(M, samples = nrow(M), vectors = 1:3, tau = 1, lap = FALSE, method = "euclidian", verbose = FALSE) {
     A <- as.matrix(stats::dist(M, method = method))
-    if(verbose) message(glue::glue("Average degree: {mean(colSums(A))}"))
+    if (verbose) message(glue::glue("Average degree: {mean(colSums(A))}"))
     avg.d <- mean(colSums(A))
     A.tau <- A + tau * avg.d / nrow(A)
-    if(!lap){
+    if (!lap) {
         SVD <- base::svd(A.tau)
-        if(verbose) message("SVD computed")
+        if (verbose) message("SVD computed")
         V <- SVD$v
         V.norm <- apply(V, 1, function(x) sqrt(sum(x^2)))
         V.normalized <- diag(1 / V.norm) %*% V
     } else {
-        if(verbose) message("Laplacian distance computed")
+        if (verbose) message("Laplacian distance computed")
         d.tau <- colSums(A.tau)
         L.tau <- diag(1 / sqrt(d.tau)) %*% A.tau %*% diag(1 / sqrt(d.tau))
         SVD <- base::svd(L.tau)
@@ -247,7 +258,7 @@ eigen_nmf <- function(df, outdir, pcs = 1, align = FALSE, ...) {
         stop("Package 'NMF' is required but not installed.")
     }
     dir.create(outdir, showWarnings = FALSE, recursive = TRUE)
-    
+
     # run NMF
     nmf_res <- NMF::nmf(as.matrix(df), rank = pcs, seed = 420)
 
@@ -255,7 +266,9 @@ eigen_nmf <- function(df, outdir, pcs = 1, align = FALSE, ...) {
     colnames(eigengenes) <- glue::glue("eigen_{pcs}")
 
     # align average expression
-    if (align) {eigengenes <- apply(eigengenes, 2, function(x) align_signature(x, df))}
+    if (align) {
+        eigengenes <- apply(eigengenes, 2, function(x) align_signature(x, df))
+    }
 
     utils::write.csv(eigengenes, glue::glue("{outdir}/eigengenes.csv"))
     return(eigengenes)
@@ -282,7 +295,9 @@ eigen_ica <- function(df, outdir, n.comp = 1, align = FALSE, ...) {
     colnames(eigengenes) <- glue::glue("eigen_{n.comp}")
 
     # align average expression
-    if (align) {eigengenes <- apply(eigengenes, 2, function(x) align_signature(x, df))}
+    if (align) {
+        eigengenes <- apply(eigengenes, 2, function(x) align_signature(x, df))
+    }
 
     utils::write.csv(eigengenes, glue::glue("{outdir}/eigengenes.csv"))
     return(eigengenes)

@@ -1,4 +1,4 @@
-#' @import ggsurvfit 
+#' @import ggsurvfit
 #' @import survival
 #' @import ggplot2
 #' @import glue
@@ -17,17 +17,16 @@ NULL
 #' @return data.frame, p-values from log rank test.
 #' @export
 log_rank_test <- function(
-  data, 
-  comparisons, 
-  censors,
-  censor_prefix = 'censor_',
-  time_prefix = 'time_to_'
-) {
+    data,
+    comparisons,
+    censors,
+    censor_prefix = "censor_",
+    time_prefix = "time_to_") {
   # Create an empty dataframe to store the p-values
   p_values <- data.frame(matrix(ncol = length(comparisons), nrow = length(censors)))
   colnames(p_values) <- comparisons
   rownames(p_values) <- censors
-  
+
   # Loop through each variable of interest
   for (censor in censors) {
     # Subset the data for the current variable of interest
@@ -35,10 +34,10 @@ log_rank_test <- function(
 
     # make sure censor and time are in the data
     if (!(time %in% colnames(data)) | !(censor %in% colnames(data))) {
-      message(glue::glue('Missing either time or censor column for {censor}'))
+      message(glue::glue("Missing either time or censor column for {censor}"))
       next
     }
-    
+
     # Loop through each comparison group
     for (i in seq_along(comparisons)) {
       comparison <- comparisons[i]
@@ -46,12 +45,12 @@ log_rank_test <- function(
       fmla <- as.formula(glue::glue("Surv({time}, {censor}) ~ {comparison}"))
       fit <- do.call(survdiff, list(fmla, data = data))
       p_value <- fit$p
-      
+
       # Store the p-value in the p_values dataframe
       p_values[censor, comparison] <- p_value
     }
   }
-  
+
   # Return the p-values dataframe
   return(p_values)
 }
@@ -68,16 +67,15 @@ log_rank_test <- function(
 #' @return list, list of survival plots and HR plots.
 #' @export
 survival_analysis <- function(
-  df, 
-  condition, 
-  censors, 
-  outdir,
-  image_type = 'pdf',
-  censor_prefix = 'censor_',
-  time_prefix = 'time_to_'
-) {
-  dir.create(file.path(outdir, 'survival_plots'), showWarnings = FALSE, recursive = TRUE)
-  censors_basenames <- gsub(censor_prefix, '', censors)
+    df,
+    condition,
+    censors,
+    outdir,
+    image_type = "pdf",
+    censor_prefix = "censor_",
+    time_prefix = "time_to_") {
+  dir.create(file.path(outdir, "survival_plots"), showWarnings = FALSE, recursive = TRUE)
+  censors_basenames <- gsub(censor_prefix, "", censors)
   time_vars <- paste0(time_prefix, censors_basenames)
 
   # verify the censors and time_vars are in the data
@@ -100,17 +98,16 @@ survival_analysis <- function(
 
     surv_plot <- ggsurvfit::ggsurvfit(surv_obj) +
       coord_cartesian(clip = "off") +
-      ggsurvfit::add_confidence_interval(alpha=0.1) +
-      theme_classic(18) + 
+      ggsurvfit::add_confidence_interval(alpha = 0.1) +
+      theme_classic(18) +
       theme(legend.position = "top") +
-      lims(x = c(0, max(surv_obj$time)+100)) +
-      labs(x = 'Time (days)', title = glue::glue('Survival Analysis for {censor} (n={sum(surv_obj$n)})')) +
-      annotate("text", x = max(surv_obj$time)*0.75, y = 1, label = paste0('HR = ', signif(exp(coef(coxmodel)), 3), '; p = ', signif(summary(coxmodel)$coefficients[5], 1)), size = 7) +
+      lims(x = c(0, max(surv_obj$time) + 100)) +
+      labs(x = "Time (days)", title = glue::glue("Survival Analysis: {censor} (n={sum(surv_obj$n)})")) +
       theme(axis.title.y = element_text(angle = 90, vjust = 0.5))
 
     # add the surv_plot to the list
     survival_plots[[censor]] <- surv_plot
-    ggplot2::ggsave(filename = file.path(outdir, 'survival_plots', glue::glue('survival_plot_{censor}.{image_type}')), plot = surv_plot)
+    ggplot2::ggsave(filename = file.path(outdir, "survival_plots", glue::glue("survival_plot_{censor}.{image_type}")), plot = surv_plot)
 
     # make a dataframe of the OR & pvalue and HR & pvalues
     cox_summary <- summary(coxmodel)
@@ -125,7 +122,7 @@ survival_analysis <- function(
     HR_list[[censor]] <- o
   }
   HR_df <- do.call(rbind, HR_list)
-  write.csv(HR_df, file.path(outdir, 'hazard_ratios.csv'))
+  write.csv(HR_df, file.path(outdir, "hazard_ratios.csv"))
   out <- list(survival_plots = survival_plots, hazard_ratios = HR_df)
   return(out)
 }
@@ -147,16 +144,15 @@ survival_analysis <- function(
 #' @importFrom purrr map
 #' @export
 hazard_ratios_table <- function(
-  df, 
-  condition, 
-  censors, 
-  controls = NULL,
-  per_sd = FALSE,
-  ovr = FALSE,
-  censor_prefix = 'C_',
-  time_prefix = 'T_'
-) {
-  censors_basenames <- gsub(censor_prefix, '', censors)
+    df,
+    condition,
+    censors,
+    controls = NULL,
+    per_sd = FALSE,
+    ovr = FALSE,
+    censor_prefix = "C_",
+    time_prefix = "T_") {
+  censors_basenames <- gsub(censor_prefix, "", censors)
   time_vars <- paste0(time_prefix, censors_basenames)
 
   # verify the censors and time_vars are in the data
@@ -165,27 +161,27 @@ hazard_ratios_table <- function(
 
   # check if there are NA values in the condition
   if (any(is.na(df[, condition]))) {
-    message('NA values in condition, removing')
+    message("NA values in condition, removing")
     df <- df[!is.na(df[, condition]), ]
   }
 
   # Check if there are NA values in the controls
   if (!is.null(controls)) {
     if (any(is.na(df[, controls]))) {
-      message('NA values in the controls')
+      message("NA values in the controls")
     }
   }
-  
+
   # Check if there are NA values in the censors
   if (any(is.na(df[, censors]))) {
-    message('NA values in the censors')
+    message("NA values in the censors")
   }
 
   # check if we are per_sd
   if (per_sd) {
     # make sure the condition is continuous
     if (!is.numeric(df[, condition])) {
-      stop('condition must be numeric if per_sd is TRUE')
+      stop("condition must be numeric if per_sd is TRUE")
     }
     df[, condition] <- scale(df[, condition])
   }
@@ -199,9 +195,9 @@ hazard_ratios_table <- function(
       censor <- censors[idx]
       cond <- df[[condition]]
       if (!is.null(controls)) {
-        fmla <- as.formula(paste0('survival::Surv(', time_var, ', ', censor, ') ~ ', condition, ' + ', paste(controls, collapse = ' + ')))
+        fmla <- as.formula(paste0("survival::Surv(", time_var, ", ", censor, ") ~ ", condition, " + ", paste(controls, collapse = " + ")))
       } else {
-        fmla <- as.formula(paste0('survival::Surv(', time_var, ', ', censor, ') ~ ', condition))
+        fmla <- as.formula(paste0("survival::Surv(", time_var, ", ", censor, ") ~ ", condition))
       }
 
       surv_obj <- do.call(survival::survfit, list(fmla, data = df))
@@ -216,26 +212,26 @@ hazard_ratios_table <- function(
       HR_list[[censor]] <- data.frame(
         censor = censor,
         condition = condition,
-        hazard_ratio = signif(exp(tidy_cox[1, 'estimate']), 4),
+        hazard_ratio = signif(exp(tidy_cox[1, "estimate"]), 4),
         ci_lower = signif(exp(tidy_confint[1, 1]), 4),
         ci_upper = signif(exp(tidy_confint[1, 2]), 4),
-        pvalue = signif(tidy_cox[1, 'p.value'], 4)
+        pvalue = signif(tidy_cox[1, "p.value"], 4)
       )
     }
   } else {
     # one hot encode the condition
-    message('one hot encoding condition')
+    message("one hot encoding condition")
     df_ <- one_hot_encode_ovr(df, condition, binary = FALSE)
     vals <- unique(df_[, condition])
-    columns_ovr <- colnames(df_)[colnames(df_) %in% paste0(condition, '_', vals)]
+    columns_ovr <- colnames(df_)[colnames(df_) %in% paste0(condition, "_", vals)]
 
     # lapply the function over the columns_ovr and censors
     HR_list <- purrr::map(columns_ovr, ~ hazard_ratios_table(df_, .x, censors, controls = controls, censor_prefix = censor_prefix, time_prefix = time_prefix, ovr = FALSE))
   }
 
   HR_df <- do.call(rbind, HR_list)
-  rownames(HR_df) <- gsub('censor_', '', rownames(HR_df))
-  rownames(HR_df) <- gsub('\\.', '__', rownames(HR_df))
+  rownames(HR_df) <- gsub("censor_", "", rownames(HR_df))
+  rownames(HR_df) <- gsub("\\.", "__", rownames(HR_df))
   return(HR_df)
 }
 
@@ -257,55 +253,58 @@ hazard_ratios_table <- function(
 #' @importFrom glue glue
 #' @export
 filtered_hazard_ratio_table <- function(
-  data, 
-  condition,
-  risks, 
-  censors, 
-  censor_prefix = 'C_',
-  time_prefix = 'T_',
-  per_sd = TRUE,
-  ovr = FALSE,
-  verbose = FALSE, 
-  ...
-) {
+    data,
+    condition,
+    risks,
+    censors,
+    censor_prefix = "C_",
+    time_prefix = "T_",
+    per_sd = TRUE,
+    ovr = FALSE,
+    verbose = FALSE,
+    ...) {
   # make sure the risks are all characters
   if (!all(sapply(risks, is.character))) {
-    stop('risks must be characters')
+    stop("risks must be characters")
   }
 
   surv_risk_res <- purrr::map(
-    risks, 
+    risks,
     function(x) {
-      vals <- na.omit(unique(data[,x]))
+      vals <- na.omit(unique(data[, x]))
       print(glue::glue("Filtering for {x}"))
       res <- purrr::map(
-        vals, 
+        vals,
         function(y) {
           tmp <- dplyr::filter(data, !!sym(x) == y)
           if (verbose) {
             message(glue::glue("    Subfiltering {y}"))
             message(glue::glue("    N = {nrow(tmp)}"))
           }
-          tryCatch({
-            out <- hazard_ratios_table(
-              df = tmp, 
-              condition = condition,
-              censors = censors,
-              censor_prefix = censor_prefix,
-              time_prefix = time_prefix,
-              per_sd = per_sd,
-              ovr = ovr,
-              ...
-            )
-            out$x <- x
-            out$y <- y
-            out$n <- nrow(tmp)
-            return(out)
-          },
-          error = function(e) {
-            if (verbose) {message(glue::glue("    ERROR: {e}"))}
-            return(NULL)
-          })
+          tryCatch(
+            {
+              out <- hazard_ratios_table(
+                df = tmp,
+                condition = condition,
+                censors = censors,
+                censor_prefix = censor_prefix,
+                time_prefix = time_prefix,
+                per_sd = per_sd,
+                ovr = ovr,
+                ...
+              )
+              out$x <- x
+              out$y <- y
+              out$n <- nrow(tmp)
+              return(out)
+            },
+            error = function(e) {
+              if (verbose) {
+                message(glue::glue("    ERROR: {e}"))
+              }
+              return(NULL)
+            }
+          )
         }
       )
       res <- do.call(rbind, res)
