@@ -148,7 +148,6 @@ compare_one_to_many <- function(df, col, cols, outdir, plot = TRUE, method = "sp
 #' @param align logical, align eigengenes by average expression
 #' @param ... additional arguments to pass to stats functions
 #' @return dataframe with eigengenes
-#' @export
 eigen_pca <- function(df, outdir, pcs = 1, align = TRUE, ...) {
     if (!requireNamespace("ggbiplot", quietly = TRUE)) {
         stop("Package 'ggbiplot' is required but not installed.")

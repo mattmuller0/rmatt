@@ -7,5 +7,5 @@
 This script contains functions for statistical analysis.
 }
 \details{
-The functions include creating a table 1, hypergeometric scoring, creating a correlation matrix, softmaxing a vector, and min-max normalizing a vector.
+The functions include creating a statistics table, hypergeometric scoring, creating a correlation matrix, softmaxing a vector, and min-max normalizing a vector.
 }

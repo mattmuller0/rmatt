@@ -19,7 +19,6 @@ NULL
 #' @param dds DESeq2 object
 #' @param min_value Minimum value to consider a gene detected
 #' @return Data frame of percent of genes detected
-#' @export
 percentGenesDetected <- function(dds, min_value = 0) {
   counts <- assay(dds)
   percent_genes_detected <- rowMeans(counts > min_value)

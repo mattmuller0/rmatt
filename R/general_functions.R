@@ -1,15 +1,15 @@
 #' @title General functions
 #' @description General functions for data manipulation and analysis
 #' @name general_functions
-#' @importFrom dplyr %>% filter pull add_row mutate select summarise_all
-#' @importFrom tibble rownames_to_column
-#' @importFrom SummarizedExperiment SummarizedExperiment colData rowData assay
-#' @importFrom S4Vectors DataFrame
-#' @importFrom edgeR cpm calcNormFactors
-#' @importFrom DESeq2 counts varianceStabilizingTransformation rlog
-#' @importFrom singscore rankGenes
-#' @importFrom glue glue
-#' @importFrom tidyr drop_na
+#' @import dplyr
+#' @import tibble
+#' @import SummarizedExperiment
+#' @import S4Vectors
+#' @import edgeR
+#' @import DESeq2
+#' @import singscore
+#' @import glue
+#' @import tidyr
 NULL
 
 #' Function to summarize results more generally
@@ -137,34 +137,10 @@ save_se <- function(se, path, normalize = 'mor') {
   }
 }
 
-#' Function to summarize a dataframe
-#' @param df dataframe to summarize
-#' @return dataframe with summary statistics
-#' @export
-summarize_df <- function(df) {
-  df %>%
-    summary() %>%
-    as.data.frame() %>%
-    rownames_to_column() %>%
-    rename('variable' = 'rowname') %>%
-    mutate(variable = as.character(variable))
-  return(df)
-}
-
-#' Function to turn list of lists into a dataframe
-#' @param list list of lists
-#' @return dataframe
-#' @export
-list_of_lists_to_df <- function(list) {
-  df <- do.call(rbind, lapply(list, function(x) data.frame(x)))
-  return(df)
-}
-
 #' Function to remove NA variables from a summarized experiment object
 #' @param se SummarizedExperiment object
 #' @param columns list of columns to remove NAs from
 #' @return DESeqDataSet object with NAs removed
-#' @export
 remove_na_variables <- function(se, columns) {
   col_data <- as.data.frame(colData(se))
   assay_data <- assay(se)
@@ -215,7 +191,6 @@ pairwise_combos <- function(vec) {
 #' Function to get the variable name
 #' @param var variable name
 #' @return character, variable name
-#' @export
 varName <- function(var) {
   deparse(substitute(var))
 }

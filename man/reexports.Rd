@@ -6,11 +6,6 @@
 \alias{assay}
 \alias{rowData}
 \alias{colData}
-\alias{select}
-\alias{filter}
-\alias{mutate}
-\alias{summarize}
-\alias{arrange}
 \title{Objects exported from other packages}
 \keyword{internal}
 \description{
@@ -18,8 +13,6 @@ These objects are imported from other packages. Follow the links
 below to see their documentation.
 
 \describe{
-  \item{dplyr}{\code{\link[dplyr]{arrange}}, \code{\link[dplyr]{filter}}, \code{\link[dplyr]{mutate}}, \code{\link[dplyr]{select}}, \code{\link[dplyr:summarise]{summarize}}}
-
   \item{SummarizedExperiment}{\code{\link[SummarizedExperiment:SummarizedExperiment-class]{assay}}, \code{\link[SummarizedExperiment:SummarizedExperiment-class]{colData}}, \code{\link[SummarizedExperiment:SummarizedExperiment-class]{rowData}}}
 }}
 

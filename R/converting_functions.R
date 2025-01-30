@@ -15,7 +15,6 @@ NULL
 #' @param remove_missing logical, keep unmatched gene IDs.
 #' @param ... additional arguments to pass to `AnnotationDbi::mapIds`.
 #' @return list, converted gene IDs.
-#' @export
 map_gene_ids <- function(geneList, from = NULL, to, orgDb = org.Hs.eg.db, remove_missing = FALSE, ...) {
   if (is.null(from)) {
     from <- detect_gene_id_type(geneList)
@@ -44,7 +43,6 @@ map_gene_ids <- function(geneList, from = NULL, to, orgDb = org.Hs.eg.db, remove
 #' @param geneList list or vector of gene IDs.
 #' @param strip logical, whether to strip version numbers from gene IDs.
 #' @return character, type of gene ID.
-#' @export
 detect_gene_id_type <- function(geneList, strip = TRUE) {
   id_types <- list(
     ENSEMBL = "^ENSG[0-9]+$",

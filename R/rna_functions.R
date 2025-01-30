@@ -417,11 +417,6 @@ deseq_analysis <- function(dds, conditions, controls = NULL, outpath, ...) {
     dds_ <- DESeq2::DESeqDataSet(dds_, design = design_matr)
     levels <- levels(SummarizedExperiment::colData(dds_)[, condition])
 
-    # Log file for condition analysis
-    logg <- file(file.path(outpath, condition, paste0(condition, "_analysis_summary.log")), open = "wt")
-    sink(logg)
-    sink(logg, type = "message")
-
     message(paste0("Running Analysis on ", condition))
 
     # PCA plot
@@ -473,11 +468,6 @@ deseq_analysis <- function(dds, conditions, controls = NULL, outpath, ...) {
     if (length(levels) == 0) {
       message(paste0("Skipping ", condition, " because there are no levels"))
     }
-
-    sink(type = "message")
-    sink()
-    close(logg)
-    readLines(file.path(outpath, condition, paste0(condition, "_analysis_summary.log")))
   }
 
   # Save summary dataframe
