@@ -1,15 +1,15 @@
 #' @title General functions
 #' @description General functions for data manipulation and analysis
 #' @name general_functions
-#' @import dplyr
-#' @import tibble
-#' @import SummarizedExperiment
-#' @import S4Vectors
-#' @import edgeR
-#' @import DESeq2
-#' @import singscore
-#' @import glue
-#' @import tidyr
+#' @importFrom dplyr filter mutate select pull summarise_all starts_with add_row
+#' @importFrom tibble rownames_to_column
+#' @importFrom SummarizedExperiment SummarizedExperiment assay colData rowData
+#' @importFrom S4Vectors DataFrame
+#' @importFrom edgeR calcNormFactors
+#' @importFrom DESeq2 DESeqDataSet
+#' @importFrom singscore rankGenes
+#' @importFrom glue glue
+#' @importFrom tidyr drop_na any_of
 NULL
 
 #' Function to summarize results more generally

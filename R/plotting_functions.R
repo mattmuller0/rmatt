@@ -2,17 +2,21 @@
 #' @description Functions for plotting data.
 #' @name plotting_functions
 #' @author Matthew Muller
-#' @import ggplot2
-#' @import SummarizedExperiment
-#' @import DESeq2
-#' @import ggpubr
-#' @import cowplot
-#' @import ggtree
-#' @import ComplexHeatmap
-#' @import ggsci
-#' @import ggrepel
-#' @import tidyverse
-#' @import circlize
+#' @importFrom ggplot2 ggplot aes geom_histogram geom_point geom_text geom_linerange geom_hline geom_vline theme_bw theme element_text element_blank element_rect margin coord_flip coord_cartesian scale_x_continuous labs theme_void facet_grid guide_colorbar
+#' @importFrom SummarizedExperiment assay colData
+#' @importFrom DESeq2 DESeqDataSet
+#' @importFrom ggpubr theme_classic2 stat_cor
+#' @importFrom cowplot plot_grid
+#' @importFrom ggtree ggtree
+#' @importFrom ComplexHeatmap Heatmap HeatmapAnnotation
+#' @importFrom ggsci pal_npg
+#' @importFrom ggrepel geom_text_repel
+#' @importFrom dplyr select_if mutate filter case_when
+#' @importFrom tidyr pivot_longer
+#' @importFrom circlize colorRamp2
+#' @importFrom RColorBrewer brewer.pal
+#' @importFrom glue glue
+#' @importFrom stringr str_wrap
 NULL
 
 # ======================== Plotting Functions ========================
@@ -112,6 +116,7 @@ plot_gene_heatmap <- function(dds, title = character(0), annotations = NULL, nor
 #' @param max_terms Maximum number of terms to plot
 #' @param ... Additional arguments to pass to ggplot
 #' @return ggplot object of enrichment terms
+#' @export
 plot_enrichment_terms <- function(
     gse,
     title = "Enrichment Plot",

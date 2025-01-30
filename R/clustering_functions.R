@@ -2,9 +2,8 @@
 #' @description Functions for preparing data and performing clustering using NMF, k-means, and hierarchical clustering.
 #' @details This script contains functions to prepare a counts matrix for NMF, estimate the rank of a matrix using NMF, plot the results of NMF, estimate k-means clustering using the elbow method, and estimate hierarchical clustering.
 #' @name clustering_functions
-#' @import tidyverse
-#' @import ggplot2
-#' @import NMF
+#' @importFrom NMF nmf randomize
+#' @importFrom ggplot2 ggplot aes geom_point labs theme_bw
 NULL
 
 #' Prepare a counts matrix for NMF

@@ -1,6 +1,4 @@
-#' @import SummarizedExperiment
-#' @import dplyr
-NULL
+# Some general exports I tend to need
 
 #' @export
 SummarizedExperiment::assay
