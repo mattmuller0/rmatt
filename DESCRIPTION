@@ -1,13 +1,12 @@
 Package: rmatt
 Title: A Collection of R Tools
-Version: 0.0.2
+Version: 0.0.3
 Maintainer: Matthew Muller <mm12865@nyu.edu>
 Description: This package contains a collection of all the R tools I've made during my PhD. It covers mainly multiomic analyses, statistical methods, and data wrangling.
 Author: Matthew Muller
 Depends: R (>= 4.3.2)
 Imports:
-    AnnotationDbi,
-    biomaRt,
+    BiocManager,
     clusterProfiler,
     cowplot,
     DESeq2,
@@ -18,22 +17,23 @@ Imports:
     ggpubr,
     ggtree,
     glue,
-    NMF,
     org.Hs.eg.db,
     purrr,
+    S4Vectors,
+    stats,
     stringr,
+    SummarizedExperiment,
     tibble,
     tidyr,
-    stats,
-    cluster,
-    BiocManager,
-    ComplexHeatmap,
-    EnhancedVolcano,
-    OlinkAnalyze,
-    S4Vectors,
-    SummarizedExperiment,
+    tidyverse
+Suggests:
+    AnnotationDbi,
+    biomaRt,
     broom,
     circlize,
+    cluster,
+    ComplexHeatmap,
+    EnhancedVolcano,
     enrichR,
     forcats,
     ggbiplot,
@@ -41,18 +41,18 @@ Imports:
     ggsci,
     ggsurvfit,
     jsonlite,
+    knitr,
     limma,
     msigdbr,
+    NMF,
+    OlinkAnalyze,
     rlang,
+    rmarkdown,
     rstatix,
     singscore,
     survival,
     tableone,
-    tidyverse
-Suggests:
-    testthat,
-    knitr,
-    rmarkdown
+    testthat
 # VignetteBuilder: knitr
 License: Artistic-2.0
 Encoding: UTF-8

@@ -3,7 +3,7 @@
 #' @name olink_functions
 #' @import dplyr
 #' @import tidyr
-#' @importFrom glue glue
+#' @import glue
 #' @import purrr
 #' @import broom
 #' @import AnnotationDbi

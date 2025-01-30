@@ -1,12 +1,10 @@
 #' @title stats_functions
 #' @description This script contains functions for statistical analysis.
-#' @details The functions include creating a table 1, hypergeometric scoring, creating a correlation matrix, softmaxing a vector, and min-max normalizing a vector.
+#' @details The functions include creating a statistics table, hypergeometric scoring, creating a correlation matrix, softmaxing a vector, and min-max normalizing a vector.
 #' @name stats_functions
-#' @importFrom SummarizedExperiment SummarizedExperiment
-#' @importFrom tibble tibble
-#' @importFrom tableone CreateTableOne
-#' @importFrom glue glue
-#' @importFrom purrr map
+#' @import tableone
+#' @import stats
+#' @import purrr
 NULL
 
 #' Create a Table 1
@@ -143,22 +141,4 @@ correlation_matrix <- function(data, vars1, vars2, method = 'pearson', use = 'pa
   cor_mat_filtr <- cor_mat
   cor_mat_filtr[p_mat > 0.05] <- NA
   return(list(cor_matr = cor_mat, pvalue_matr = p_mat, cor_matr_filtr = cor_mat_filtr))
-}
-
-#' Softmax a Vector
-#' @description Softmax a vector
-#' @param x numeric, vector to softmax
-#' @return numeric, softmaxed vector
-#' @export
-softmax <- function(x) {
-  exp(x) / sum(exp(x))
-}
-
-#' Min-Max Normalize a Vector
-#' @description Min-max normalize a vector
-#' @param x numeric, vector to min-max normalize
-#' @return numeric, min-max normalized vector
-#' @export
-min_max_norm <- function(x) {
-  (x - min(x)) / (max(x) - min(x))
 }

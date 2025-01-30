@@ -113,13 +113,14 @@ survival_analysis <- function(
     ggplot2::ggsave(filename = file.path(outdir, 'survival_plots', glue::glue('survival_plot_{censor}.{image_type}')), plot = surv_plot)
 
     # make a dataframe of the OR & pvalue and HR & pvalues
+    cox_summary <- summary(coxmodel)
     o <- data.frame(
-      logrank_chisq = signif(surv_diff$chisq, 4),
-      logrank_pvalue = signif(surv_diff$pvalue, 4),
-      hazard_ratio = signif(exp(coef(coxmodel)), 4),
-      ci_lower = signif(exp(confint(coxmodel))[1], 4),
-      ci_upper = signif(exp(confint(coxmodel))[2], 4),
-      hr_pvalue = signif(summary(coxmodel)$coefficients[5], 4)
+      logrank_chisq = surv_diff$chisq,
+      logrank_pvalue = surv_diff$pvalue,
+      hazard_ratio = exp(cox_summary$coefficients[1, "coef"]),
+      ci_lower = exp(confint(coxmodel))[1],
+      ci_upper = exp(confint(coxmodel))[2],
+      hr_pvalue = cox_summary$coefficients[1, "Pr(>|z|)"]
     )
     HR_list[[censor]] <- o
   }
