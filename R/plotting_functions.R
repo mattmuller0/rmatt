@@ -2,7 +2,7 @@
 #' @description Functions for plotting data.
 #' @name plotting_functions
 #' @author Matthew Muller
-#' @importFrom ggplot2 ggplot aes geom_histogram geom_point geom_text geom_linerange geom_hline geom_vline theme_bw theme element_text element_blank element_rect margin coord_flip coord_cartesian scale_x_continuous labs theme_void facet_grid guide_colorbar
+#' @importFrom ggplot2 ggplot aes geom_histogram geom_point geom_text geom_linerange geom_hline geom_vline theme_bw theme element_text element_blank element_rect margin coord_flip coord_cartesian scale_x_continuous labs theme_void facet_grid guide_colorbar scale_color_manual
 #' @importFrom SummarizedExperiment assay colData
 #' @importFrom DESeq2 DESeqDataSet
 #' @importFrom ggpubr theme_classic2 stat_cor
