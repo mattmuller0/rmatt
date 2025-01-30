@@ -1,16 +1,16 @@
 #' @title Signature Functions
-#' @description This script contains functions for signature analysis.
+#' @description This script contains functions for signature analysis. 
 #' @details The functions include selecting top genes by variance, filtering genes by expression, filtering genes by lasso regression, and aligning a signature by average correlation with the derivation values.
 #' @name signature_functions
-#' @import ggplot2
-#' @import ggpubr
-#' @import ggrepel
-#' @import singscore
-#' @import tidyverse
-#' @import glue
-#' @import rstatix
-#' @import glmnet
-#' @import tidyr
+#' @importFrom ggplot2 ggplot aes geom_point geom_smooth geom_boxplot labs ggsave
+#' @importFrom ggpubr stat_cor stat_compare_means
+#' @importFrom ggrepel geom_text_repel
+#' @importFrom singscore rankGenes
+#' @importFrom dplyr select mutate bind_rows pull any_of as_tibble
+#' @importFrom glue glue
+#' @importFrom rstatix cor_test t_test anova_test
+#' @importFrom glmnet cv.glmnet
+#' @importFrom tidyr drop_na
 NULL
 
 #======================== Data Preprocessing Functions ========================

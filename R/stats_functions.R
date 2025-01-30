@@ -2,9 +2,8 @@
 #' @description This script contains functions for statistical analysis.
 #' @details The functions include creating a statistics table, hypergeometric scoring, creating a correlation matrix, softmaxing a vector, and min-max normalizing a vector.
 #' @name stats_functions
-#' @import tableone
-#' @import stats
-#' @import purrr
+#' @importFrom tableone CreateTableOne
+#' @importFrom purrr map
 NULL
 
 #' Create a Table 1

@@ -1,11 +1,11 @@
 #' @title Utility functions
 #' @description Utility functions for general tasks.
 #' @name utility_functions
-#' @import BiocManager
-#' @import jsonlite
-#' @import parallel
-#' @import dplyr
-#' @import tidyr
+#' @importFrom BiocManager install
+#' @importFrom jsonlite fromJSON toJSON
+#' @importFrom parallel detectCores makeCluster stopCluster
+#' @importFrom dplyr rowwise ungroup filter select where across everything
+#' @importFrom tidyr drop_na
 NULL
 
 #' Install all required packages from a script

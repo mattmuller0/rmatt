@@ -1,15 +1,15 @@
 #' @title Olink proteomics functions
 #' @description Functions for analyzing Olink proteomics data.
 #' @name olink_functions
-#' @import dplyr
-#' @import tidyr
-#' @import glue
-#' @import purrr
-#' @import broom
-#' @import AnnotationDbi
-#' @import clusterProfiler
-#' @import OlinkAnalyze
-#' @import ggplot2
+#' @importFrom dplyr select filter mutate pull bind_rows any_of
+#' @importFrom tidyr pivot_wider drop_na
+#' @importFrom glue glue
+#' @importFrom purrr map
+#' @importFrom broom tidy
+#' @importFrom clusterProfiler enrichGO enrichKEGG
+#' @importFrom OlinkAnalyze olink_pca_plot olink_umap_plot olink_wilcox olink_volcano_plot olink_pathway_enrichment olink_pathway_visualization olink_pathway_heatmap
+#' @importFrom ggplot2 ggplot aes geom_histogram facet_wrap theme_bw theme ggsave
+#' @importFrom tibble column_to_rownames
 NULL
 
 #======================== CODE ========================#
