@@ -1,6 +1,6 @@
 Package: rmatt
 Title: A Collection of R Tools
-Version: 0.0.5
+Version: 0.0.6
 Maintainer: Matthew Muller <mm12865@nyu.edu>
 Description: This package contains a collection of all the R tools I've made during my PhD. It covers mainly multiomic analyses, statistical methods, and data wrangling.
 Author: Matthew Muller

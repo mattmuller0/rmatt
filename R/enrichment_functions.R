@@ -40,9 +40,6 @@ NULL
 #' @export
 get_fc_list <- function(res, fc_col = "log2FoldChange", names = NULL) {
   # Input validation
-  if (!is.data.frame(res)) {
-    stop("'res' must be a data frame")
-  }
   if (!fc_col %in% colnames(res)) {
     stop(sprintf("Column '%s' not found in input data frame", fc_col))
   }
