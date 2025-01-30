@@ -1,15 +1,16 @@
 #' @title RNA Functions
 #' @description A collection of functions for RNA analysis.
 #' @name rna_functions
-#' @import dplyr
-#' @import purrr
-#' @import DESeq2
-#' @import SummarizedExperiment
-#' @import ggplot2
-#' @import EnhancedVolcano
-#' @import edgeR
-#' @import limma
-#' @import rstatix
+#' @importFrom dplyr select inner_join mutate 
+#' @importFrom tibble rownames_to_column
+#' @importFrom purrr map reduce
+#' @importFrom DESeq2 DESeq results lfcShrink plotMA DESeqDataSet
+#' @importFrom SummarizedExperiment colData assay
+#' @importFrom ggplot2 ggsave
+#' @importFrom EnhancedVolcano EnhancedVolcano
+#' @importFrom edgeR calcNormFactors
+#' @importFrom limma lmFit eBayes topTable
+#' @importFrom rstatix wilcox_test
 NULL
 
 # ======================== Reading Functions ========================
@@ -473,84 +474,6 @@ deseq_analysis <- function(dds, conditions, controls = NULL, outpath, ...) {
   # Save summary dataframe
   utils::write.csv(summary_df, file.path(outpath, "deseq_analysis_summary.csv"), row.names = FALSE)
   return(analysis_list)
-}
-
-#' Function to run statistical tests on a DESeq2 object using rstatix functions
-#' @description Function to run statistical tests on a DESeq2 object using rstatix functions
-#' @param formula Formula to use for the test.
-#' @param dds DESeq2 object.
-#' @param rstatix_test rstatix test to use.
-#' @param ... Additional arguments to pass to rstatix_test.
-#' @return Data frame of p-values and adjusted p-values.
-#' @export
-test_dds <- function(formula, dds, rstatix_test = rstatix::wilcox_test, ...) {
-  message("Extracting data from DESeq object")
-  # Extract count data from the DESeq object
-  count_data_raw <- DESeq2::assay(dds) %>%
-    t() %>%
-    as.data.frame()
-  count_data <- log2(count_data_raw + 1)
-
-  message("Extracting metadata from DESeq object")
-  # Extract metadata from the DESeq object
-  meta <- DESeq2::colData(dds) %>%
-    as.data.frame() %>%
-    dplyr::select(all_of(attr(stats::terms(formula), "term.labels")))
-
-  message("Running statistical test")
-  # run the test for all the genes using map
-  test_res <- purrr::map(
-    count_data,
-    function(x) {
-      # combine the metadata and count data on the gene
-      data <- meta %>% dplyr::mutate(x = x)
-
-      # add the gene to the formula as the response using reformulate
-      formula <- stats::reformulate(
-        response = "x",
-        termlabels = attr(stats::terms(formula), "term.labels")
-      )
-
-      # get the condition as the last term in the formula
-      condition <- attr(stats::terms(formula), "term.labels")[length(attr(stats::terms(formula), "term.labels"))]
-      conditions <- unique(meta[, condition])
-
-      # run the test
-      test <- rstatix_test(
-        data,
-        formula,
-        ...
-      )
-
-      # get the stats
-      basemean <- 2^mean(x)
-      log2FC <- mean(x[meta[, condition] == conditions[2]]) - mean(x[meta[, condition] == conditions[1]])
-      test$basemean <- basemean
-      test$log2FC <- log2FC
-
-      # return the test
-      return(test)
-    }
-  )
-
-  # add the gene names
-  names(test_res) <- colnames(count_data)
-
-  # convert to dataframe
-  df_out <- list_of_lists_to_df(test_res) %>%
-    dplyr::mutate(
-      pvalue = p,
-      padj = p.adjust(p, method = "fdr")
-    ) %>%
-    dplyr::select(
-      basemean,
-      log2FC,
-      pvalue,
-      padj
-    )
-
-  # return the dataframe
-  return(df_out)
 }
 
 # ======================== Summary Functions ========================

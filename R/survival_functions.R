@@ -1,10 +1,13 @@
-#' @import ggsurvfit 
-#' @import survival
-#' @import ggplot2
-#' @import glue
-#' @import broom
-#' @import purrr
-#' @import dplyr
+#' @title Survival Analysis Functions
+#' @description Functions for survival analysis including log rank tests and hazard ratios.
+#' @name survival_functions
+#' @importFrom ggsurvfit ggsurvfit add_confidence_interval
+#' @importFrom survival Surv survfit survdiff coxph
+#' @importFrom ggplot2 ggplot coord_cartesian theme_classic theme labs lims annotate element_text ggsave
+#' @importFrom glue glue
+#' @importFrom broom tidy
+#' @importFrom purrr map
+#' @importFrom dplyr filter sym
 NULL
 
 #' @title Log Rank Test

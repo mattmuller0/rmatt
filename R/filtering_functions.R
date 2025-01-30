@@ -1,16 +1,17 @@
 #' @title RNA-seq filtering and preprocessing functions
 #' @description Functions for filtering and preprocessing RNA-seq data.
 #' @name expr_filtering_functions
-#' @import dplyr
-#' @import tidyverse
-#' @import ggplot2
-#' @import ggpubr
-#' @import SummarizedExperiment
-#' @import DESeq2
-#' @import edgeR
-#' @import ggrepel
-#' @import ggtree
-#' @import ggbiplot
+#' @importFrom dplyr select filter mutate
+#' @importFrom ggplot2 ggplot aes geom_point theme element_blank element_text labs theme_classic
+#' @importFrom ggpubr theme_classic2
+#' @importFrom SummarizedExperiment SummarizedExperiment assay colData
+#' @importFrom DESeq2 DESeqDataSet vst
+#' @importFrom edgeR filterByExpr
+#' @importFrom ggrepel geom_text_repel
+#' @importFrom ggtree ggtree geom_tiplab theme_tree2
+#' @importFrom ggbiplot ggbiplot
+#' @importFrom cowplot plot_grid
+#' @importFrom glue glue
 NULL
 
 #======================== CODE ========================#

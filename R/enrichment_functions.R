@@ -1,20 +1,18 @@
 #' @title Enrichment Functions
 #' @description Functions for gene set enrichment analysis.
 #' @name enrichment_functions
-#' @import dplyr
-#' @import ggplot2
-#' @import forcats
-#' @import stringr
-#' @import purrr
-#' @import clusterProfiler
-#' @import enrichplot
-#' @import org.Hs.eg.db
-#' @import AnnotationDbi
-#' @import enrichR
-#' @import msigdbr
-#' @import SummarizedExperiment
-#' @import ggpubr
-#' @import tidyverse
+#' @importFrom dplyr filter mutate group_by arrange slice select pull bind_rows
+#' @importFrom ggplot2 ggplot aes geom_col scale_fill_continuous labs ggsave guide_colorbar
+#' @importFrom forcats fct_reorder
+#' @importFrom stringr str_wrap
+#' @importFrom purrr map map_dfr
+#' @importFrom clusterProfiler enrichGO gseGO GSEA groupGO
+#' @importFrom enrichplot dotplot cnetplot ridgeplot heatplot
+#' @importFrom AnnotationDbi mapIds
+#' @importFrom enrichR enrichr
+#' @importFrom msigdbr msigdbr
+#' @importFrom SummarizedExperiment assay
+#' @importFrom ggpubr theme_classic2
 NULL
 
 # # LOAD FUNCTIONS

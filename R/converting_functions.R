@@ -2,7 +2,15 @@
 #' @description This script contains functions for converting gene IDs and normalizing data.
 #' @details The functions include mapping gene IDs using `AnnotationDbi`, converting gene IDs using `biomaRt`, detecting gene ID types, and normalizing data.
 #' @name converting_functions
-#' @import org.Hs.eg.db
+#' @importFrom org.Hs.eg.db org.Hs.eg.db 
+#' @importFrom AnnotationDbi mapIds
+#' @importFrom DESeq2 sizeFactors estimateSizeFactors counts varianceStabilizingTransformation rlog
+#' @importFrom SummarizedExperiment assay
+#' @importFrom edgeR cpm rpkm calcNormFactors
+#' @importFrom singscore rankGenes
+#' @importFrom stringr str_split
+#' @importFrom glue glue
+#' @importFrom dplyr %>%
 NULL
 
 #' Map Gene IDs
