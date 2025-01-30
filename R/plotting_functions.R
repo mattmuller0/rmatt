@@ -2,7 +2,7 @@
 #' @description Functions for plotting data.
 #' @name plotting_functions
 #' @author Matthew Muller
-#' @importFrom ggplot2 ggplot aes geom_histogram geom_point geom_text geom_linerange geom_hline geom_vline theme_bw theme element_text element_blank element_rect margin coord_flip coord_cartesian scale_x_continuous labs theme_void facet_grid guide_colorbar
+#' @import ggplot2
 #' @importFrom SummarizedExperiment assay colData
 #' @importFrom DESeq2 DESeqDataSet
 #' @importFrom ggpubr theme_classic2 stat_cor
@@ -299,7 +299,6 @@ plot_clinical_factors_heatmap <- function(
 #' @param labels Column name for labels
 #' @param pCutoff P-value cutoff for significance
 #' @return ggplot object
-#' @export
 plot_odds_volcano <- function(
     odds_ratio_df,
     x = "odds.ratio",
@@ -315,7 +314,7 @@ plot_odds_volcano <- function(
   out <- ggplot(odds_ratio_df, aes(x = !!sym(x), y = -log10(!!sym(y)), color = !!sym(color) < pCutoff)) +
     geom_point(aes(color = signf)) +
     geom_vline(xintercept = 1, linetype = "dashed") +
-    scale_color_manual(values = c("grey", "red"), labels = c("NS", paste0(color, glue(" < {color}")))) +
+    ggplot2::scale_color_manual(values = c("grey", "red"), labels = c("NS", paste0(color, glue(" < {color}")))) +
     geom_text_repel(aes(label = !!sym(labels)), show.legend = FALSE) +
     theme_matt() +
     theme(legend.position = "bottom") +
@@ -388,7 +387,7 @@ plot_volcano <- function(
 
   out <- ggplot(dge, aes(x = !!sym(x), y = -log10(!!sym(y)), color = signf)) +
     geom_point() +
-    scale_color_manual(values = c("grey", "red")) +
+    ggplot2::scale_color_manual(values = c("grey", "red")) +
     geom_text_repel(data = head(dge[order(dge[, y]), ], 100), aes(label = !!sym(labels)), show.legend = FALSE) +
     theme_matt() +
     theme(legend.position = "bottom") +
@@ -540,11 +539,11 @@ plot_stratified_forest <- function(
 #' @return ggplot2 theme object
 #' @export
 theme_matt <- function(base_size = 16, base_family = "", ...) {
-  theme_matt_ <- theme_bw(base_size = base_size, base_family = base_family) %+replace%
+  theme_matt_ <- theme_bw(base_size = base_size, base_family = base_family) +
     theme(
       # Edits to legend
       legend.text = element_text(size = base_size * 0.9, colour = "black"),
-      legend.title = element_text(size = base_size * 0.9, colour = "black"),
+      legend.title = element_text(size = base_size * 0.9, colour = "black"), 
       legend.background = element_blank(),
       legend.box.background = element_rect(colour = "black", size = 0.5),
       legend.box.margin = margin(6, 6, 6, 6),

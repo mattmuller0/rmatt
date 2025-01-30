@@ -16,41 +16,51 @@ NULL
 #' @export
 install_packages_from_script <- function(script) {
   script <- utils::readLines(script)
-  
-  packages <- script[grepl('library', script)]
-  packages <- gsub('library\\(', '', packages)
-  packages <- gsub('suppressMessages\\(', '', packages)
-  packages <- gsub('\\)', '', packages)
-  packages <- gsub('"', '', packages)
-  packages <- gsub("'", '', packages)
-  packages <- gsub(' ', '', packages)
+
+  packages <- script[grepl("library", script)]
+  packages <- gsub("library\\(", "", packages)
+  packages <- gsub("suppressMessages\\(", "", packages)
+  packages <- gsub("\\)", "", packages)
+  packages <- gsub('"', "", packages)
+  packages <- gsub("'", "", packages)
+  packages <- gsub(" ", "", packages)
 
   if (length(packages) == 0) {
-    packages <- script[grepl('require', script)]
-    packages <- gsub('require\\(', '', packages)
-    packages <- gsub('\\)', '', packages)
-    packages <- gsub('"', '', packages)
-    packages <- gsub("'", '', packages)
-    packages <- gsub(' ', '', packages)
+    packages <- script[grepl("require", script)]
+    packages <- gsub("require\\(", "", packages)
+    packages <- gsub("\\)", "", packages)
+    packages <- gsub('"', "", packages)
+    packages <- gsub("'", "", packages)
+    packages <- gsub(" ", "", packages)
   }
 
   if (length(packages) == 0) {
-    packages <- script[grepl('package', script)]
-    packages <- gsub('package\\(', '', packages)
-    packages <- gsub('\\)', '', packages)
-    packages <- gsub('"', '', packages)
-    packages <- gsub("'", '', packages)
-    packages <- gsub(' ', '', packages)
+    packages <- script[grepl("package", script)]
+    packages <- gsub("package\\(", "", packages)
+    packages <- gsub("\\)", "", packages)
+    packages <- gsub('"', "", packages)
+    packages <- gsub("'", "", packages)
+    packages <- gsub(" ", "", packages)
   }
 
   output <- capture.output({
     for (pkg in packages) {
-      tryCatch({
-        utils::install.packages(pkg, dependencies = TRUE)
-      }, error = function(e) {print(e)})
-      tryCatch({
-        BiocManager::install(pkg, dependencies = TRUE, update = TRUE, ask = FALSE)
-      }, error = function(e) {print(e)})
+      tryCatch(
+        {
+          utils::install.packages(pkg, dependencies = TRUE)
+        },
+        error = function(e) {
+          print(e)
+        }
+      )
+      tryCatch(
+        {
+          BiocManager::install(pkg, dependencies = TRUE, update = TRUE, ask = FALSE)
+        },
+        error = function(e) {
+          print(e)
+        }
+      )
     }
   })
   return(output)

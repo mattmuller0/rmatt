@@ -14,7 +14,7 @@
 #' @importFrom glue glue
 NULL
 
-#======================== CODE ========================#
+# ======================== CODE ========================#
 
 #' Get percent of genes detected
 #' @param dds DESeq2 object
@@ -37,13 +37,13 @@ percentGenesDetected <- function(dds, min_value = 0) {
 #' @return DESeq2 object after preprocessing
 #' @export
 rna_preprocessing <- function(
-  dds, outpath, 
-  depth_filter = 10, size_filter = 1e6, percent_filter = 0.5, 
-  normalize="none", group = NULL
-  ) {
-  
+    dds, outpath,
+    depth_filter = 10, size_filter = 1e6, percent_filter = 0.5,
+    normalize = "none", group = NULL) {
   dir.create(outpath, showWarnings = FALSE, recursive = TRUE)
-  normal <- function(x) {normalize_counts(x, method = normalize)}
+  normal <- function(x) {
+    normalize_counts(x, method = normalize)
+  }
 
   dds_before <- dds
 
@@ -51,18 +51,18 @@ rna_preprocessing <- function(
   if (!is.na(depth_filter)) {
     before_plot <- plot_library_depth(dds_before, "Library Depth Prefiltering", bins = 100)
     keep <- rowMeans(as.data.frame(normal(dds))) >= depth_filter
-    dds <- dds[keep,]
+    dds <- dds[keep, ]
     after_plot <- plot_library_depth(dds, "Library Depth Postfiltering", bins = 100)
     depth_plots <- plot_grid(before_plot, after_plot, ncol = 2)
   } else {
     before_plot <- plot_library_depth(dds, "Library Depth Prefiltering", bins = 100)
   }
-  
+
   message("Checking library size")
   if (!is.na(size_filter)) {
     before_plot <- plot_library_size(dds_before, "Library Size Prefiltering", bins = 10)
     keep <- colSums(as.data.frame(normal(dds))) >= size_filter
-    dds <- dds[,keep]
+    dds <- dds[, keep]
     after_plot <- plot_library_size(dds, "Library Size Postfiltering", bins = 10)
     size_plots <- plot_grid(before_plot, after_plot, ncol = 2)
   } else {
@@ -73,7 +73,7 @@ rna_preprocessing <- function(
   if (!is.na(percent_filter)) {
     before_plot <- plot_percent_genes_detected(dds_before, "Percent of Genes Detected Prefiltering")
     keep <- percentGenesDetected(dds) >= percent_filter
-    dds <- dds[keep,]
+    dds <- dds[keep, ]
     after_plot <- plot_percent_genes_detected(dds, "Percent of Genes Detected Postfiltering")
     percent_plots <- plot_grid(before_plot, after_plot, ncol = 2)
   } else {
@@ -82,12 +82,12 @@ rna_preprocessing <- function(
 
   all_plots <- plot_grid(depth_plots, size_plots, percent_plots, nrow = 3)
   ggsave(file.path(outpath, "preprocessing_plots.pdf"), all_plots)
-  
+
   message("Checking hierarchical clustering")
   counts <- scale(t(normal(dds)))
   sampleTree <- hclust(dist(counts))
-  ggtree(sampleTree) + 
-    geom_tiplab(size = 2, hjust = -0.1) + 
+  ggtree(sampleTree) +
+    geom_tiplab(size = 2, hjust = -0.1) +
     theme_tree2() +
     labs(title = "Sample clustering to detect outliers", subtitle = "", x = "", y = "")
   ggsave(file.path(outpath, "sample_outliers.pdf"))
@@ -102,15 +102,15 @@ rna_preprocessing <- function(
   }
 
   pca_plot <- pca_plot +
-    theme(legend.direction = 'horizontal', legend.position = 'top') +
+    theme(legend.direction = "horizontal", legend.position = "top") +
     geom_text_repel(aes(label = rownames(counts)), size = 4, vjust = -1, max.overlaps = log10(length(colnames(dds)))) +
     theme_classic2() +
     labs(title = "PCA Plot")
   ggsave(file.path(outpath, "pca_plot.pdf"), pca_plot, dpi = 300)
 
   message("Saving dds object")
-  saveRDS(dds, file = file.path(outpath,"dds.rds"))
-  
+  saveRDS(dds, file = file.path(outpath, "dds.rds"))
+
   save_se(dds, outpath, normalize = normalize)
   if (normalize != "none") {
     save_se(dds, outpath, normalize = "none")
@@ -132,19 +132,17 @@ rna_preprocessing <- function(
 #' @return DESeq2 object after filtering
 #' @export
 filter_edgeR <- function(
-  dds, outpath, 
-  group = NULL, 
-  min.count = 10, min.prop = 0.5,
-  ...
-  ) {
-
+    dds, outpath,
+    group = NULL,
+    min.count = 10, min.prop = 0.5,
+    ...) {
   dir.create(outpath, showWarnings = FALSE, recursive = TRUE)
 
   dds_before <- dds
 
   message("Filtering with FilterByExpr from edgeR")
   keep <- filterByExpr(dds, group = dds[[group]], min.count = min.count, ...)
-  dds <- dds[keep,]
+  dds <- dds[keep, ]
 
   message("Plotting filtering results")
   before_plot <- plot_library_depth(dds_before, "Library Depth Prefiltering", bins = 100)
@@ -165,8 +163,8 @@ filter_edgeR <- function(
   message("Checking hierarchical clustering")
   counts <- scale(t(assay(vst(dds))))
   sampleTree <- hclust(dist(counts))
-  ggtree(sampleTree) + 
-    geom_tiplab(size = 2, hjust = -0.1) + 
+  ggtree(sampleTree) +
+    geom_tiplab(size = 2, hjust = -0.1) +
     theme_tree2() +
     labs(title = "Sample clustering to detect outliers", subtitle = "", x = "", y = "")
   ggsave(file.path(outpath, "sample_outliers.pdf"), dpi = 300)
@@ -180,14 +178,14 @@ filter_edgeR <- function(
     pca_plot <- ggbiplot(pca, groups = colData(dds)[, group], ellipse = TRUE, var.axes = FALSE)
   }
   pca_plot <- pca_plot +
-    theme(legend.direction = 'horizontal', legend.position = 'top') +
+    theme(legend.direction = "horizontal", legend.position = "top") +
     geom_text_repel(aes(label = rownames(counts)), size = 4, vjust = -1, max.overlaps = log10(length(colnames(dds)))) +
     theme_classic2() +
     labs(title = "PCA Plot")
   ggsave(file.path(outpath, "pca_plot.pdf"), pca_plot, dpi = 300)
 
   message("Saving dds object")
-  saveRDS(dds, file = file.path(outpath,"dds.rds"))
+  saveRDS(dds, file = file.path(outpath, "dds.rds"))
 
   save_se(dds, outpath, normalize = "none")
   save_se(dds, outpath, normalize = "vst")
@@ -203,7 +201,6 @@ filter_edgeR <- function(
 #' @return DESeq2 object after detecting WBC contamination
 #' @export
 detect_wbc <- function(dds, outpath, group = NULL, normalize = "vst") {
-
   dir.create(outpath, showWarnings = FALSE, recursive = TRUE)
 
   dds_before <- dds
@@ -215,10 +212,10 @@ detect_wbc <- function(dds, outpath, group = NULL, normalize = "vst") {
     stop("Genes PTPRC and ITGA2B not found in counts")
   }
 
-  ratio <- counts['PTPRC',] / counts['ITGA2B',]
+  ratio <- counts["PTPRC", ] / counts["ITGA2B", ]
 
   tryCatch(
-    grouping <- colData(dds)[,group],
+    grouping <- colData(dds)[, group],
     error = function(e) {
       message("No group specified or group does not exist")
       grouping <- ratio > 1
@@ -229,15 +226,15 @@ detect_wbc <- function(dds, outpath, group = NULL, normalize = "vst") {
   plotting_df <- data.frame(IDs, ratio, grouping)
 
   plot <- ggplot(data.frame(ratio), aes(x = IDs, y = ratio, col = grouping)) +
-      geom_point() +
-      theme_matt(18) +
-      labs(title = "WBC Contamination", x = "PTPRC/ITGA2B", y = "Count") +
-      theme(axis.text.x = element_blank(), axis.ticks.x = element_blank()) +
-      geom_text_repel(label = IDs, size = 5, show.legend = FALSE)
+    geom_point() +
+    theme_matt(18) +
+    labs(title = "WBC Contamination", x = "PTPRC/ITGA2B", y = "Count") +
+    theme(axis.text.x = element_blank(), axis.ticks.x = element_blank()) +
+    geom_text_repel(label = IDs, size = 5, show.legend = FALSE)
 
   ggsave(file.path(outpath, "wbc_contamination.pdf"), plot)
   write.csv(plotting_df, file.path(outpath, "wbc_contamination.csv"))
-  saveRDS(dds, file.path(outpath,"dds.rds"))
+  saveRDS(dds, file.path(outpath, "dds.rds"))
 
   return(dds)
 }

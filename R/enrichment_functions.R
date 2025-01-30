@@ -21,7 +21,7 @@ NULL
 # source("https://raw.githubusercontent.com/mattmuller0/Rtools/main/plotting_functions.R")
 # source("https://raw.githubusercontent.com/mattmuller0/Rtools/main/converting_functions.R")
 
-#======================== CODE ========================#
+# ======================== CODE ========================#
 
 #' Create a sorted fold change vector from results
 #'
@@ -34,19 +34,16 @@ NULL
 #' @param names Character string specifying the column to use for names. If NULL, uses rownames
 #'
 #' @return Named numeric vector of sorted fold changes
-#' 
+#'
 #' @importFrom dplyr select
 #' @importFrom rlang sym !!
 #' @export
 get_fc_list <- function(res, fc_col = "log2FoldChange", names = NULL) {
   # Input validation
-  if (!is.data.frame(res)) {
-    stop("'res' must be a data frame")
-  }
   if (!fc_col %in% colnames(res)) {
     stop(sprintf("Column '%s' not found in input data frame", fc_col))
   }
-  
+
   # Handle names
   if (is.null(names)) {
     if (length(rownames(res)) == 0) {
@@ -65,12 +62,12 @@ get_fc_list <- function(res, fc_col = "log2FoldChange", names = NULL) {
     unlist() %>%
     stats::setNames(res[[names]]) %>%
     sort(decreasing = TRUE)
-  
+
   # Validate output
   if (any(is.na(fc))) {
     warning("NA values present in fold changes")
   }
-  
+
   return(fc)
 }
 
@@ -86,25 +83,26 @@ get_fc_list <- function(res, fc_col = "log2FoldChange", names = NULL) {
 #' @return Enrichment results.
 #' @export
 rna_enrichment <- function(
-  geneList, outpath, 
-  keyType = NULL, enricher_function = NULL, 
-  image_type = "pdf", ontology = "ALL", 
-  terms2plot = c("inflam", "immune", "plat"), 
-  ...
-  ) {
+    geneList, outpath,
+    keyType = NULL, enricher_function = NULL,
+    image_type = "pdf", ontology = "ALL",
+    terms2plot = c("inflam", "immune", "plat"),
+    ...) {
   require(SummarizedExperiment)
   require(clusterProfiler)
   require(org.Hs.eg.db)
   require(AnnotationDbi)
   require(enrichplot)
 
-  if (is.null(keyType)) {keyType <- detect_gene_id_type(names(geneList), strip = TRUE)}
+  if (is.null(keyType)) {
+    keyType <- detect_gene_id_type(names(geneList), strip = TRUE)
+  }
 
   dir.create(outpath, showWarnings = FALSE, recursive = TRUE)
 
   if (is.null(enricher_function)) {
-  message("No enrichment function specified, defaulting to gseGO")
-  enricher_function <- gseGO
+    message("No enrichment function specified, defaulting to gseGO")
+    enricher_function <- gseGO
   }
 
   gse <- do.call(enricher_function, list(geneList, org.Hs.eg.db, keyType = keyType, ont = ontology, pvalueCutoff = Inf, ...))
@@ -129,92 +127,116 @@ save_gse <- function(gse, outpath, ...) {
   write.csv(filter(gse@result, qvalue < 0.1), file.path(outpath, "enrichment_results_sig.csv"), quote = TRUE, row.names = FALSE)
   saveRDS(gse, file.path(outpath, "enrichment_results.rds"))
 
-  tryCatch({
-  gseDot <- enrichplot::dotplot(gse, showCategory = 20) + ggtitle("Enrichment Dotplot")
-  ggsave(file.path(outpath, paste0("dotplot.pdf")), gseDot, ...)
-  }, error = function(e) {
-  warning("Dotplot GSEA Plots Failed")
-  })
+  tryCatch(
+    {
+      gseDot <- enrichplot::dotplot(gse, showCategory = 20) + ggtitle("Enrichment Dotplot")
+      ggsave(file.path(outpath, paste0("dotplot.pdf")), gseDot, ...)
+    },
+    error = function(e) {
+      warning("Dotplot GSEA Plots Failed")
+    }
+  )
 
-  tryCatch({
-  cnet <- cnetplot(gse, node_label="category", cex_label_gene = 0.8)
-  ggsave(file.path(outpath, paste0("cnetplot.pdf")), cnet, ...)
-  }, error = function(e) {
-  warning("Cnetplot GSEA Plots Failed")
-  })
+  tryCatch(
+    {
+      cnet <- cnetplot(gse, node_label = "category", cex_label_gene = 0.8)
+      ggsave(file.path(outpath, paste0("cnetplot.pdf")), cnet, ...)
+    },
+    error = function(e) {
+      warning("Cnetplot GSEA Plots Failed")
+    }
+  )
 
-  tryCatch({
-  gse_bar <- gse %>%
-    as.data.frame() %>%
-    group_by(sign(NES)) %>%
-    arrange(qvalue) %>%
-    slice(1:10) %>%
-    mutate(
-    Description = gsub("^(REACTOME_|GO_|HALLMARK_)", "", Description),
-    Description = gsub("_", " ", Description),
-    Description = factor(stringr::str_wrap(Description, 40))
-    )
+  tryCatch(
+    {
+      gse_bar <- gse %>%
+        as.data.frame() %>%
+        group_by(sign(NES)) %>%
+        arrange(qvalue) %>%
+        slice(1:10) %>%
+        mutate(
+          Description = gsub("^(REACTOME_|GO_|HALLMARK_)", "", Description),
+          Description = gsub("_", " ", Description),
+          Description = factor(stringr::str_wrap(Description, 40))
+        )
 
-  gseBar <- ggplot(gse_bar, aes(NES, fct_reorder(Description, NES), fill=qvalue)) +
-    geom_col(orientation = "y") +
-    scale_fill_continuous(low="red", high="blue", guide=guide_colorbar(reverse=TRUE)) +
-    labs(title="Enrichment Barplot", y = NULL) +
-    theme_classic2()
-  ggsave(file.path(outpath, paste0("barplot_all.pdf")), gseBar, ...)
-  }, error = function(e) {
-  warning("GSEA Barplot Failed")
-  })
+      gseBar <- ggplot(gse_bar, aes(NES, fct_reorder(Description, NES), fill = qvalue)) +
+        geom_col(orientation = "y") +
+        scale_fill_continuous(low = "red", high = "blue", guide = guide_colorbar(reverse = TRUE)) +
+        labs(title = "Enrichment Barplot", y = NULL) +
+        theme_classic2()
+      ggsave(file.path(outpath, paste0("barplot_all.pdf")), gseBar, ...)
+    },
+    error = function(e) {
+      warning("GSEA Barplot Failed")
+    }
+  )
 
-  tryCatch({
-  gse_bar_bp <- gse %>%
-    as.data.frame() %>%
-    filter(ONTOLOGY == "BP") %>%
-    group_by(sign(NES)) %>%
-    arrange(qvalue) %>%
-    slice(1:10) %>%
-    mutate(
-    Description = gsub("^(REACTOME_|GO_|HALLMARK_)", "", Description),
-    Description = gsub("_", " ", Description),
-    Description = factor(stringr::str_wrap(Description, 40))
-    )
+  tryCatch(
+    {
+      gse_bar_bp <- gse %>%
+        as.data.frame() %>%
+        filter(ONTOLOGY == "BP") %>%
+        group_by(sign(NES)) %>%
+        arrange(qvalue) %>%
+        slice(1:10) %>%
+        mutate(
+          Description = gsub("^(REACTOME_|GO_|HALLMARK_)", "", Description),
+          Description = gsub("_", " ", Description),
+          Description = factor(stringr::str_wrap(Description, 40))
+        )
 
-  gseBar_bp <- ggplot(gse_bar_bp, aes(NES , fct_reorder(Description, NES), fill=qvalue)) +
-    geom_col(orientation = "y") +
-    scale_fill_continuous(low="red", high="blue", guide=guide_colorbar(reverse=TRUE)) +
-    labs(title="Enrichment Barplot", y = NULL) +
-    theme_classic2()
-  ggsave(file.path(outpath, paste0("barplot_BP.pdf")), gseBar_bp, ...)
-  }, error = function(e) {
-  warning("GSEA Barplot BP Failed")
-  })
+      gseBar_bp <- ggplot(gse_bar_bp, aes(NES, fct_reorder(Description, NES), fill = qvalue)) +
+        geom_col(orientation = "y") +
+        scale_fill_continuous(low = "red", high = "blue", guide = guide_colorbar(reverse = TRUE)) +
+        labs(title = "Enrichment Barplot", y = NULL) +
+        theme_classic2()
+      ggsave(file.path(outpath, paste0("barplot_BP.pdf")), gseBar_bp, ...)
+    },
+    error = function(e) {
+      warning("GSEA Barplot BP Failed")
+    }
+  )
 
-  tryCatch({
-  cnet <- cnetplot(gse, node_label="category", cex_label_gene = 0.8)
-  ggsave(file.path(outpath, paste0("cnetplot.pdf")), cnet, ...)
-  }, error = function(e) {
-  warning("Cnetplot GSEA Plots Failed")
-  })
+  tryCatch(
+    {
+      cnet <- cnetplot(gse, node_label = "category", cex_label_gene = 0.8)
+      ggsave(file.path(outpath, paste0("cnetplot.pdf")), cnet, ...)
+    },
+    error = function(e) {
+      warning("Cnetplot GSEA Plots Failed")
+    }
+  )
 
-  tryCatch({
-  p_terms <- plot_enrichment_terms(gse, terms2plot = c("inflam", "plat", "coag"), max_terms = 12)
-  ggsave(file.path(outpath, paste0("barplot_terms.pdf")), p_terms, ...)
-  }, error = function(e) {
-  warning("GSEA Term Specific Barplot Failed")
-  })
+  tryCatch(
+    {
+      p_terms <- plot_enrichment_terms(gse, terms2plot = c("inflam", "plat", "coag"), max_terms = 12)
+      ggsave(file.path(outpath, paste0("barplot_terms.pdf")), p_terms, ...)
+    },
+    error = function(e) {
+      warning("GSEA Term Specific Barplot Failed")
+    }
+  )
 
-  tryCatch({
-  p_ridge <- ridgeplot(gse, showCategory = 15)
-  ggsave(file.path(outpath, paste0("ridgeplot.pdf")), p_ridge, ...)
-  }, error = function(e) {
-  warning("RidgePlot GSEA Failed")
-  })
+  tryCatch(
+    {
+      p_ridge <- ridgeplot(gse, showCategory = 15)
+      ggsave(file.path(outpath, paste0("ridgeplot.pdf")), p_ridge, ...)
+    },
+    error = function(e) {
+      warning("RidgePlot GSEA Failed")
+    }
+  )
 
-  tryCatch({
-  p_heat <- heatplot(gse, showCategory = 10)
-  ggsave(file.path(outpath, paste0("heatplot.pdf")), p_heat, ...)
-  }, error = function(e) {
-  warning("Heatplot GSEA Failed")
-  })
+  tryCatch(
+    {
+      p_heat <- heatplot(gse, showCategory = 10)
+      ggsave(file.path(outpath, paste0("heatplot.pdf")), p_heat, ...)
+    },
+    error = function(e) {
+      warning("Heatplot GSEA Failed")
+    }
+  )
 }
 
 #' Run a GSEA analysis
@@ -227,11 +249,10 @@ save_gse <- function(gse, outpath, ...) {
 #' @return Enrichment results for each level of column of interest.
 #' @export
 gsea_analysis <- function(
-  geneList, outpath, 
-  keyType = NULL,
-  msigdb_category = "H",
-  ontology = "ALL"
-  ) {
+    geneList, outpath,
+    keyType = NULL,
+    msigdb_category = "H",
+    ontology = "ALL") {
   require(SummarizedExperiment)
   require(clusterProfiler)
   require(org.Hs.eg.db)
@@ -241,39 +262,41 @@ gsea_analysis <- function(
   require(ggplot2)
   require(msigdbr)
 
-  if (is.null(keyType)) {keyType <- detect_gene_id_type(names(geneList), strip = TRUE)}
+  if (is.null(keyType)) {
+    keyType <- detect_gene_id_type(names(geneList), strip = TRUE)
+  }
 
   dir.create(outpath, showWarnings = FALSE, recursive = TRUE)
 
   msigdb <- msigdbr(species = "Homo sapiens")
-  gse_go <- gseGO(geneList, org.Hs.eg.db, keyType = keyType, ont = ontology, pvalueCutoff = Inf)
+  gse_go <- gseGO(geneList = geneList, OrgDb = org.Hs.eg.db, keyType = keyType, ont = ontology, pvalueCutoff = Inf)
 
   H_t2g <- msigdb %>%
-  filter(gs_cat == "H") %>%
-  dplyr::select(gs_name, gene_symbol)
+    filter(gs_cat == "H") %>%
+    dplyr::select(gs_name, gene_symbol)
   gse_h <- GSEA(geneList, TERM2GENE = H_t2g, pvalueCutoff = Inf)
 
   reactome_t2g <- msigdb %>%
-  filter(gs_cat == "C2" & gs_subcat == "CP:REACTOME") %>%
-  dplyr::select(gs_name, gene_symbol)
+    filter(gs_cat == "C2" & gs_subcat == "CP:REACTOME") %>%
+    dplyr::select(gs_name, gene_symbol)
   gse_reactome <- GSEA(geneList, TERM2GENE = reactome_t2g, pvalueCutoff = Inf)
 
   kegg_t2g <- msigdb %>%
-  filter(gs_cat == "C2" & gs_subcat == "CP:KEGG") %>%
-  dplyr::select(gs_name, gene_symbol)
+    filter(gs_cat == "C2" & gs_subcat == "CP:KEGG") %>%
+    dplyr::select(gs_name, gene_symbol)
   gse_kegg <- GSEA(geneList, TERM2GENE = kegg_t2g, pvalueCutoff = Inf)
-  
+
   gse_list <- list(
-  GO = gse_go,
-  H = gse_h,
-  REACTOME = gse_reactome,
-  KEGG = gse_kegg
+    GO = gse_go,
+    H = gse_h,
+    REACTOME = gse_reactome,
+    KEGG = gse_kegg
   )
 
   for (idx in seq_along(gse_list)) {
-  gse <- gse_list[[idx]]
-  name <- names(gse_list)[idx]
-  save_gse(gse, file.path(outpath, name))
+    gse <- gse_list[[idx]]
+    name <- names(gse_list)[idx]
+    save_gse(gse, file.path(outpath, name))
   }
   return(gse_list)
 }
@@ -288,54 +311,57 @@ gsea_analysis <- function(
 #' @return Overrepresentation analysis results.
 #' @export
 stratified_ora <- function(
-  gene_dataframe,
-  outpath,
-  method = "enrichGO",
-  padj_cutoff = 0.05,
-  max_pathways = 5,
-  ...
-  ) {
+    gene_dataframe,
+    outpath,
+    method = "enrichGO",
+    padj_cutoff = 0.05,
+    max_pathways = 5,
+    ...) {
   require(clusterProfiler)
   require(org.Hs.eg.db)
 
-  up_genes <- gene_dataframe %>% filter(direction == "up") %>% pull(features)
-  down_genes <- gene_dataframe %>% filter(direction == "down") %>% pull(features)
+  up_genes <- gene_dataframe %>%
+    filter(direction == "up") %>%
+    pull(features)
+  down_genes <- gene_dataframe %>%
+    filter(direction == "down") %>%
+    pull(features)
 
   methods <- c("enrichGO", "groupGO")
   if (!(method %in% methods)) {
-  stop("Method not supported. Please use one of: ", paste(methods, collapse = ", "))
+    stop("Method not supported. Please use one of: ", paste(methods, collapse = ", "))
   }
 
   enr_fn <- switch(method,
-  "enrichGO" = function(x) enrichGO(x, org.Hs.eg.db, pvalueCutoff = Inf, ...),
-  "groupGO" = function(x) groupGO(x, org.Hs.eg.db, pvalueCutoff = Inf, ...)
+    "enrichGO" = function(x) enrichGO(x, org.Hs.eg.db, pvalueCutoff = Inf, ...),
+    "groupGO" = function(x) groupGO(x, org.Hs.eg.db, pvalueCutoff = Inf, ...)
   )
   dir.create(outpath, showWarnings = FALSE, recursive = TRUE)
 
   out <- purrr::map_dfr(
-  c("up", "down"), ~{
-    enr <- if (.x == "up") enr_fn(up_genes) else enr_fn(down_genes)
-    print(enr)
+    c("up", "down"), ~ {
+      enr <- if (.x == "up") enr_fn(up_genes) else enr_fn(down_genes)
+      print(enr)
 
-    if (is.null(enr)) {
-    message("No results found for ", .x)
-    return(NULL)
+      if (is.null(enr)) {
+        message("No results found for ", .x)
+        return(NULL)
+      }
+      save_gse(enr, file.path(outpath, .x))
+
+      enr@result %>%
+        filter(p.adjust < padj_cutoff) %>%
+        arrange(p.adjust) %>%
+        slice(1:max_pathways) %>%
+        mutate(direction = .x)
     }
-    save_gse(enr, file.path(outpath, .x))
-
-    enr@result %>% 
-    filter(p.adjust < padj_cutoff) %>%
-    arrange(p.adjust) %>%
-    slice(1:max_pathways) %>%
-    mutate(direction = .x)
-  }
   )
   write.csv(out, file.path(outpath, "ora_results.csv"), quote = TRUE, row.names = FALSE)
   out$signed <- ifelse(out$direction == "up", -log10(out$p.adjust), log10(out$p.adjust))
   p <- ggplot(out, aes(x = signed, y = fct_reorder(stringr::str_wrap(Description, 40), signed), fill = direction)) +
-  geom_col() +
-  labs(title = "ORA Results", x = "Signed -log10(padj)", y = NULL) +
-  theme_classic2()
+    geom_col() +
+    labs(title = "ORA Results", x = "Signed -log10(padj)", y = NULL) +
+    theme_classic2()
   ggplot2::ggsave(file.path(outpath, "ora_results.pdf"), p)
 
   return(out)
@@ -351,46 +377,49 @@ stratified_ora <- function(
 #' @return Enrichment results for each database.
 #' @export
 stratified_enrichr <- function(
-  gene_dataframe,
-  outpath,
-  dbs = c("GO_Biological_Process_2023", "GO_Cellular_Component_2023", "GO_Molecular_Function_2023", "WikiPathway_2023_Human", "GWAS_Catalog_2023", "Reactome_2022", "MSigDB Hallmark 2020"),
-  padj_cutoff = 0.05,
-  max_pathways = 5,
-  ...
-  ) {
+    gene_dataframe,
+    outpath,
+    dbs = c("GO_Biological_Process_2023", "GO_Cellular_Component_2023", "GO_Molecular_Function_2023", "WikiPathway_2023_Human", "GWAS_Catalog_2023", "Reactome_2022", "MSigDB Hallmark 2020"),
+    padj_cutoff = 0.05,
+    max_pathways = 5,
+    ...) {
   require(clusterProfiler)
   require(enrichR)
   require(org.Hs.eg.db)
 
-  up_genes <- gene_dataframe %>% filter(direction == "up") %>% pull(features)
-  down_genes <- gene_dataframe %>% filter(direction == "down") %>% pull(features)
+  up_genes <- gene_dataframe %>%
+    filter(direction == "up") %>%
+    pull(features)
+  down_genes <- gene_dataframe %>%
+    filter(direction == "down") %>%
+    pull(features)
   dir.create(outpath, showWarnings = FALSE, recursive = TRUE)
 
-  out_dbs <- purrr::map(dbs, ~{
-  dir.create(file.path(outpath, .x), showWarnings = FALSE, recursive = TRUE)
-  enr_up <- enrichr(up_genes, .x)[[.x]] %>% mutate(direction = "up")
-  enr_down <- enrichr(down_genes, .x)[[.x]] %>% mutate(direction = "down")
-  enr <- bind_rows(enr_up, enr_down)
-  if (nrow(enr) == 0) {
-    message("No results found for ", .x)
-    return(NULL)
-  }
-  write.csv(enr, file.path(outpath, .x, "enrichr_results.csv"), quote = TRUE, row.names = FALSE)
+  out_dbs <- purrr::map(dbs, ~ {
+    dir.create(file.path(outpath, .x), showWarnings = FALSE, recursive = TRUE)
+    enr_up <- enrichr(up_genes, .x)[[.x]] %>% mutate(direction = "up")
+    enr_down <- enrichr(down_genes, .x)[[.x]] %>% mutate(direction = "down")
+    enr <- bind_rows(enr_up, enr_down)
+    if (nrow(enr) == 0) {
+      message("No results found for ", .x)
+      return(NULL)
+    }
+    write.csv(enr, file.path(outpath, .x, "enrichr_results.csv"), quote = TRUE, row.names = FALSE)
 
-  sign_enr <- enr %>% 
-    group_by(direction) %>%
-    filter(Adjusted.P.value < padj_cutoff) %>%
-    arrange(Adjusted.P.value) %>%
-    slice(1:max_pathways) %>%
-    mutate(signed = ifelse(direction == "up", -log10(Adjusted.P.value), log10(Adjusted.P.value)))
-  write.csv(sign_enr, file.path(outpath, .x, "enrichr_results_sig.csv"), quote = TRUE, row.names = FALSE)
+    sign_enr <- enr %>%
+      group_by(direction) %>%
+      filter(Adjusted.P.value < padj_cutoff) %>%
+      arrange(Adjusted.P.value) %>%
+      slice(1:max_pathways) %>%
+      mutate(signed = ifelse(direction == "up", -log10(Adjusted.P.value), log10(Adjusted.P.value)))
+    write.csv(sign_enr, file.path(outpath, .x, "enrichr_results_sig.csv"), quote = TRUE, row.names = FALSE)
 
-  p <- ggplot(sign_enr, aes(x = signed, y = fct_reorder(stringr::str_wrap(Term, 40), signed), fill = direction)) +
-    geom_col() +
-    labs(title = "ORA Results", x = "Signed -log10(padj)", y = NULL) +
-    theme_classic2()
-  ggplot2::ggsave(file.path(outpath, .x, "enrichr_results.pdf"), p)
-  sign_enr
+    p <- ggplot(sign_enr, aes(x = signed, y = fct_reorder(stringr::str_wrap(Term, 40), signed), fill = direction)) +
+      geom_col() +
+      labs(title = "ORA Results", x = "Signed -log10(padj)", y = NULL) +
+      theme_classic2()
+    ggplot2::ggsave(file.path(outpath, .x, "enrichr_results.pdf"), p)
+    sign_enr
   })
   names(out_dbs) <- dbs
 

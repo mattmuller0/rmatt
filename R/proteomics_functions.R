@@ -12,7 +12,7 @@
 #' @importFrom tibble column_to_rownames
 NULL
 
-#======================== CODE ========================#
+# ======================== CODE ========================#
 
 #' Get Olink sample info
 #' @description Get sample IDs, plates, proteins, and panels from Olink data
@@ -47,13 +47,17 @@ olink_info <- function(data) {
 olink_pca_outliers <- function(data, outdir, outlierDefX = 2.5, outlierDefY = 4, byPanel = TRUE, ...) {
     dir.create(outdir, showWarnings = FALSE)
     pca <- OlinkAnalyze::olink_pca_plot(data, outlierDefX = outlierDefX, outlierDefY = outlierDefY, byPanel = byPanel, ...)
-    lapply(names(pca), function(x) {ggplot2::ggsave(glue::glue('{outdir}/{x}_pca.pdf'), pca[[x]])})
+    lapply(names(pca), function(x) {
+        ggplot2::ggsave(glue::glue("{outdir}/{x}_pca.pdf"), pca[[x]])
+    })
 
-    outliers <- lapply(pca, function(x) {x$data}) %>%
+    outliers <- lapply(pca, function(x) {
+        x$data
+    }) %>%
         dplyr::bind_rows() %>%
-        dplyr::filter(Outlier == 1) %>% 
+        dplyr::filter(Outlier == 1) %>%
         dplyr::select(SampleID, Outlier, Panel)
-    utils::write.csv(outliers, glue::glue('{outdir}/pca_outliers.csv'), row.names = FALSE)
+    utils::write.csv(outliers, glue::glue("{outdir}/pca_outliers.csv"), row.names = FALSE)
 
     out <- list(pca = pca, outliers = outliers)
     return(out)
@@ -72,13 +76,17 @@ olink_pca_outliers <- function(data, outdir, outlierDefX = 2.5, outlierDefY = 4,
 olink_umap_outliers <- function(data, outdir, outlierDefX = 2.5, outlierDefY = 4, byPanel = TRUE, ...) {
     dir.create(outdir, showWarnings = FALSE)
     umap <- OlinkAnalyze::olink_umap_plot(data, outlierDefX = outlierDefX, outlierDefY = outlierDefY, byPanel = byPanel, ...)
-    lapply(names(umap), function(x) {ggplot2::ggsave(glue::glue('{outdir}/{x}_umap.pdf'), umap[[x]])})
+    lapply(names(umap), function(x) {
+        ggplot2::ggsave(glue::glue("{outdir}/{x}_umap.pdf"), umap[[x]])
+    })
 
-    outliers <- lapply(umap, function(x) {x$data}) %>%
+    outliers <- lapply(umap, function(x) {
+        x$data
+    }) %>%
         dplyr::bind_rows() %>%
-        dplyr::filter(Outlier == 1) %>% 
+        dplyr::filter(Outlier == 1) %>%
         dplyr::select(SampleID, Outlier, Panel)
-    utils::write.csv(outliers, glue::glue('{outdir}/umap_outliers.csv'), row.names = FALSE)
+    utils::write.csv(outliers, glue::glue("{outdir}/umap_outliers.csv"), row.names = FALSE)
 
     out <- list(umap = umap, outliers = outliers)
     return(out)
@@ -94,15 +102,15 @@ olink_umap_outliers <- function(data, outdir, outlierDefX = 2.5, outlierDefY = 4
 olink_lod_qc <- function(data, outdir, plot = TRUE) {
     dir.create(outdir, showWarnings = FALSE)
     lod <- data %>% dplyr::mutate(LOD_QC = NPX > LOD)
-    utils::write.csv(lod, glue::glue('{outdir}/lod_qc.csv'), row.names = FALSE)
-    
+    utils::write.csv(lod, glue::glue("{outdir}/lod_qc.csv"), row.names = FALSE)
+
     if (plot) {
         p <- ggplot2::ggplot(lod, ggplot2::aes(x = NPX, fill = LOD_QC)) +
             ggplot2::geom_histogram(bins = 100) +
-            ggplot2::facet_wrap(~Assay, scales = 'free') +
+            ggplot2::facet_wrap(~Assay, scales = "free") +
             ggplot2::theme_bw() +
-            ggplot2::theme(legend.position = 'bottom')
-        ggplot2::ggsave(glue::glue('{outdir}/npx_hist.pdf'), p, width = 45, height = 25)
+            ggplot2::theme(legend.position = "bottom")
+        ggplot2::ggsave(glue::glue("{outdir}/npx_hist.pdf"), p, width = 45, height = 25)
     }
 
     outliers <- lod %>% dplyr::filter(MissingFreq > 0.25)
@@ -119,7 +127,7 @@ olink_lod_qc <- function(data, outdir, plot = TRUE) {
 #' @param value Value column
 #' @return Count table
 #' @export
-olink_count_table <- function(data, sampleID = 'SampleID', assay = 'Assay', value = 'NPX') {
+olink_count_table <- function(data, sampleID = "SampleID", assay = "Assay", value = "NPX") {
     count_table <- data %>%
         dplyr::select(sampleID, assay, value) %>%
         tidyr::pivot_wider(names_from = assay, values_from = value) %>%
@@ -138,41 +146,48 @@ olink_count_table <- function(data, sampleID = 'SampleID', assay = 'Assay', valu
 #' @export
 olink_filtering <- function(data, outdir, pca_args = list(), umap_args = list(), lod_args = list()) {
     dir.create(outdir, showWarnings = FALSE)
-    message('Getting sample info')
+    message("Getting sample info")
     sample_info <- do.call(olink_info, list(data))
     writeLines(glue::glue("{names(sample_info)}: {sample_info}\n"), file.path(outdir, "sampleIDs.txt"))
 
-    message('Running PCA')
-    pca_outliers <- do.call(olink_pca_outliers, c(list(data = data, outdir = file.path(outdir, 'pca')), pca_args))
-    saveRDS(pca_outliers, glue::glue('{outdir}/pca/pca_outliers.rds'))
+    message("Running PCA")
+    pca_outliers <- do.call(olink_pca_outliers, c(list(data = data, outdir = file.path(outdir, "pca")), pca_args))
+    saveRDS(pca_outliers, glue::glue("{outdir}/pca/pca_outliers.rds"))
 
-    message('Running UMAP')
-    umap_outliers <- do.call(olink_umap_outliers, c(list(data = data, outdir = file.path(outdir, 'umap')), umap_args))
-    saveRDS(umap_outliers, glue::glue('{outdir}/umap/umap_outliers.rds'))
+    message("Running UMAP")
+    umap_outliers <- do.call(olink_umap_outliers, c(list(data = data, outdir = file.path(outdir, "umap")), umap_args))
+    saveRDS(umap_outliers, glue::glue("{outdir}/umap/umap_outliers.rds"))
 
-    message('Running LOD')
-    lod_qc <- do.call(olink_lod_qc, c(list(data = data, outdir = file.path(outdir, 'lod')), lod_args))
-    saveRDS(lod_qc, glue::glue('{outdir}/lod/lod_qc.rds'))
+    message("Running LOD")
+    lod_qc <- do.call(olink_lod_qc, c(list(data = data, outdir = file.path(outdir, "lod")), lod_args))
+    saveRDS(lod_qc, glue::glue("{outdir}/lod/lod_qc.rds"))
 
-    message('Getting outliers')
-    qc_outliers <- data %>% dplyr::filter(QC_Warning == "WARN") %>% dplyr::pull(SampleID) %>% unique()
+    message("Getting outliers")
+    qc_outliers <- data %>%
+        dplyr::filter(QC_Warning == "WARN") %>%
+        dplyr::pull(SampleID) %>%
+        unique()
     pca_outliers <- pca_outliers$outliers %>% dplyr::pull(SampleID)
-    umap_outliers <- umap_outliers$outliers %>% dplyr::filter(Outlier == 1) %>% dplyr::pull(SampleID)
+    umap_outliers <- umap_outliers$outliers %>%
+        dplyr::filter(Outlier == 1) %>%
+        dplyr::pull(SampleID)
     outliers <- unique(c(qc_outliers, pca_outliers, umap_outliers))
-    utils::write.csv(outliers, glue::glue('{outdir}/sample_outliers.csv'), row.names = FALSE)
+    utils::write.csv(outliers, glue::glue("{outdir}/sample_outliers.csv"), row.names = FALSE)
 
-    message('Getting proteins below the LOD')
-    lod_outliers <- lod_qc$outliers %>% dplyr::pull(Assay) %>% unique()
-    utils::write.csv(lod_outliers, glue::glue('{outdir}/protein_outliers.csv'), row.names = FALSE)
+    message("Getting proteins below the LOD")
+    lod_outliers <- lod_qc$outliers %>%
+        dplyr::pull(Assay) %>%
+        unique()
+    utils::write.csv(lod_outliers, glue::glue("{outdir}/protein_outliers.csv"), row.names = FALSE)
 
     data <- data %>% dplyr::filter(!grepl(paste(outliers, collapse = "|"), SampleID))
     data <- data %>% dplyr::filter(!grepl(paste(lod_outliers, collapse = "|"), Assay))
-    utils::write.csv(data, glue::glue('{outdir}/npx_data.csv'), row.names = FALSE)
+    utils::write.csv(data, glue::glue("{outdir}/npx_data.csv"), row.names = FALSE)
 
     count_table <- olink_count_table(data)
-    utils::write.csv(count_table, glue::glue('{outdir}/count_table.csv'))
+    utils::write.csv(count_table, glue::glue("{outdir}/count_table.csv"))
 
-    message('Done filtering')
+    message("Done filtering")
     out <- list(data = data, count_table = count_table, outliers = outliers, lod_outliers = lod_outliers)
 
     return(out)
@@ -191,19 +206,18 @@ olink_filtering <- function(data, outdir, pca_args = list(), umap_args = list(),
 #' @return List of differential expression and pathway analysis results
 #' @export
 olink_analysis <- function(
-    data, 
-    conditions, 
-    outdir, 
-    de_fxn = OlinkAnalyze::olink_wilcox, 
+    data,
+    conditions,
+    outdir,
+    de_fxn = OlinkAnalyze::olink_wilcox,
     gsea_fxn = OlinkAnalyze::olink_pathway_enrichment,
     de_args = list(),
     volcano_args = list(),
-    gsea_args = list()
-) {
+    gsea_args = list()) {
     dir.create(outdir, showWarnings = FALSE)
-    
+
     if (!all(conditions %in% colnames(data))) {
-        stop('Conditions not in data')
+        stop("Conditions not in data")
     }
 
     de_res <- list()
@@ -211,31 +225,31 @@ olink_analysis <- function(
     res <- list()
     message("Looping over: ", paste0(conditions, collapse = ", "))
     for (condition in conditions) {
-        dir.create(glue::glue('{outdir}/{condition}'), showWarnings = FALSE)
-        message('Running differential expression')
+        dir.create(glue::glue("{outdir}/{condition}"), showWarnings = FALSE)
+        message("Running differential expression")
         de <- do.call(de_fxn, c(list(data, condition), de_args))
         p <- do.call(OlinkAnalyze::olink_volcano_plot, list(de))
-        ggplot2::ggsave(glue::glue('{outdir}/{condition}/volcano.pdf'), p, width = 6, height = 6)
-        utils::write.csv(de, glue::glue('{outdir}/{condition}/de_results.csv'), row.names = FALSE)
+        ggplot2::ggsave(glue::glue("{outdir}/{condition}/volcano.pdf"), p, width = 6, height = 6)
+        utils::write.csv(de, glue::glue("{outdir}/{condition}/de_results.csv"), row.names = FALSE)
         de_res[[condition]] <- de
         r <- summarize_experiment(de, logFC_column = "estimate", pvalue_column = "p.value", padj_column = "Adjusted_pval")
         r$condition <- condition
         res[[condition]] <- r
 
-        message('Running pathway analysis')
+        message("Running pathway analysis")
         gsea <- do.call(gsea_fxn, c(list(data, de), gsea_args))
-        utils::write.csv(gsea, glue::glue('{outdir}/{condition}/gsea_results.csv'), row.names = FALSE)
+        utils::write.csv(gsea, glue::glue("{outdir}/{condition}/gsea_results.csv"), row.names = FALSE)
         p <- do.call(OlinkAnalyze::olink_pathway_visualization, list(gsea))
-        ggplot2::ggsave(glue::glue('{outdir}/{condition}/gsea.pdf'), p, width = 12, height = 8)
+        ggplot2::ggsave(glue::glue("{outdir}/{condition}/gsea.pdf"), p, width = 12, height = 8)
         p <- do.call(OlinkAnalyze::olink_pathway_heatmap, list(gsea, de))
-        ggplot2::ggsave(glue::glue('{outdir}/{condition}/gsea_heatmap.pdf'), p, width = 12, height = 8)
+        ggplot2::ggsave(glue::glue("{outdir}/{condition}/gsea_heatmap.pdf"), p, width = 12, height = 8)
         gsea_res[[condition]] <- gsea
     }
 
     res <- do.call(rbind, res)
-    utils::write.csv(res, glue::glue('{outdir}/experiment_summary.csv'), row.names = FALSE)
+    utils::write.csv(res, glue::glue("{outdir}/experiment_summary.csv"), row.names = FALSE)
 
-    message('Done with analysis')
+    message("Done with analysis")
     out <- list(de = de_res, gsea = gsea_res)
     return(out)
 }
@@ -259,14 +273,14 @@ olink_odds_ratios <- function(data, proteins, events, adjustments = NULL) {
                         dplyr::select(protein, event, dplyr::any_of(adjustments)) %>%
                         tidyr::drop_na()
                     if (is.null(adjustments)) {
-                        form <- paste0(event, ' ~ ', protein)
+                        form <- paste0(event, " ~ ", protein)
                     } else {
-                        form <- paste0(event, ' ~ ', protein, ' + ', paste(adjustments, collapse = ' + '))
+                        form <- paste0(event, " ~ ", protein, " + ", paste(adjustments, collapse = " + "))
                     }
                     odds_ratio <- stats::glm(
                         formula = form,
                         data = dat,
-                        family = stats::binomial(link = 'logit')
+                        family = stats::binomial(link = "logit")
                     ) %>%
                         broom::tidy() %>%
                         dplyr::filter(term == protein) %>%
@@ -280,7 +294,7 @@ olink_odds_ratios <- function(data, proteins, events, adjustments = NULL) {
                 }
             )
             out <- do.call(rbind, out)
-            out$p.adj <- stats::p.adjust(out$p.value, method = 'BH')
+            out$p.adj <- stats::p.adjust(out$p.value, method = "BH")
             out
         }
     )
