@@ -62,6 +62,7 @@ hypergeometric_scoring <- function(
   geneset <- gse@gene
 
   # Get the enrichment sets
+  
   enrichment <- gse@geneSets
 
   # Get the universe genes
