@@ -88,11 +88,6 @@ rna_enrichment <- function(
     image_type = "pdf", ontology = "ALL",
     terms2plot = c("inflam", "immune", "plat"),
     ...) {
-  require(SummarizedExperiment)
-  require(clusterProfiler)
-  require(org.Hs.eg.db)
-  require(AnnotationDbi)
-  require(enrichplot)
 
   if (is.null(keyType)) {
     keyType <- detect_gene_id_type(names(geneList), strip = TRUE)
@@ -120,8 +115,6 @@ rna_enrichment <- function(
 #' @export
 save_gse <- function(gse, outpath, ...) {
   dir.create(outpath, showWarnings = FALSE, recursive = TRUE)
-  require(enrichplot)
-  require(ggplot2)
 
   write.csv(gse@result, file.path(outpath, "enrichment_results.csv"), quote = TRUE, row.names = FALSE)
   write.csv(filter(gse@result, qvalue < 0.1), file.path(outpath, "enrichment_results_sig.csv"), quote = TRUE, row.names = FALSE)
@@ -253,14 +246,6 @@ gsea_analysis <- function(
     keyType = NULL,
     msigdb_category = "H",
     ontology = "ALL") {
-  require(SummarizedExperiment)
-  require(clusterProfiler)
-  require(org.Hs.eg.db)
-  require(AnnotationDbi)
-  require(enrichplot)
-  require(forcats)
-  require(ggplot2)
-  require(msigdbr)
 
   if (is.null(keyType)) {
     keyType <- detect_gene_id_type(names(geneList), strip = TRUE)
@@ -317,8 +302,6 @@ stratified_ora <- function(
     padj_cutoff = 0.05,
     max_pathways = 5,
     ...) {
-  require(clusterProfiler)
-  require(org.Hs.eg.db)
 
   up_genes <- gene_dataframe %>%
     filter(direction == "up") %>%
@@ -383,9 +366,6 @@ stratified_enrichr <- function(
     padj_cutoff = 0.05,
     max_pathways = 5,
     ...) {
-  require(clusterProfiler)
-  require(enrichR)
-  require(org.Hs.eg.db)
 
   up_genes <- gene_dataframe %>%
     filter(direction == "up") %>%
