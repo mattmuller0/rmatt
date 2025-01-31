@@ -160,8 +160,8 @@ hazard_ratios_table <- function(
     controls = NULL,
     per_sd = FALSE,
     ovr = FALSE,
-    censor_prefix = "C_",
-    time_prefix = "T_") {
+    censor_prefix = "censor_",
+    time_prefix = "time_to_") {
   censors_basenames <- gsub(censor_prefix, "", censors)
   time_vars <- paste0(time_prefix, censors_basenames)
 
@@ -267,8 +267,8 @@ filtered_hazard_ratio_table <- function(
     condition,
     risks,
     censors,
-    censor_prefix = "C_",
-    time_prefix = "T_",
+    censor_prefix = "censor_",
+    time_prefix = "time_to_",
     per_sd = TRUE,
     ovr = FALSE,
     verbose = FALSE,
