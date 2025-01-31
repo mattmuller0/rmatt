@@ -113,15 +113,22 @@ survival_analysis <- function(
     ggplot2::ggsave(filename = file.path(outdir, "survival_plots", glue::glue("survival_plot_{censor}.{image_type}")), plot = surv_plot)
 
     # make a dataframe of the OR & pvalue and HR & pvalues
-    cox_summary <- summary(coxmodel)
-    o <- data.frame(
-      logrank_chisq = surv_diff$chisq,
-      logrank_pvalue = surv_diff$pvalue,
-      hazard_ratio = exp(cox_summary$coefficients[1, "coef"]),
-      ci_lower = exp(confint(coxmodel))[1],
-      ci_upper = exp(confint(coxmodel))[2],
-      hr_pvalue = cox_summary$coefficients[1, "Pr(>|z|)"]
-    )
+    o <- tidy(coxmodel)
+    o <- o %>%
+      mutate(
+        censor = censor,
+        logrank.chisq = surv_diff$chisq,
+        logrank.pvalue = surv_diff$pvalue,
+        hazard.ratio = exp(estimate),
+        ci.upper = exp(estimate + 1.96 * std.error),
+        ci.lower = exp(estimate - 1.96 * std.error)
+      ) %>%
+      select(
+        censor, term,
+        logrank.chisq, logrank.pvalue,
+        hazard.ratio, ci.lower, ci.upper, p.value
+      )
+
     HR_list[[censor]] <- o
   }
   HR_df <- do.call(rbind, HR_list)
@@ -204,22 +211,24 @@ hazard_ratios_table <- function(
       }
 
       surv_obj <- do.call(survival::survfit, list(fmla, data = df))
-      surv_diff <- do.call(survival::survdiff, list(fmla, data = df))
       coxmodel <- do.call(survival::coxph, list(fmla, data = df))
 
-      tidy_cox <- broom::tidy(coxmodel)
-      tidy_confint <- confint(coxmodel)
-      tidy_surv <- broom::tidy(surv_obj)
-
-      # make a dataframe of the OR & pvalue and HR & pvalues
-      HR_list[[censor]] <- data.frame(
-        censor = censor,
-        condition = condition,
-        hazard_ratio = signif(exp(tidy_cox[1, "estimate"]), 4),
-        ci_lower = signif(exp(tidy_confint[1, 1]), 4),
-        ci_upper = signif(exp(tidy_confint[1, 2]), 4),
-        pvalue = signif(tidy_cox[1, "p.value"], 4)
-      )
+      # make a dataframe of the HRs & pvalue and HR & pvalues
+      o <- tidy(coxmodel)
+      o <- o %>% filter(grepl(condition, term))
+      o <- o %>%
+        mutate(
+          condition = condition,
+          censor = censor,
+          hazard.ratio = exp(estimate),
+          ci.upper = exp(estimate + 1.96 * std.error),
+          ci.lower = exp(estimate - 1.96 * std.error)
+        ) %>%
+        select(
+          censor, condition, term,
+          hazard.ratio, ci.lower, ci.upper, p.value
+        )
+      HR_list[[censor]] <- o
     }
   } else {
     # one hot encode the condition
@@ -233,8 +242,6 @@ hazard_ratios_table <- function(
   }
 
   HR_df <- do.call(rbind, HR_list)
-  rownames(HR_df) <- gsub("censor_", "", rownames(HR_df))
-  rownames(HR_df) <- gsub("\\.", "__", rownames(HR_df))
   return(HR_df)
 }
 
