@@ -38,6 +38,10 @@ summarize_experiment <- function(
     n_up = numeric(),
     n_down = numeric()
   )
+  
+  # make sure results is a dataframe 
+  # results <- as.data.frame(results)
+
   lapply(pvalue_cutoffs, function(pvalue_cutoff) {
     summary <<- summary %>%
       add_row(
@@ -97,7 +101,6 @@ add_missing_rows <- function(
     rows,
     sorted = TRUE) {
   missingRowNames <- rows[which(!rows %in% rownames(df))]
-  print(missingRowNames)
   df_tmp <- as.data.frame(matrix(0, nrow = length(missingRowNames), ncol = dim(df)[2]))
   colnames(df_tmp) <- colnames(df)
   rownames(df_tmp) <- missingRowNames

@@ -453,7 +453,7 @@ deseq_analysis <- function(dds, conditions, controls = NULL, outpath, ...) {
       res <- run_deseq(dds_, file.path(outpath, condition), contrast = contrast, ...)
 
       # Summarize results
-      summary <- summarize_experiment(res, padj_cutoffs = c(0.05, 0.1, 0.2), pvalue_cutoffs = c(0.01, 0.05, 0.1))
+      summary <- summarize_experiment(res)
       summary$condition <- condition
       summary <- summary[, c(ncol(summary), 1:(ncol(summary) - 1))]
       summary_df <- rbind(summary_df, summary)
