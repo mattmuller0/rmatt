@@ -83,16 +83,18 @@ detect_gene_id_type <- function(geneList, strip = TRUE) {
     warning("Gene ID version numbers have been stripped.")
   }
 
-  matches <- sapply(id_types, function(x) grepl(x, geneList))
-
-  type <- names(which(apply(matches, 2, any)))
+  matches <- sapply(id_types, function(x) grepl(x, geneList, perl = TRUE))
+  
+  # get the colSums of the matches
+  matched_num <- colSums(matches)
+  type <- names(id_types)[which.max(matched_num)]
 
   if (length(type) > 1) {
     message(glue::glue("Multiple gene ID types detected. Returning first match: {type[1]} from ({paste(type, collapse = ', ')})"))
     type <- type[1]
   }
 
-  if (length(type) == 0) {
+  if (all(matched_num == 0)) {
     stop("No gene ID type detected.")
   }
 
