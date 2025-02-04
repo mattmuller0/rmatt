@@ -54,14 +54,13 @@ map_gene_ids <- function(geneList, from = NULL, to, orgDb = org.Hs.eg.db, remove
 detect_gene_id_type <- function(geneList, strip = TRUE) {
   id_types <- list(
     # Start with the most common gene ID types
-    SYMBOL = "^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*(-[A-Z0-9]+)*$",
     ENSEMBL = "^ENSG[0-9]+$",
+    ENSEMBLTRANS = "^ENST[0-9]+$",
+    ENSEMBLPROT = "^ENSP[0-9]+$",
+    SYMBOL = "^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*(-[A-Z0-9]+)*$",
     ENTREZID = "^[0-9]+$",
     REFSEQ = "^N[MP]_[0-9]+$",
     UNIGENE = "^Hs\\.([0-9]+)$",
-    # Now some transcript and protein IDs
-    ENSEMBLTRANS = "^ENST[0-9]+$",
-    ENSEMBLPROT = "^ENSP[0-9]+$",
     # Now some less common gene ID types
     IMAGE = "^IMAGE:[0-9]+$",
     GOID = "^GO:[0-9]+$",
