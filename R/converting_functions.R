@@ -53,18 +53,21 @@ map_gene_ids <- function(geneList, from = NULL, to, orgDb = org.Hs.eg.db, remove
 #' @return character, type of gene ID.
 detect_gene_id_type <- function(geneList, strip = TRUE) {
   id_types <- list(
+    # Start with the most common gene ID types
+    SYMBOL = "^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*(-[A-Z0-9]+)*$",
     ENSEMBL = "^ENSG[0-9]+$",
+    ENTREZID = "^[0-9]+$",
+    REFSEQ = "^N[MP]_[0-9]+$",
+    UNIGENE = "^Hs\\.([0-9]+)$",
+    # Now some transcript and protein IDs
     ENSEMBLTRANS = "^ENST[0-9]+$",
     ENSEMBLPROT = "^ENSP[0-9]+$",
-    ENTREZID = "^[0-9]+$",
+    # Now some less common gene ID types
     IMAGE = "^IMAGE:[0-9]+$",
     GOID = "^GO:[0-9]+$",
     PFAM = "^PF[0-9]+$",
-    REFSEQ = "^N[MP]_[0-9]+$",
     ENZYME = "^[0-9]+(\\.(([0-9]+)|-)+)3$",
     MAP = "^[0-9XY]+((([pq])|(cen))(([0-9]+(\\.[0-9]+)?)|(ter))?(-([0-9XY]+)?(([pq]?)|(cen))((ter)|([0-9]+(\\.[0-9]+)?))?)?)?$",
-    UNIGENE = "^Hs\\.([0-9]+)$",
-    SYMBOL = "^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*(-[A-Z0-9]+)*$",
     GENEBANK_Nucleotide = "^[A-Z][0-9]5$",
     GENEBANK_Protein = "^[A-Z]3[0-9]5$",
     GENEBANK_WGS = "^[A-Z]4[0-9]8[0-9]?[0-9]?$",
