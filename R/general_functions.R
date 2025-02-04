@@ -48,9 +48,9 @@ summarize_experiment <- function(
         variable = "pvalue",
         p_cutoff = pvalue_cutoff,
         fc_cutoff = logFC_cutoff,
-        n_sig = sum(results[[pvalue_column]] < pvalue_cutoff),
-        n_up = sum(results[[pvalue_column]] < pvalue_cutoff & results[[logFC_column]] > logFC_cutoff),
-        n_down = sum(results[[pvalue_column]] < pvalue_cutoff & results[[logFC_column]] < -logFC_cutoff)
+        n_sig = nrow(subset(results, results[[pvalue_column]] < pvalue_cutoff)),
+        n_up = nrow(subset(results, results[[pvalue_column]] < pvalue_cutoff & results[[logFC_column]] > logFC_cutoff)),
+        n_down = nrow(subset(results, results[[pvalue_column]] < pvalue_cutoff & results[[logFC_column]] < -logFC_cutoff))
       )
   })
   lapply(padj_cutoffs, function(padj_cutoff) {
@@ -59,9 +59,9 @@ summarize_experiment <- function(
         variable = "padj",
         p_cutoff = padj_cutoff,
         fc_cutoff = logFC_cutoff,
-        n_sig = sum(results[[padj_column]] < padj_cutoff),
-        n_up = sum(results[[padj_column]] < padj_cutoff & results[[logFC_column]] > logFC_cutoff),
-        n_down = sum(results[[padj_column]] < padj_cutoff & results[[logFC_column]] < -logFC_cutoff)
+        n_sig = nrow(subset(results, results[[padj_column]] < padj_cutoff)),
+        n_up = nrow(subset(results, results[[padj_column]] < padj_cutoff & results[[logFC_column]] > logFC_cutoff)),
+        n_down = nrow(subset(results, results[[padj_column]] < padj_cutoff & results[[logFC_column]] < -logFC_cutoff))
       )
   })
   return(summary)

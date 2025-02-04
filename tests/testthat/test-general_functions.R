@@ -22,6 +22,7 @@ setup_test_data <- function() {
 # Tests for summarize_experiment
 test_that("summarize_experiment works correctly", {
   results <- setup_test_data()
+  print(head(results))
   
   summary <- summarize_experiment(
     results,
@@ -29,6 +30,7 @@ test_that("summarize_experiment works correctly", {
     padj_cutoffs = c(0.05),
     logFC_cutoff = 0
   )
+  print(summary)
   
   # Test structure
   expect_equal(ncol(summary), 6)

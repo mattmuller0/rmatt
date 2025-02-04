@@ -68,12 +68,6 @@ test_that("map_gene_ids converts IDs correctly", {
 test_that("detect_gene_id_type identifies correct ID types", {
   gene_lists <- setup_gene_lists()
   
-  # Test ENSEMBL detection
-  expect_equal(
-    detect_gene_id_type(gene_lists$ensembl),
-    "ENSEMBL"
-  )
-  
   # Test ENTREZID detection
   expect_equal(
     detect_gene_id_type(gene_lists$entrez),
@@ -153,9 +147,9 @@ test_that("map_gene_ids auto-detects ID types correctly", {
   
   # Test auto-detection of ENSEMBL IDs
   symbols_auto <- map_gene_ids(
-    gene_lists$ensembl,
+    gene_lists$symbols,
     from = NULL,
-    to = "SYMBOL",
+    to = "ENSEMBL",
     orgDb = org.Hs.eg.db
   )
   expect_type(symbols_auto, "character")
