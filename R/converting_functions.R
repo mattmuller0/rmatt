@@ -39,7 +39,7 @@ map_gene_ids <- function(geneList, from = NULL, to, orgDb = org.Hs.eg.db, remove
   if (remove_missing) {
     out_list <- out_list[!is.na(out_list)]
   } else {
-    out_list[is.na(out_list)] <- geneList_copy[is.na(out_list)] %>% as.vector()
+    out_list[is.na(out_list)] <- as.vector(geneList_copy[is.na(out_list)])
   }
 
   return(out_list)
@@ -77,15 +77,15 @@ detect_gene_id_type <- function(geneList, strip = TRUE) {
 
   if (grepl("\\.", geneList[1]) && strip) {
     geneList <- sapply(geneList, function(x) stringr::str_split(x, "\\.", simplify = TRUE)[1])
-    message("Gene ID version numbers have been stripped.")
+    warning("Gene ID version numbers have been stripped.")
   }
 
   matches <- sapply(id_types, function(x) grepl(x, geneList))
 
-  type <- colnames(matches)[which(matches[1, ] == TRUE)]
+  type <- names(which(apply(matches, 2, all)))
 
   if (length(type) > 1) {
-    warning(glue::glue("Multiple gene ID types detected. Returning first match: {type[1]}"))
+    message(glue::glue("Multiple gene ID types detected. Returning first match: {type[1]} from ({paste(type, collapse = ', ')})"))
     type <- type[1]
   }
 
