@@ -11,8 +11,7 @@
 #' @importFrom glue glue
 #' @importFrom tidyr drop_na any_of
 NULL
-
-#' Function to summarize results more generally
+#' Summarize differential expression results
 #' @param results results of differential expression analysis
 #' @param logFC_column column to use for logFC
 #' @param pvalue_column column to use for pvalue
@@ -30,40 +29,70 @@ summarize_experiment <- function(
     pvalue_cutoffs = c(0.01, 0.05, 0.1),
     padj_cutoffs = c(0.05, 0.1, 0.2),
     logFC_cutoff = 0) {
+  
+  # Input validation
+  required_cols <- c(logFC_column, pvalue_column, padj_column)
+  if (!all(required_cols %in% colnames(results))) {
+    stop("Missing required columns: ", 
+         paste(setdiff(required_cols, colnames(results)), collapse = ", "))
+  }
+  
+  # Initialize results dataframe
   summary <- data.frame(
     variable = character(),
     p_cutoff = numeric(),
     fc_cutoff = numeric(),
-    n_sig = numeric(),
-    n_up = numeric(),
-    n_down = numeric()
+    n_sig = integer(),
+    n_up = integer(),
+    n_down = integer(),
+    stringsAsFactors = FALSE
   )
   
-  # make sure results is a dataframe 
-  # results <- as.data.frame(results)
-
-  lapply(pvalue_cutoffs, function(pvalue_cutoff) {
-    summary <<- summary %>%
-      add_row(
-        variable = "pvalue",
-        p_cutoff = pvalue_cutoff,
-        fc_cutoff = logFC_cutoff,
-        n_sig = nrow(subset(results, results[[pvalue_column]] < pvalue_cutoff)),
-        n_up = nrow(subset(results, results[[pvalue_column]] < pvalue_cutoff & results[[logFC_column]] > logFC_cutoff)),
-        n_down = nrow(subset(results, results[[pvalue_column]] < pvalue_cutoff & results[[logFC_column]] < -logFC_cutoff))
-      )
-  })
-  lapply(padj_cutoffs, function(padj_cutoff) {
-    summary <<- summary %>%
-      add_row(
-        variable = "padj",
-        p_cutoff = padj_cutoff,
-        fc_cutoff = logFC_cutoff,
-        n_sig = nrow(subset(results, results[[padj_column]] < padj_cutoff)),
-        n_up = nrow(subset(results, results[[padj_column]] < padj_cutoff & results[[logFC_column]] > logFC_cutoff)),
-        n_down = nrow(subset(results, results[[padj_column]] < padj_cutoff & results[[logFC_column]] < -logFC_cutoff))
-      )
-  })
+  # Function to count genes based on criteria
+  count_genes <- function(data, p_col, p_cutoff, fc_col, fc_cutoff) {
+    # Get valid data (non-NA)
+    valid_idx <- !is.na(data[[p_col]]) & !is.na(data[[fc_col]])
+    valid_data <- data[valid_idx, ]
+    
+    # Get significant genes
+    sig_idx <- valid_data[[p_col]] < p_cutoff
+    fc_data <- valid_data[[fc_col]][sig_idx]
+    
+    o <- list(
+      n_sig = sum(sig_idx),
+      n_up = sum(fc_data > fc_cutoff),
+      n_down = sum(fc_data < -fc_cutoff)
+    )
+    return(o)
+  }
+  
+  # Process p-value cutoffs
+  for (cutoff in pvalue_cutoffs) {
+    counts <- count_genes(results, pvalue_column, cutoff, logFC_column, logFC_cutoff)
+    summary <- rbind(summary, data.frame(
+      variable = "pvalue",
+      p_cutoff = cutoff,
+      fc_cutoff = logFC_cutoff,
+      n_sig = counts$n_sig,
+      n_up = counts$n_up,
+      n_down = counts$n_down
+    ))
+  }
+  
+  # Process adjusted p-value cutoffs
+  for (cutoff in padj_cutoffs) {
+    counts <- count_genes(results, padj_column, cutoff, logFC_column, logFC_cutoff)
+    summary <- rbind(summary, data.frame(
+      variable = "padj",
+      p_cutoff = cutoff,
+      fc_cutoff = logFC_cutoff,
+      n_sig = counts$n_sig,
+      n_up = counts$n_up,
+      n_down = counts$n_down
+    ))
+  }
+  
+  rownames(summary) <- NULL
   return(summary)
 }
 
