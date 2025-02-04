@@ -1,8 +1,5 @@
 # rmatt #
 
-[![Build Status](https://travis-ci.org/mattmuller0/rmatt.svg?branch=master)](https://travis-ci.org/mattmuller0/rmatt)
-[![codecov.io](https://codecov.io/github/mattmuller0/rmatt/coverage.svg?branch=master)](https://codecov.io/github/mattmuller0/rmatt?branch=master)
-
 Install the package using the following command:
 
 ```R
