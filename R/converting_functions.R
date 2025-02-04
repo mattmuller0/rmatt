@@ -82,7 +82,7 @@ detect_gene_id_type <- function(geneList, strip = TRUE) {
 
   matches <- sapply(id_types, function(x) grepl(x, geneList))
 
-  type <- names(which(apply(matches, 2, all)))
+  type <- names(which(apply(matches, 2, any)))
 
   if (length(type) > 1) {
     message(glue::glue("Multiple gene ID types detected. Returning first match: {type[1]} from ({paste(type, collapse = ', ')})"))
