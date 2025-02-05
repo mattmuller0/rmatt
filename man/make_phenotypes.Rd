@@ -2,18 +2,18 @@
 % Please edit documentation in R/phenomics_functions.R
 \name{make_phenotypes}
 \alias{make_phenotypes}
-\title{Make Phenotypes}
+\title{Make Phenotypes from Composite Encoding}
 \usage{
 make_phenotypes(hesin, encoding)
 }
 \arguments{
-\item{hesin}{Data frame of hesin data pivoted longer [dnx_hesin_id, Participant ID, field, value].}
+\item{hesin}{Data frame with columns [dnx_hesin_id, Participant ID, field, value]}
 
-\item{encoding}{Data frame of composite encoding [key, field, value].}
+\item{encoding}{Data frame with columns [key, field, value]}
 }
 \value{
-A data frame with composite encoding.
+Data frame with matched phenotypes
 }
 \description{
-Function to make a phenotype from the composite encoding.
+Make Phenotypes from Composite Encoding
 }

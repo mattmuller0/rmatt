@@ -282,15 +282,21 @@ filtered_hazard_ratio_table <- function(
     risks,
     function(x) {
       vals <- na.omit(unique(data[, x]))
-      print(glue::glue("Filtering for {x}"))
+      
+      if (verbose) {
+        message(glue::glue("Filtering for {x}"))
+      }
+      
       res <- purrr::map(
         vals,
+        
         function(y) {
           tmp <- dplyr::filter(data, !!sym(x) == y)
           if (verbose) {
             message(glue::glue("    Subfiltering {y}"))
             message(glue::glue("    N = {nrow(tmp)}"))
           }
+          
           tryCatch(
             {
               out <- hazard_ratios_table(

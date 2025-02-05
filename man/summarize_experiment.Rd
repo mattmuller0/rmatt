@@ -2,7 +2,7 @@
 % Please edit documentation in R/general_functions.R
 \name{summarize_experiment}
 \alias{summarize_experiment}
-\title{Function to summarize results more generally}
+\title{Summarize differential expression results}
 \usage{
 summarize_experiment(
   results,
@@ -33,5 +33,5 @@ summarize_experiment(
 summary of results
 }
 \description{
-Function to summarize results more generally
+Summarize differential expression results
 }

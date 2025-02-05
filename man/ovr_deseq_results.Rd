@@ -4,7 +4,7 @@
 \alias{ovr_deseq_results}
 \title{OVR Deseq Results Function}
 \usage{
-ovr_deseq_results(dds, column, outpath, controls = NULL, ...)
+ovr_deseq_results(dds, column, outpath, controls = NULL)
 }
 \arguments{
 \item{dds}{DESeq2 object}
