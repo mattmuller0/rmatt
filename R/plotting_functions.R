@@ -17,6 +17,7 @@
 #' @importFrom RColorBrewer brewer.pal
 #' @importFrom glue glue
 #' @importFrom stringr str_wrap
+#' @importFrom grid grid.text gpar
 NULL
 
 # ======================== Plotting Functions ========================
