@@ -340,7 +340,7 @@ run_deseq <- function(
 #' @param ... Additional arguments to pass to DESeq2
 #' @return OVR results for each level of column of interest
 #' @export
-ovr_deseq_results <- function(dds, column, outpath, controls = NULL, ...) {
+ovr_deseq_results <- function(dds, column, outpath, controls = NULL) {
   dir.create(outpath, showWarnings = FALSE, recursive = TRUE)
 
   # This function takes in a DDS or SE object, the condition column of interest
