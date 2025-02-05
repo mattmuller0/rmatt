@@ -11,8 +11,8 @@ hazard_ratios_table(
   controls = NULL,
   per_sd = FALSE,
   ovr = FALSE,
-  censor_prefix = "C_",
-  time_prefix = "T_"
+  censor_prefix = "censor_",
+  time_prefix = "time_to_"
 )
 }
 \arguments{

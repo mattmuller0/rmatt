@@ -1,73 +1,78 @@
 #' @title Phenomics Functions
 #' @description Functions for EHR / Biobank data processing.
 #' @name phenomics_functions
-#' @importFrom dplyr filter pull mutate group_by summarise
+#' @importFrom dplyr filter pull mutate group_by summarise n_distinct bind_rows
 #' @importFrom glue glue
 #' @importFrom purrr map
 #' @importFrom tidyr pivot_longer pivot_wider
 NULL
 
-#' @title Make Composite Coding CSV
-#' @description Function to take any codes and make a composite variable CSV.
-#' @param lol List of lists containing the codes.
-#' @param composite_name Name of the composite variable.
-#' @return A data frame with the composite variable.
+#' Make Composite Coding CSV
+#' @param lol List of lists containing the codes
+#' @param composite_name Name of the composite variable
+#' @return Data frame with composite variable mapping
 #' @export
-make_compsite_coding_csv <- function(lol, composite_name) {
-    # ensure the lol args are all named vectors
-    if (!all(sapply(list(lol), is.vector))) {
-        stop("All unnamed arguments must be named vectors")
-    }
-    out <- data.frame(
-        key = rep(composite_name, length(unlist(unlist(lol)))),
-        field = c(rep(names(lol), sapply(lol, length))),
-        value = c(unlist(unlist(lol)))
+make_composite_coding <- function(lol, composite_name) {
+  if (!is.list(lol) || !all(sapply(lol, is.vector))) {
+    stop("Input must be a list of named vectors")
+  }
+  
+  if (length(lol) == 0) {
+    stop("Input list is empty")
+  }
+  
+  results <- map(names(lol), function(field) {
+    data.frame(
+      key = composite_name,
+      field = field,
+      value = unlist(lol[[field]]),
+      stringsAsFactors = FALSE
     )
-    return(out)
+  })
+  
+  bind_rows(results)
 }
 
-#' @title Make Phenotypes
-#' @description Function to make a phenotype from the composite encoding.
-#' @param hesin Data frame of hesin data pivoted longer [dnx_hesin_id, Participant ID, field, value].
-#' @param encoding Data frame of composite encoding [key, field, value].
-#' @return A data frame with composite encoding.
+#' Make Phenotypes from Composite Encoding
+#' @param hesin Data frame with columns [dnx_hesin_id, Participant ID, field, value]
+#' @param encoding Data frame with columns [key, field, value]
+#' @return Data frame with matched phenotypes
 #' @export
 make_phenotypes <- function(hesin, encoding) {
-    # ensure the required columns are present
-    reqs <- c("Participant ID", "field", "value")
-    if (!all(reqs %in% colnames(hesin))) {
-        stop(glue::glue("Missing required columns in hesin data\n[{paste0(reqs, collapse = ', ')}]"))
-    }
-    reqs <- c("key", "field", "value")
-    if (!all(reqs %in% colnames(encoding))) {
-        stop(glue::glue("Missing required columns in encoding data\n[{paste0(reqs, collapse = ', ')}]"))
-    }
-
-    out <- list()
-    for (i in seq_along(unique(encoding$key))) {
-        k <- unique(encoding$key)[i]
-        print(glue("Processing {unique(encoding$key)[i]}"))
-        tmp <- encoding %>% filter(key == k)
-        fields <- unique(tmp$field)
-        o <- list()
-        for (j in seq_along(fields)) {
-            print(glue("    Field: {fields[j]}"))
-            v <- unique(tmp %>% filter(field == fields[j]) %>% pull(value))
-            v_reg <- paste0("^(", paste(v, collapse = "|"), ")")
-            print(glue("        Values: {paste0(v, collapse = '|')}"))
-            o[[j]] <- hesin %>%
-                filter(field == fields[j]) %>%
-                filter(grepl(v_reg, value)) %>%
-                mutate(phenotype = k)
-            print(glue("        N: {nrow(o[[j]])}"))
-        }
-        out[[i]] <- do.call(rbind, o)
-    }
-    out <- do.call(rbind, out)
-    summary <- out %>%
-        group_by(phenotype) %>%
-        summarise(n = n())
-    print("Summary of phenotypes")
-    print(summary)
-    return(out)
+  required_hesin <- c("field", "value")
+  required_encoding <- c("key", "field", "value")
+  
+  if (!all(required_hesin %in% colnames(hesin))) {
+    stop("Missing hesin columns: ", 
+         paste(setdiff(required_hesin, colnames(hesin)), collapse = ", "))
+  }
+  
+  if (!all(required_encoding %in% colnames(encoding))) {
+    stop("Missing encoding columns: ", 
+         paste(setdiff(required_encoding, colnames(encoding)), collapse = ", "))
+  }
+  
+  phenotype_results <- map(unique(encoding$key), function(phenotype) {
+    message(glue("Processing {phenotype}"))
+    phenotype_encoding <- encoding[encoding$key == phenotype, ]
+    
+    field_results <- map(unique(phenotype_encoding$field), function(field) {
+      values <- unique(phenotype_encoding$value[phenotype_encoding$field == field])
+      value_pattern <- paste0("^(", paste(values, collapse = "|"), ")")
+      
+      matches <- hesin %>%
+        filter(field == !!field, grepl(value_pattern, value)) %>%
+        mutate(phenotype = phenotype)
+      
+      message(glue("  {field}: {n_distinct(matches$`Participant ID`)} participants"))
+      matches
+    })
+    
+    bind_rows(field_results)
+  })
+  
+  bind_rows(phenotype_results) %>%
+    group_by(phenotype) %>%
+    mutate(n_codes = n_distinct(value)) %>%
+    ungroup()
 }

@@ -128,7 +128,7 @@ correlation_matrix <- function(data, vars1, vars2, method = "pearson", use = "pa
       purrr::map(
         vars2,
         function(y) {
-          res <- stats::cor.test(data[, x], data[, y], method = method, use = use, ...)
+          res <- cor.test(data[, x], data[, y], method = method, use = use, ...)
           cor_mat[x, y] <<- res$estimate
           p_mat[x, y] <<- res$p.value
         }
