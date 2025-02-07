@@ -137,6 +137,32 @@ survival_analysis <- function(
   return(out)
 }
 
+#' @title Internal Hazard Ratios Helper
+#' @description Internal function to calculate hazard ratios.
+#' @param cs list, list of censors and time variables.
+hazards.internal <- function(cs) {
+  fmla <- as.formula(glue::glue("survival::Surv({cs$time}, {cs$censor}) ~ {paste0(c(condition, controls), collapse = " + ")}"))
+  surv_obj <- do.call(survival::survfit, list(fmla, data = df))
+  coxmodel <- do.call(survival::coxph, list(fmla, data = df))
+
+  # make a dataframe of the HRs & pvalue and HR & pvalues
+  o <- tidy(coxmodel)
+  o <- o %>% filter(grepl(condition, term))
+  o <- o %>%
+    mutate(
+      condition = condition,
+      censor = cs$censor,
+      hazard.ratio = exp(estimate),
+      ci.upper = exp(estimate + 1.96 * std.error),
+      ci.lower = exp(estimate - 1.96 * std.error)
+    ) %>%
+    select(
+      censor, condition, term,
+      hazard.ratio, ci.lower, ci.upper, p.value
+    )
+  return(o)
+}
+
 #' @title Hazard Ratios Table
 #' @description Make HR tables for a condition and censors.
 #' @param df data.frame, data to make survival curves from.
@@ -171,21 +197,9 @@ hazard_ratios_table <- function(
 
   # check if there are NA values in the condition
   if (any(is.na(df[, condition]))) {
-    message("NA values in condition, removing")
-    df <- df[!is.na(df[, condition]), ]
+    warning("NA values in condition, conrols, or censors -- removing")
   }
-
-  # Check if there are NA values in the controls
-  if (!is.null(controls)) {
-    if (any(is.na(df[, controls]))) {
-      message("NA values in the controls")
-    }
-  }
-
-  # Check if there are NA values in the censors
-  if (any(is.na(df[, censors]))) {
-    message("NA values in the censors")
-  }
+  df <- df[complete.cases(df[, condition, censors, controls]), ]
 
   # check if we are per_sd
   if (per_sd) {
@@ -196,40 +210,12 @@ hazard_ratios_table <- function(
     df[, condition] <- scale(df[, condition])
   }
 
-  # make a list to store the survival plots
-  HR_list <- list()
+  # vectorize the operation
+  censors_list <- split(data.frame(censor = censors, time = time_vars), seq_along(censors))
+  HR_list <- lapply(censors_list, hazards.internal)
   if (!ovr) {
-    # loop over the censors
-    for (idx in seq_along(censors)) {
-      time_var <- time_vars[idx]
-      censor <- censors[idx]
-      cond <- df[[condition]]
-      if (!is.null(controls)) {
-        fmla <- as.formula(paste0("survival::Surv(", time_var, ", ", censor, ") ~ ", condition, " + ", paste(controls, collapse = " + ")))
-      } else {
-        fmla <- as.formula(paste0("survival::Surv(", time_var, ", ", censor, ") ~ ", condition))
-      }
-
-      surv_obj <- do.call(survival::survfit, list(fmla, data = df))
-      coxmodel <- do.call(survival::coxph, list(fmla, data = df))
-
-      # make a dataframe of the HRs & pvalue and HR & pvalues
-      o <- tidy(coxmodel)
-      o <- o %>% filter(grepl(condition, term))
-      o <- o %>%
-        mutate(
-          condition = condition,
-          censor = censor,
-          hazard.ratio = exp(estimate),
-          ci.upper = exp(estimate + 1.96 * std.error),
-          ci.lower = exp(estimate - 1.96 * std.error)
-        ) %>%
-        select(
-          censor, condition, term,
-          hazard.ratio, ci.lower, ci.upper, p.value
-        )
-      HR_list[[censor]] <- o
-    }
+    censors_list <- split(data.frame(censor = censors, time = time_vars), seq_along(censors))
+    HR_list <- lapply(censors_list, hazards.internal)
   } else {
     # one hot encode the condition
     message("one hot encoding condition")
@@ -282,21 +268,20 @@ filtered_hazard_ratio_table <- function(
     risks,
     function(x) {
       vals <- na.omit(unique(data[, x]))
-      
+
       if (verbose) {
         message(glue::glue("Filtering for {x}"))
       }
-      
+
       res <- purrr::map(
         vals,
-        
         function(y) {
           tmp <- dplyr::filter(data, !!sym(x) == y)
           if (verbose) {
             message(glue::glue("    Subfiltering {y}"))
             message(glue::glue("    N = {nrow(tmp)}"))
           }
-          
+
           tryCatch(
             {
               out <- hazard_ratios_table(
