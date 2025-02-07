@@ -140,8 +140,8 @@ survival_analysis <- function(
 #' @title Internal Hazard Ratios Helper
 #' @description Internal function to calculate hazard ratios.
 #' @param cs list, list of censors and time variables.
-hazards.internal <- function(cs) {
-  fmla <- as.formula(glue::glue("survival::Surv({cs$time}, {cs$censor}) ~ {paste0(c(condition, controls), collapse = " + ")}"))
+hazards.internal <- function(cs, df, condition, controls) {
+  fmla <- as.formula(glue::glue("survival::Surv({cs$time}, {cs$censor}) ~ {paste0(c(condition, controls), collapse = ' + ')}"))
   surv_obj <- do.call(survival::survfit, list(fmla, data = df))
   coxmodel <- do.call(survival::coxph, list(fmla, data = df))
 
@@ -199,7 +199,7 @@ hazard_ratios_table <- function(
   if (any(is.na(df[, condition]))) {
     warning("NA values in condition, conrols, or censors -- removing")
   }
-  df <- df[complete.cases(df[, condition, censors, controls]), ]
+  df <- df[complete.cases(df[, c(condition, censors, controls)]), ]
 
   # check if we are per_sd
   if (per_sd) {
@@ -212,10 +212,10 @@ hazard_ratios_table <- function(
 
   # vectorize the operation
   censors_list <- split(data.frame(censor = censors, time = time_vars), seq_along(censors))
-  HR_list <- lapply(censors_list, hazards.internal)
+
   if (!ovr) {
     censors_list <- split(data.frame(censor = censors, time = time_vars), seq_along(censors))
-    HR_list <- lapply(censors_list, hazards.internal)
+    HR_list <- lapply(censors_list, hazards.internal, df = df, condition = condition, controls = controls)
   } else {
     # one hot encode the condition
     message("one hot encoding condition")
@@ -224,7 +224,7 @@ hazard_ratios_table <- function(
     columns_ovr <- colnames(df_)[colnames(df_) %in% paste0(condition, "_", vals)]
 
     # lapply the function over the columns_ovr and censors
-    HR_list <- purrr::map(columns_ovr, ~ hazard_ratios_table(df_, .x, censors, controls = controls, censor_prefix = censor_prefix, time_prefix = time_prefix, ovr = FALSE))
+    HR_list <- purrr::map(columns_ovr, ~ hazard_ratios_table(df_, condition = .x, censors = censors, controls = controls, censor_prefix = censor_prefix, time_prefix = time_prefix, ovr = FALSE))
   }
 
   HR_df <- do.call(rbind, HR_list)

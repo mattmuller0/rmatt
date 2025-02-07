@@ -123,3 +123,176 @@ test_that("survival_analysis produces expected output for multigroup input", {
         outdir = temp_dir
     ))
 })
+
+# Test hazard_ratios_table function
+test_that("hazard_ratios_table works correctly with basic input", {
+    # Create mock data
+    test_data <- create_mock_survival_data()
+    
+    # Test basic functionality
+    result <- hazard_ratios_table(
+        df = test_data,
+        condition = "group",
+        censors = c("censor_death", "censor_progression"),
+        time_prefix = "time_to_",
+        censor_prefix = "censor_"
+    )
+    
+    # Check output structure
+    expect_true(is.data.frame(result))
+    expect_true(all(c("censor", "condition", "term", "hazard.ratio", 
+                     "ci.lower", "ci.upper", "p.value") %in% colnames(result)))
+    expect_equal(nrow(result), 2)  # One row per censor
+    expect_true(all(result$hazard.ratio > 0))  # HRs should be positive
+})
+
+test_that("hazard_ratios_table handles controls correctly", {
+    test_data <- create_mock_survival_data()
+    
+    result <- hazard_ratios_table(
+        df = test_data,
+        condition = "group",
+        censors = "censor_death",
+        controls = c("age", "sex"),
+        time_prefix = "time_to_",
+        censor_prefix = "censor_"
+    )
+    
+    expect_true(is.data.frame(result))
+    expect_equal(nrow(result), 1)  # One row for the condition
+})
+
+test_that("hazard_ratios_table handles per_sd option correctly", {
+    test_data <- create_mock_survival_data()
+    
+    # Test with continuous variable
+    result <- hazard_ratios_table(
+        df = test_data,
+        condition = "age",
+        censors = "censor_death",
+        per_sd = TRUE,
+        time_prefix = "time_to_",
+        censor_prefix = "censor_"
+    )
+    
+    expect_true(is.data.frame(result))
+    
+    # Should error with categorical variable
+    expect_error(
+        hazard_ratios_table(
+            df = test_data,
+            condition = "group",
+            censors = "censor_death",
+            per_sd = TRUE
+        ),
+        "condition must be numeric if per_sd is TRUE"
+    )
+})
+
+test_that("hazard_ratios_table handles one-vs-rest correctly", {
+    test_data <- create_mock_survival_data()
+    
+    result <- hazard_ratios_table(
+        df = test_data,
+        condition = "multigroup",
+        censors = "censor_death",
+        ovr = TRUE,
+        time_prefix = "time_to_",
+        censor_prefix = "censor_"
+    )
+    
+    expect_true(is.data.frame(result))
+    expect_equal(nrow(result), 3)  # One row per level of multigroup
+})
+
+test_that("hazard_ratios_table handles NA values appropriately", {
+    test_data <- create_mock_survival_data()
+    test_data$age[1:10] <- NA
+    
+    expect_warning(
+        result <- hazard_ratios_table(
+            df = test_data,
+            condition = "age",
+            censors = "censor_death",
+            time_prefix = "time_to_",
+            censor_prefix = "censor_"
+        ),
+        "NA values in condition"
+    )
+    
+    expect_true(is.data.frame(result))
+})
+
+test_that("hazard_ratios_table validates input columns", {
+    test_data <- create_mock_survival_data()
+    
+    expect_error(
+        hazard_ratios_table(
+            df = test_data,
+            condition = "nonexistent",
+            censors = "censor_death"
+        )
+    )
+    
+    expect_error(
+        hazard_ratios_table(
+            df = test_data,
+            condition = "group",
+            censors = "nonexistent"
+        )
+    )
+})
+
+# Test hazards.internal function
+test_that("hazards.internal produces correct output structure", {
+    test_data <- create_mock_survival_data()
+    condition <- "group"
+    controls <- NULL
+    df <- test_data
+    
+    censors_list <- list(
+        censor = "censor_death",
+        time = "time_to_death"
+    )
+    
+    result <- hazards.internal(censors_list, df, condition, controls)
+    
+    expect_true(is.data.frame(result))
+    expect_true(all(c("censor", "condition", "term", "hazard.ratio", 
+                     "ci.lower", "ci.upper", "p.value") %in% colnames(result)))
+})
+
+test_that("hazards.internal handles controls correctly", {
+    test_data <- create_mock_survival_data()
+    condition <- "group"
+    controls <- c("age", "sex")
+    df <- test_data
+    
+    censors_list <- list(
+        censor = "censor_death",
+        time = "time_to_death"
+    )
+    
+    result <- hazards.internal(censors_list, df, condition, controls)
+    
+    expect_true(is.data.frame(result))
+    expect_true(grepl(condition, result$term[1]))  # Term should contain condition name
+})
+
+test_that("hazards.internal calculates correct statistics", {
+    test_data <- create_mock_survival_data()
+    condition <- "group"
+    controls <- NULL
+    df <- test_data
+    
+    censors_list <- list(
+        censor = "censor_death",
+        time = "time_to_death"
+    )
+    
+    result <- hazards.internal(censors_list, df, condition, controls)
+    
+    expect_true(result$ci.lower <= result$hazard.ratio)
+    expect_true(result$ci.upper >= result$hazard.ratio)
+    expect_true(result$p.value >= 0 && result$p.value <= 1)
+})
