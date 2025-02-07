@@ -1,7 +1,7 @@
 #' @title RNA Functions
 #' @description A collection of functions for RNA analysis.
 #' @name rna_functions
-#' @importFrom dplyr select inner_join mutate 
+#' @importFrom dplyr select inner_join mutate
 #' @importFrom tibble rownames_to_column
 #' @importFrom purrr map reduce
 #' @importFrom DESeq2 DESeq results lfcShrink plotMA DESeqDataSet
@@ -387,11 +387,11 @@ deseq_analysis <- function(dds, conditions, controls = NULL, outpath, ...) {
   dir.create(outpath, showWarnings = FALSE, recursive = TRUE)
 
   # Initialize list to store results
-  analysis_list <- list()
-  summary_df <- data.frame()
+  # analysis_list <- list()
+  # summary_df <- data.frame()
 
-  # Loop through each condition
-  for (condition in conditions) {
+  # Use lapply to iterate through conditions
+  analysis_list <- lapply(conditions, function(condition) {
     # Create directory for each condition
     dir.create(file.path(outpath, condition), showWarnings = FALSE, recursive = TRUE)
 
@@ -432,44 +432,36 @@ deseq_analysis <- function(dds, conditions, controls = NULL, outpath, ...) {
       }
     )
 
-    # One-vs-Rest (OVR) analysis for conditions with more than 2 levels
+    # Return results based on number of levels
     if (length(levels) > 2) {
+      # One-vs-Rest analysis
       res <- ovr_deseq_results(dds_, condition, file.path(outpath, condition), ...)
-
-      # Summarize results
       summary <- lapply(res, summarize_experiment)
-      for (i in 1:length(summary)) {
+      for (i in seq_along(summary)) {
         summary[[i]]$condition <- names(res)[i]
       }
       summary <- do.call(rbind, summary)
       summary <- summary[, c(ncol(summary), 1:(ncol(summary) - 1))]
-      summary_df <- rbind(summary_df, summary)
-      analysis_list[[condition]] <- res
-    }
+      summary_df <<- rbind(summary_df, summary)
+      return(res)
 
-    # DESeq2 analysis for conditions with exactly 2 levels
-    if (length(levels) == 2) {
+    } else if (length(levels) == 2) {
+      # Two-group comparison
       contrast <- c(condition, levels[2], levels[1])
       res <- run_deseq(dds_, file.path(outpath, condition), contrast = contrast, ...)
-
-      # Summarize results
       summary <- summarize_experiment(res)
       summary$condition <- condition
       summary <- summary[, c(ncol(summary), 1:(ncol(summary) - 1))]
-      summary_df <- rbind(summary_df, summary)
-      analysis_list[[condition]] <- res
+      summary_df <<- rbind(summary_df, summary)
+      return(res)
+      
+    } else {
+      # Skip conditions with insufficient levels
+      message(paste0("Skipping ", condition, " because it has ", length(levels), " levels"))
+      return(NULL)
     }
-
-    # Skip conditions with only one level
-    if (length(levels) == 1) {
-      message(paste0("Skipping ", condition, " because there is only one level"))
-    }
-
-    # Skip conditions with no levels
-    if (length(levels) == 0) {
-      message(paste0("Skipping ", condition, " because there are no levels"))
-    }
-  }
+  })
+  names(analysis_list) <- conditions
 
   # Save summary dataframe
   utils::write.csv(summary_df, file.path(outpath, "deseq_analysis_summary.csv"), row.names = FALSE)
