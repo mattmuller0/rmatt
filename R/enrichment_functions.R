@@ -97,7 +97,7 @@ rna_enrichment <- function(
 
   if (is.null(enricher_function)) {
     message("No enrichment function specified, defaulting to gseGO")
-    enricher_function <- gseGO
+    enricher_function <- clusterProfiler::gseGO
   }
 
   gse <- do.call(enricher_function, list(geneList, org.Hs.eg.db, keyType = keyType, ont = ontology, pvalueCutoff = Inf, ...))
@@ -232,8 +232,18 @@ save_gse <- function(gse, outpath, ...) {
   )
 }
 
+#' Load custom gene sets
+#' @return List of custom gene sets.
+get_custom_genesets <- function(){
+  files <- list.files("data/genesets", full.names = TRUE, pattern = ".csv")
+  gene_sets <- lapply(files, function(x) {
+    read.csv(x, header = TRUE, stringsAsFactors = FALSE)
+  })
+  t2g <- rbind(gene_sets)
+  return(t2g)
+}
+
 #' Run a GSEA analysis
-#'
 #' @param geneList List of genes to run enrichment on.
 #' @param outpath Path to save results.
 #' @param keyType Key type for gene list.
@@ -254,6 +264,7 @@ gsea_analysis <- function(
   dir.create(outpath, showWarnings = FALSE, recursive = TRUE)
 
   msigdb <- msigdbr(species = "Homo sapiens")
+
   gse_go <- gseGO(geneList = geneList, OrgDb = org.Hs.eg.db, keyType = keyType, ont = ontology, pvalueCutoff = Inf)
 
   H_t2g <- msigdb %>%
@@ -270,12 +281,17 @@ gsea_analysis <- function(
     filter(gs_cat == "C2" & gs_subcat == "CP:KEGG") %>%
     dplyr::select(gs_name, gene_symbol)
   gse_kegg <- GSEA(geneList, TERM2GENE = kegg_t2g, pvalueCutoff = Inf)
+  
+  # Custom t2g terms
+  cust_t2g <- get_custom_genesets()
+  gse_cust <- GSEA(geneList, TERM2GENE = cust_t2g, pvalueCutoff = Inf)
 
   gse_list <- list(
     GO = gse_go,
     H = gse_h,
     REACTOME = gse_reactome,
-    KEGG = gse_kegg
+    KEGG = gse_kegg,
+    CUSTOM = gse_cust
   )
 
   for (idx in seq_along(gse_list)) {
