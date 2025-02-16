@@ -28,3 +28,13 @@ test_that("get_fc_list handles basic cases correctly", {
   expect_error(get_fc_list(test_df, fc_col = "nonexistent"))
   expect_error(get_fc_list(test_df, names = "nonexistent"))
 })
+
+test_that("get_custom_genesets loads gene sets correctly", {
+  # Test function
+  result <- get_custom_genesets()
+  
+  # Test return type
+  expect_s3_class(result, "data.frame")
+  # Test column names
+  expect_equal(colnames(result), c("gs_name", "gene_symbol"))
+})
