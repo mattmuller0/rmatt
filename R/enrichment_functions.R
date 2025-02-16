@@ -281,8 +281,8 @@ gsea_analysis <- function(
   gse_kegg <- GSEA(geneList, TERM2GENE = kegg_t2g, pvalueCutoff = Inf)
 
   # Custom t2g terms
-  cust_t2g <- get_custom_genesets()
-  gse_cust <- GSEA(geneList, TERM2GENE = cust_t2g, pvalueCutoff = Inf)
+  # cust_t2g <- get_custom_genesets()
+  # gse_cust <- GSEA(geneList, TERM2GENE = cust_t2g, pvalueCutoff = Inf)
 
   gse_list <- list(
     GO = gse_go,
