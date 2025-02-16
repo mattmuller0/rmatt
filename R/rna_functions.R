@@ -273,7 +273,7 @@ run_deseq <- function(
       {
         sign_genes <- res[, pvalue] < pCutoff & abs(res[, "log2FoldChange"]) > FCcutoff
         sign_genes[is.na(sign_genes)] <- FALSE # some error handing for outliers as NA
-        heatmapP <- plot_gene_heatmap(dds[sign_genes, ], title = name, annotations = contrast[1], normalize = "vst", show_row_names = FALSE, show_column_names = FALSE)
+        heatmapP <- plot_gene_heatmap(dds[sign_genes, ], title = name, annotations = contrast[1], normalize = "log2-mor", show_row_names = FALSE, show_column_names = FALSE)
         pdf(file.path(outpath, "dge_heatmap.pdf"))
         print(heatmapP)
         dev.off()
@@ -444,7 +444,6 @@ deseq_analysis <- function(dds, conditions, controls = NULL, outpath, ...) {
       summary <- summary[, c(ncol(summary), 1:(ncol(summary) - 1))]
       summary_df <<- rbind(summary_df, summary)
       return(res)
-
     } else if (length(levels) == 2) {
       # Two-group comparison
       contrast <- c(condition, levels[2], levels[1])
@@ -454,7 +453,6 @@ deseq_analysis <- function(dds, conditions, controls = NULL, outpath, ...) {
       summary <- summary[, c(ncol(summary), 1:(ncol(summary) - 1))]
       summary_df <<- rbind(summary_df, summary)
       return(res)
-      
     } else {
       # Skip conditions with insufficient levels
       message(paste0("Skipping ", condition, " because it has ", length(levels), " levels"))
