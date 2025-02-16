@@ -388,7 +388,7 @@ deseq_analysis <- function(dds, conditions, controls = NULL, outpath, ...) {
 
   # Initialize list to store results
   # analysis_list <- list()
-  # summary_df <- data.frame()
+  summary_df <- data.frame()
 
   # Use lapply to iterate through conditions
   analysis_list <- lapply(conditions, function(condition) {
