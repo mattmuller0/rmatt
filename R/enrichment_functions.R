@@ -235,11 +235,11 @@ save_gse <- function(gse, outpath, ...) {
 #' Load custom gene sets
 #' @return List of custom gene sets.
 get_custom_genesets <- function(){
-  files <- list.files("data/genesets", full.names = TRUE, pattern = ".csv")
-  gene_sets <- lapply(files, function(x) {
-    read.csv(x, header = TRUE, stringsAsFactors = FALSE)
-  })
-  t2g <- rbind(gene_sets)
+  # Load custom gene sets
+  mpa_geneset <- read.csv("https://raw.githubusercontent.com/mattmuller0/rmatt/refs/heads/main/data/genesets/mpa_signature.csv", header = TRUE)
+  press_geneset <- read.csv("https://raw.githubusercontent.com/mattmuller0/rmatt/refs/heads/main/data/genesets/press451_genes.csv", header = TRUE)
+
+  t2g <- rbind(mpa_geneset, press_geneset)
   return(t2g)
 }
 
