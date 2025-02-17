@@ -287,7 +287,7 @@ gsea_analysis <- function(
     H = gse_h,
     REACTOME = gse_reactome,
     KEGG = gse_kegg
-    # CUSTOM = gse_cust
+    CUSTOM = gse_cust
   )
 
   for (idx in seq_along(gse_list)) {
