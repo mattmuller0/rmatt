@@ -286,7 +286,7 @@ gsea_analysis <- function(
     GO = gse_go,
     H = gse_h,
     REACTOME = gse_reactome,
-    KEGG = gse_kegg
+    KEGG = gse_kegg,
     CUSTOM = gse_cust
   )
 
