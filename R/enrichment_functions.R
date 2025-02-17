@@ -233,7 +233,7 @@ save_gse <- function(gse, outpath, ...) {
 
 #' Load custom gene sets
 #' @return List of custom gene sets.
-get_custom_genesets <- function(){
+get_custom_genesets <- function() {
   # Load custom gene sets
   mpa_geneset <- read.csv("https://raw.githubusercontent.com/mattmuller0/rmatt/refs/heads/main/data/genesets/mpa_signature.csv", header = TRUE)
   press_geneset <- read.csv("https://raw.githubusercontent.com/mattmuller0/rmatt/refs/heads/main/data/genesets/press451_genes.csv", header = TRUE)
@@ -246,14 +246,12 @@ get_custom_genesets <- function(){
 #' @param geneList List of genes to run enrichment on.
 #' @param outpath Path to save results.
 #' @param keyType Key type for gene list.
-#' @param msigdb_category MSigDB category (default is "H").
 #' @param ontology Ontology to use (default is ALL).
 #' @return Enrichment results for each level of column of interest.
 #' @export
 gsea_analysis <- function(
     geneList, outpath,
     keyType = NULL,
-    msigdb_category = "H",
     ontology = "ALL") {
   if (is.null(keyType)) {
     keyType <- detect_gene_id_type(names(geneList), strip = TRUE)
@@ -281,8 +279,8 @@ gsea_analysis <- function(
   gse_kegg <- GSEA(geneList, TERM2GENE = kegg_t2g, pvalueCutoff = Inf)
 
   # Custom t2g terms
-  # cust_t2g <- get_custom_genesets()
-  # gse_cust <- GSEA(geneList, TERM2GENE = cust_t2g, pvalueCutoff = Inf)
+  cust_t2g <- get_custom_genesets()
+  gse_cust <- GSEA(geneList, TERM2GENE = cust_t2g, pvalueCutoff = Inf)
 
   gse_list <- list(
     GO = gse_go,
