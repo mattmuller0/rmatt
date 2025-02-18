@@ -253,8 +253,6 @@ gsea_analysis <- function(
 
   msigdb <- msigdbr(species = "Homo sapiens")
 
-  # gse_go <- gseGO(geneList = geneList, OrgDb = org.Hs.eg.db, keyType = keyType, ont = ontology, pvalueCutoff = Inf)
-
   # match the keytype to the ID held in msigdbr
   gene_keys <- list(
     SYMBOL = "gene_symbol",
@@ -345,7 +343,6 @@ stratified_ora <- function(
   out <- purrr::map_dfr(
     c("up", "down"), ~ {
       enr <- if (.x == "up") enr_fn(up_genes) else enr_fn(down_genes)
-      print(enr)
 
       if (is.null(enr)) {
         message("No results found for ", .x)
