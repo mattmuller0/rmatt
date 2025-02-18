@@ -247,7 +247,7 @@ gsea_analysis <- function(
 
   msigdb <- msigdbr(species = "Homo sapiens")
 
-  gse_go <- gseGO(geneList = geneList, OrgDb = org.Hs.eg.db, keyType = keyType, ont = ontology, pvalueCutoff = Inf)
+  # gse_go <- gseGO(geneList = geneList, OrgDb = org.Hs.eg.db, keyType = keyType, ont = ontology, pvalueCutoff = Inf)
 
   # match the keytype to the ID held in msigdbr
   gene_keys <- list(
@@ -257,14 +257,21 @@ gsea_analysis <- function(
   )
   gene_key <- gene_keys[[keyType]]
 
+  GO_t2g <- msigdb %>%
+    filter(gs_cat == "C5" & gs_subcat != "HP") %>%
+    dplyr::select(gs_name, all_of(gene_key))
+  gse_go <- GSEA(geneList, TERM2GENE = GO_t2g, pvalueCutoff = Inf)
+
   H_t2g <- msigdb %>%
     filter(gs_cat == "H") %>%
     dplyr::select(gs_name, all_of(gene_key))
+  print(head(H_t2g))
   gse_h <- GSEA(geneList, TERM2GENE = H_t2g, pvalueCutoff = Inf)
 
   reactome_t2g <- msigdb %>%
     filter(gs_cat == "C2" & gs_subcat == "CP:REACTOME") %>%
     dplyr::select(gs_name, all_of(gene_key))
+  print(head(reactome_t2g))
   gse_reactome <- GSEA(geneList, TERM2GENE = reactome_t2g, pvalueCutoff = Inf)
 
   kegg_t2g <- msigdb %>%
@@ -273,8 +280,13 @@ gsea_analysis <- function(
   gse_kegg <- GSEA(geneList, TERM2GENE = kegg_t2g, pvalueCutoff = Inf)
 
   # Custom t2g terms
-  cust_t2g <- get_custom_genesets()
-  gse_cust <- GSEA(geneList, TERM2GENE = cust_t2g, pvalueCutoff = Inf)
+  # Only run custom gene sets if keyType is SYMBOL
+  if (keyType == "SYMBOL") {
+    cust_t2g <- get_custom_genesets()
+    gse_cust <- GSEA(geneList, TERM2GENE = cust_t2g, pvalueCutoff = Inf)
+  } else {
+    gse_cust <- NULL
+  }
 
   gse_list <- list(
     GO = gse_go,
