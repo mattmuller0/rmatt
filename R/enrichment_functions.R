@@ -114,6 +114,12 @@ rna_enrichment <- function(
 save_gse <- function(gse, outpath, ...) {
   dir.create(outpath, showWarnings = FALSE, recursive = TRUE)
 
+  # make sure gse isn't null for error handling
+  if (is.null(gse)) {
+    message("GSE object is NULL")
+    return(NULL)
+  }
+
   write.csv(gse@result, file.path(outpath, "enrichment_results.csv"), quote = TRUE, row.names = FALSE)
   write.csv(filter(gse@result, qvalue < 0.1), file.path(outpath, "enrichment_results_sig.csv"), quote = TRUE, row.names = FALSE)
   saveRDS(gse, file.path(outpath, "enrichment_results.rds"))
@@ -265,13 +271,11 @@ gsea_analysis <- function(
   H_t2g <- msigdb %>%
     filter(gs_cat == "H") %>%
     dplyr::select(gs_name, all_of(gene_key))
-  print(head(H_t2g))
   gse_h <- GSEA(geneList, TERM2GENE = H_t2g, pvalueCutoff = Inf)
 
   reactome_t2g <- msigdb %>%
     filter(gs_cat == "C2" & gs_subcat == "CP:REACTOME") %>%
     dplyr::select(gs_name, all_of(gene_key))
-  print(head(reactome_t2g))
   gse_reactome <- GSEA(geneList, TERM2GENE = reactome_t2g, pvalueCutoff = Inf)
 
   kegg_t2g <- msigdb %>%
