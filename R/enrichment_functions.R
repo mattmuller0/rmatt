@@ -249,19 +249,27 @@ gsea_analysis <- function(
 
   gse_go <- gseGO(geneList = geneList, OrgDb = org.Hs.eg.db, keyType = keyType, ont = ontology, pvalueCutoff = Inf)
 
+  # match the keytype to the ID held in msigdbr
+  gene_keys <- list(
+    SYMBOL = "gene_symbol",
+    ENTREZID = "entrez_gene",
+    ENSEMBL = "ensembl_gene"
+  )
+  gene_key <- gene_keys[[keyType]]
+
   H_t2g <- msigdb %>%
     filter(gs_cat == "H") %>%
-    dplyr::select(gs_name, gene_symbol)
+    dplyr::select(gs_name, all_of(gene_key))
   gse_h <- GSEA(geneList, TERM2GENE = H_t2g, pvalueCutoff = Inf)
 
   reactome_t2g <- msigdb %>%
     filter(gs_cat == "C2" & gs_subcat == "CP:REACTOME") %>%
-    dplyr::select(gs_name, gene_symbol)
+    dplyr::select(gs_name, all_of(gene_key))
   gse_reactome <- GSEA(geneList, TERM2GENE = reactome_t2g, pvalueCutoff = Inf)
 
   kegg_t2g <- msigdb %>%
     filter(gs_cat == "C2" & gs_subcat == "CP:KEGG") %>%
-    dplyr::select(gs_name, gene_symbol)
+    dplyr::select(gs_name, all_of(gene_key))
   gse_kegg <- GSEA(geneList, TERM2GENE = kegg_t2g, pvalueCutoff = Inf)
 
   # Custom t2g terms
