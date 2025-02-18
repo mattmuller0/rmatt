@@ -4,16 +4,18 @@
 \alias{color_mapping}
 \title{Color Mapping}
 \usage{
-color_mapping(df, custom_colors = NULL)
+color_mapping(df, custom_colors = NULL, alpha = 1)
 }
 \arguments{
-\item{df}{Data frame of annotations}
+\item{df}{Data frame containing variables to be mapped}
 
-\item{custom_colors}{List of custom colors to use with names of variables}
+\item{custom_colors}{Optional list of custom color mappings}
+
+\item{alpha}{Color transparency (0-1, default: 0.8)}
 }
 \value{
-List of annotation color maps
+List of color mappings for continuous and categorical variables
 }
 \description{
-Function to make annotation color maps for continuous variables and categorical variables
+Creates color maps for continuous and categorical variables
 }

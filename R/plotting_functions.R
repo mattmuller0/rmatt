@@ -138,12 +138,10 @@ plot_enrichment_terms <- function(
     )
 
   if (!is.null(terms2plot)) {
-    print(paste0("Plotting ", length(terms2plot), " terms"))
     enrichment_terms <- enrichment_terms %>%
       filter(grepl(paste0(tolower(terms2plot), collapse = "|"), tolower(Description)), qvalue < qvalueCutoff)
   }
   if (!is.null(genes2plot)) {
-    print(paste0("Plotting ", length(genes2plot), " genes"))
     enrichment_terms <- enrichment_terms %>%
       filter(grepl(paste0(tolower(genes2plot), collapse = "|"), tolower(core_enrichment)), qvalue < qvalueCutoff) %>%
       filter(grepl(paste0(tolower(genes2plot), collapse = "|"), tolower(gene_id)), qvalue < qvalueCutoff)

@@ -6,7 +6,7 @@
 \usage{
 plot_gene_heatmap(
   dds,
-  title = character(0),
+  genes = NULL,
   annotations = NULL,
   normalize = "vst",
   ...
@@ -15,13 +15,13 @@ plot_gene_heatmap(
 \arguments{
 \item{dds}{DESeq2 object}
 
-\item{title}{Title of plot}
-
 \item{annotations}{List of annotations to plot}
 
 \item{normalize}{Type of normalization to use}
 
 \item{...}{Additional arguments to pass to ComplexHeatmap}
+
+\item{title}{Title of plot}
 }
 \value{
 ComplexHeatmap object of gene heatmap

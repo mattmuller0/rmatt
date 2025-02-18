@@ -4,13 +4,7 @@
 \alias{gsea_analysis}
 \title{Run a GSEA analysis}
 \usage{
-gsea_analysis(
-  geneList,
-  outpath,
-  keyType = NULL,
-  msigdb_category = "H",
-  ontology = "ALL"
-)
+gsea_analysis(geneList, outpath, keyType = NULL, ontology = "ALL")
 }
 \arguments{
 \item{geneList}{List of genes to run enrichment on.}
@@ -18,8 +12,6 @@ gsea_analysis(
 \item{outpath}{Path to save results.}
 
 \item{keyType}{Key type for gene list.}
-
-\item{msigdb_category}{MSigDB category (default is "H").}
 
 \item{ontology}{Ontology to use (default is ALL).}
 }
