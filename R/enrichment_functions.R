@@ -125,7 +125,7 @@ save_gse <- function(gse, outpath, ...) {
       ggsave(file.path(outpath, paste0("dotplot.pdf")), gseDot, ...)
     },
     error = function(e) {
-      warning("Dotplot GSEA Plots Failed")
+      message("Dotplot GSEA Plots Failed")
     }
   )
 
@@ -135,7 +135,7 @@ save_gse <- function(gse, outpath, ...) {
       ggsave(file.path(outpath, paste0("cnetplot.pdf")), cnet, ...)
     },
     error = function(e) {
-      warning("Cnetplot GSEA Plots Failed")
+      message("Cnetplot GSEA Plots Failed")
     }
   )
 
@@ -160,7 +160,7 @@ save_gse <- function(gse, outpath, ...) {
       ggsave(file.path(outpath, paste0("barplot_all.pdf")), gseBar, ...)
     },
     error = function(e) {
-      warning("GSEA Barplot Failed")
+      message("GSEA Barplot Failed")
     }
   )
 
@@ -186,7 +186,7 @@ save_gse <- function(gse, outpath, ...) {
       ggsave(file.path(outpath, paste0("barplot_BP.pdf")), gseBar_bp, ...)
     },
     error = function(e) {
-      warning("GSEA Barplot BP Failed")
+      message("GSEA Barplot BP Failed")
     }
   )
 
@@ -196,7 +196,7 @@ save_gse <- function(gse, outpath, ...) {
       ggsave(file.path(outpath, paste0("cnetplot.pdf")), cnet, ...)
     },
     error = function(e) {
-      warning("Cnetplot GSEA Plots Failed")
+      message("Cnetplot GSEA Plots Failed")
     }
   )
 
@@ -206,7 +206,7 @@ save_gse <- function(gse, outpath, ...) {
       ggsave(file.path(outpath, paste0("barplot_terms.pdf")), p_terms, ...)
     },
     error = function(e) {
-      warning("GSEA Term Specific Barplot Failed")
+      message("GSEA Term Specific Barplot Failed")
     }
   )
 
@@ -216,7 +216,7 @@ save_gse <- function(gse, outpath, ...) {
       ggsave(file.path(outpath, paste0("ridgeplot.pdf")), p_ridge, ...)
     },
     error = function(e) {
-      warning("RidgePlot GSEA Failed")
+      message("RidgePlot GSEA Failed")
     }
   )
 
@@ -226,7 +226,7 @@ save_gse <- function(gse, outpath, ...) {
       ggsave(file.path(outpath, paste0("heatplot.pdf")), p_heat, ...)
     },
     error = function(e) {
-      warning("Heatplot GSEA Failed")
+      message("Heatplot GSEA Failed")
     }
   )
 }

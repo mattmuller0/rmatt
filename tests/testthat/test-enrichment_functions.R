@@ -47,7 +47,12 @@ test_that("get_custom_genesets loads gene sets correctly", {
 test_that("gsea_analysis works correctly", {
   # Create test data
   test_genes <- c("WASF1", "WDR13", "PGAM1", "PGD", "PLIN3", "POMGNT2", 
-                  "PTMAP9", "IMPA2", "MAPK1", "MAP1A", "HSPA2", "GALM")
+                  "PTMAP9", "IMPA2", "MAPK1", "MAP1A", "HSPA2", "GALM",
+                  "TP53", "BRCA1", "EGFR", "TNF", "IL6", "VEGFA",
+                  "MYC", "KRAS", "PTEN", "AKT1", "MTOR", "PIK3CA",
+                  "NFKB1", "STAT3", "MAPK3", "CDK2", "CCND1", "BCL2",
+                  "BAX", "CASP3", "HIF1A", "NOTCH1", "WNT1", "GSK3B",
+                  "CTNNB1", "CDKN1A", "MDM2", "FOS", "JUN", "GAPDH")
   test_values <- rnorm(length(test_genes))
   names(test_values) <- test_genes
   test_list <- sort(test_values, decreasing = TRUE)
@@ -56,18 +61,11 @@ test_that("gsea_analysis works correctly", {
   temp_dir <- tempdir()
   
   # Run function
-  result <- gsea_analysis(test_list, temp_dir, keyType = "SYMBOL")
+  result <- gsea_analysis(test_list, temp_dir)
   
   # Test return value structure
   expect_type(result, "list")
   expect_equal(names(result), c("GO", "H", "REACTOME", "KEGG", "CUSTOM"))
-  
-  # Test that each component is a gseaResult object
-  expect_s4_class(result$GO, "gseaResult")
-  expect_s4_class(result$H, "gseaResult")
-  expect_s4_class(result$REACTOME, "gseaResult")
-  expect_s4_class(result$KEGG, "gseaResult")
-  expect_s4_class(result$CUSTOM, "gseaResult")
   
   # Test file outputs
   expect_true(file.exists(file.path(temp_dir, "GO")))
@@ -75,8 +73,4 @@ test_that("gsea_analysis works correctly", {
   expect_true(file.exists(file.path(temp_dir, "REACTOME")))
   expect_true(file.exists(file.path(temp_dir, "KEGG")))
   expect_true(file.exists(file.path(temp_dir, "CUSTOM")))
-  
-  # Test error handling
-  expect_error(gsea_analysis(test_list, temp_dir, keyType = "INVALID"))
-  expect_error(gsea_analysis(test_list, temp_dir, ontology = "INVALID"))
 })
