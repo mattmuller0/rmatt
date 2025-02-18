@@ -80,7 +80,7 @@ plot_gene_heatmap <- function(dds, genes = NULL, annotations = NULL, normalize =
   if (is.null(genes)) {
     genes <- rownames(norm_counts)
   }
-  norm_counts <- norm_counts[genes, ]
+  norm_counts <- norm_counts[genes, ] # this is giving this error: An error occurred while generating the heatmap: object of type 'closure' is not subsettable
 
   # Create heatmap
   if (is.null(annotations)) {
@@ -101,7 +101,6 @@ plot_gene_heatmap <- function(dds, genes = NULL, annotations = NULL, normalize =
 
     heatmap <- Heatmap(
       matrix = norm_counts,
-      column_title = title,
       name = "Z-Score",
       top_annotation = annotations_top,
       ...
@@ -435,7 +434,7 @@ plot_volcano <- function(
 #' @return ggplot object
 #' @export
 plot_correlation_matrix <- function(cor_mat, title = "", xlab = "", ylab = "", x_order = NULL, y_order = NULL, ...) {
-  long_cor_mat <- cor_mat %>%
+  long_cor_mat <- as.data.frame(cor_mat) %>%
     rownames_to_column("var1") %>%
     pivot_longer(-var1, names_to = "var2", values_to = "cor")
 

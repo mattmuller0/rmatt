@@ -153,7 +153,7 @@ save_gse <- function(gse, outpath, ...) {
           slice(1:10) %>%
           mutate(
             # Remove prefixes from description and wrap text
-            Description = gsub("^(REACTOME_|GO_|HALLMARK_)", "", Description),
+            Description = gsub("^(REACTOME_|HALLMARK_|GO(CC|BP|MF)_|KEGG_)", "", Description),
             Description = gsub("_", " ", Description),
             Description = factor(stringr::str_wrap(Description, 40))
           )
@@ -262,7 +262,7 @@ gsea_analysis <- function(
   gene_key <- gene_keys[[keyType]]
 
   GO_t2g <- msigdb %>%
-    filter(gs_cat == "C5" & gs_subcat != "HP") %>%
+    filter(gs_cat == "C5" & gs_subcat != "HPO") %>%
     dplyr::select(gs_name, all_of(gene_key))
   gse_go <- GSEA(geneList, TERM2GENE = GO_t2g, pvalueCutoff = Inf)
 
