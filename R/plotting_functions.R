@@ -160,46 +160,65 @@ plot_enrichment_terms <- function(
 }
 
 #' @title Color Mapping
-#' @description Function to make annotation color maps for continuous variables and categorical variables
-#' @param df Data frame of annotations
-#' @param custom_colors List of custom colors to use with names of variables
-#' @return List of annotation color maps
-color_mapping <- function(df, custom_colors = NULL) {
-  continuous_vars <- colnames(select_if(df, is.numeric))
-  categorical_vars <- colnames(select_if(df, is.factor))
-  convert_to_factor <- colnames(select_if(df, is.character))
-  categorical_vars <- c(categorical_vars, convert_to_factor)
-
-  color_list <- pal_npg("nrc", alpha = 0.8)(10)
-  color_list[1:2] <- color_list[2:1]
-
+#' @description Creates color maps for continuous and categorical variables
+#' @param df Data frame containing variables to be mapped
+#' @param custom_colors Optional list of custom color mappings
+#' @param alpha Color transparency (0-1, default: 0.8)
+#' @return List of color mappings for continuous and categorical variables
+#' @export
+color_mapping <- function(df, custom_colors = NULL, alpha = 0.8) {
+  if (!is.data.frame(df)) stop("Input must be a data frame")
+  
+  # Identify variable types and initialize color maps
+  is_continuous <- sapply(df, is.numeric)
+  cont_vars <- names(which(is_continuous))
+  cat_vars <- names(which(!is_continuous))
   color_maps <- list()
-  if (!is.null(continuous_vars)) {
-    for (var in continuous_vars) {
-      if (is.null(custom_colors)) {
-        min_v <- min(na.omit(df[[var]]), na.rm = T)
-        max_v <- max(na.omit(df[[var]]), na.rm = T)
-        length_v <- length(na.omit(df[[var]]))
-        color_maps[[var]] <- circlize::colorRamp2(
-          seq(min_v, max_v, length.out = 3),
-          RColorBrewer::brewer.pal(3, "Blues")
-        )
-      } else {
-        color_maps[[var]] <- custom_colors[[var]]
-      }
+  
+  # Handle continuous variables
+  for (var in cont_vars) {
+    if (!is.null(custom_colors[[var]])) {
+      color_maps[[var]] <- custom_colors[[var]]
+      next
+    }
+    
+    values <- df[[var]][is.finite(df[[var]])]
+    breaks <- if (length(values) == 0) c(0, 0.5, 1) else quantile(values, c(0, 0.5, 1))
+    
+    # Adjust breaks if all values are identical
+    if (length(unique(breaks)) == 1) {
+      breaks <- c(breaks[1] - 1, breaks[1], breaks[1] + 1)
+    }
+    
+    color_maps[[var]] <- circlize::colorRamp2(
+      breaks,
+      grDevices::adjustcolor(RColorBrewer::brewer.pal(3, "Blues"), alpha)
+    )
+  }
+  
+  # Handle categorical variables
+  for (var in cat_vars) {
+    if (!is.null(custom_colors[[var]])) {
+      color_maps[[var]] <- custom_colors[[var]]
+      next
+    }
+    
+    levels <- unique(as.factor(df[[var]]))
+    n_levels <- length(levels)
+    
+    if (n_levels > 0) {
+      colors <- grDevices::adjustcolor(
+        RColorBrewer::brewer.pal(min(max(3, n_levels), 8), "Set2"),
+        alpha
+      )
+      
+      color_maps[[var]] <- setNames(
+        rep_len(colors, n_levels),
+        levels
+      )
     }
   }
-  if (!is.null(categorical_vars)) {
-    for (var in categorical_vars) {
-      if (is.null(custom_colors)) {
-        c_list <- color_list[1:length(levels(na.omit(df[[var]])))]
-        names(c_list) <- sort(unique(na.omit(df[[var]])))
-        color_maps[[var]] <- c_list
-      } else {
-        color_maps[[var]] <- custom_colors[[var]]
-      }
-    }
-  }
+  
   return(color_maps)
 }
 
