@@ -56,8 +56,7 @@ get_fc_list <- function(res, fc_col = "log2FoldChange", names = NULL) {
   }
 
   # Create sorted fold change vector
-  fc <- res %>%
-    as.data.frame() %>%
+  fc <- as.data.frame(res) %>%
     dplyr::select(!!sym(fc_col)) %>%
     unlist() %>%
     stats::setNames(res[[names]]) %>%
@@ -125,7 +124,7 @@ save_gse <- function(gse, outpath, ...) {
       ggsave(file.path(outpath, paste0("dotplot.pdf")), gseDot, ...)
     },
     error = function(e) {
-      warning("Dotplot GSEA Plots Failed")
+      message("Dotplot GSEA Plots Failed")
     }
   )
 
@@ -135,58 +134,45 @@ save_gse <- function(gse, outpath, ...) {
       ggsave(file.path(outpath, paste0("cnetplot.pdf")), cnet, ...)
     },
     error = function(e) {
-      warning("Cnetplot GSEA Plots Failed")
+      message("Cnetplot GSEA Plots Failed")
     }
   )
 
   tryCatch(
     {
-      gse_bar <- gse %>%
-        as.data.frame() %>%
-        group_by(sign(NES)) %>%
-        arrange(qvalue) %>%
-        slice(1:10) %>%
-        mutate(
-          Description = gsub("^(REACTOME_|GO_|HALLMARK_)", "", Description),
-          Description = gsub("_", " ", Description),
-          Description = factor(stringr::str_wrap(Description, 40))
-        )
-
-      gseBar <- ggplot(gse_bar, aes(NES, fct_reorder(Description, NES), fill = qvalue)) +
-        geom_col(orientation = "y") +
-        scale_fill_continuous(low = "red", high = "blue", guide = guide_colorbar(reverse = TRUE)) +
-        labs(title = "Enrichment Barplot", y = NULL) +
-        theme_classic2()
+      gsea_barplot <- function(gse) {
+        gse_bar <- as.data.frame(gse) %>%
+          group_by(sign(NES)) %>%
+          arrange(qvalue) %>%
+          slice(1:10) %>%
+          mutate(
+            # Remove prefixes from description and wrap text
+            Description = gsub("^(REACTOME_|GO_|HALLMARK_)", "", Description),
+            Description = gsub("_", " ", Description),
+            Description = factor(stringr::str_wrap(Description, 40))
+          )
+        plot <- ggplot(gse_bar, aes(NES, fct_reorder(Description, NES), fill = qvalue)) +
+          geom_col(orientation = "y") +
+          scale_fill_continuous(low = "red", high = "blue", guide = guide_colorbar(reverse = TRUE)) +
+          labs(title = "Enrichment Barplot", y = NULL) +
+          theme_classic2()
+        return(plot)
+      }
+      gseBar <- gsea_barplot(gse)
       ggsave(file.path(outpath, paste0("barplot_all.pdf")), gseBar, ...)
     },
     error = function(e) {
-      warning("GSEA Barplot Failed")
+      message("GSEA Barplot Failed")
     }
   )
 
   tryCatch(
     {
-      gse_bar_bp <- gse %>%
-        as.data.frame() %>%
-        filter(ONTOLOGY == "BP") %>%
-        group_by(sign(NES)) %>%
-        arrange(qvalue) %>%
-        slice(1:10) %>%
-        mutate(
-          Description = gsub("^(REACTOME_|GO_|HALLMARK_)", "", Description),
-          Description = gsub("_", " ", Description),
-          Description = factor(stringr::str_wrap(Description, 40))
-        )
-
-      gseBar_bp <- ggplot(gse_bar_bp, aes(NES, fct_reorder(Description, NES), fill = qvalue)) +
-        geom_col(orientation = "y") +
-        scale_fill_continuous(low = "red", high = "blue", guide = guide_colorbar(reverse = TRUE)) +
-        labs(title = "Enrichment Barplot", y = NULL) +
-        theme_classic2()
+      gseBar_bp <- gsea_barplot(filter(as.data.frame(gse), ONTOLOGY == "BP"))
       ggsave(file.path(outpath, paste0("barplot_BP.pdf")), gseBar_bp, ...)
     },
     error = function(e) {
-      warning("GSEA Barplot BP Failed")
+      message("GSEA Barplot BP Failed")
     }
   )
 
@@ -196,27 +182,27 @@ save_gse <- function(gse, outpath, ...) {
       ggsave(file.path(outpath, paste0("cnetplot.pdf")), cnet, ...)
     },
     error = function(e) {
-      warning("Cnetplot GSEA Plots Failed")
+      message("Cnetplot GSEA Plots Failed")
     }
   )
 
   tryCatch(
     {
-      p_terms <- plot_enrichment_terms(gse, terms2plot = c("inflam", "plat", "coag"), max_terms = 12)
+      p_terms <- plot_enrichment_terms(gse, terms2plot = c("inflam", "plat", "coag"), max_terms = min(10, nrow(gse@result)))
       ggsave(file.path(outpath, paste0("barplot_terms.pdf")), p_terms, ...)
     },
     error = function(e) {
-      warning("GSEA Term Specific Barplot Failed")
+      message("GSEA Term Specific Barplot Failed")
     }
   )
 
   tryCatch(
     {
-      p_ridge <- ridgeplot(gse, showCategory = 15)
+      p_ridge <- ridgeplot(gse, showCategory = min(10, nrow(gse@result)))
       ggsave(file.path(outpath, paste0("ridgeplot.pdf")), p_ridge, ...)
     },
     error = function(e) {
-      warning("RidgePlot GSEA Failed")
+      message("RidgePlot GSEA Failed")
     }
   )
 
@@ -226,7 +212,7 @@ save_gse <- function(gse, outpath, ...) {
       ggsave(file.path(outpath, paste0("heatplot.pdf")), p_heat, ...)
     },
     error = function(e) {
-      warning("Heatplot GSEA Failed")
+      message("Heatplot GSEA Failed")
     }
   )
 }
