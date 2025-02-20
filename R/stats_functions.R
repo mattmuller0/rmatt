@@ -7,23 +7,34 @@
 NULL
 
 #' Create a Table 1
-#' @description Create a stats table from a data.frame
-#' @param data data.frame, data to make table 1 from
-#' @param groups character, groups to stratify by
-#' @param vars character, variables to include in table 1
-#' @param printArgs list, arguments to pass to print
-#' @param ... other arguments to pass to CreateTableOne
-#' @return data.frame, table 1
+#' @description Create a comprehensive descriptive statistics table from a data.frame
+#' @param data data.frame, input data for statistical analysis
+#' @param groups character, column name(s) for group stratification
+#' @param vars character vector, optional list of variables to include in analysis (if NULL, uses all columns except groups)
+#' @param table.includeNA logical, whether to include NA as a valid category
+#' @param print.showAllLevels logical, whether to show all levels of categorical variables
+#' @param print.printToggle logical, whether to show variable labels
+#' @param print.catDigits integer, number of digits for categorical variables
+#' @param print.contDigits integer, number of digits for continuous variables
+#' @param print.pDigits integer, number of digits for p-values
+#' @param print.missing logical, whether to show missing data information
+#' @param print.nonnormal character vector, variables to be summarized with median/IQR
+#' @return matrix containing descriptive statistics table
 #' @export
 stats_table <- function(
     data,
     groups,
     vars = NULL,
-    printArgs = list(
-      showAllLevels = FALSE,
-      printToggle = FALSE
-    ),
-    ...) {
+    # Some parameters to pass to CreateTableOne
+    table.includeNA = FALSE,
+    # Some arguments to pass to print
+    print.showAllLevels = TRUE,
+    print.printToggle = FALSE,
+    print.catDigits = 1,
+    print.contDigits = 2,
+    print.pDigits = 3,
+    print.missing = FALSE,
+    print.nonnormal = NULL) {
   if (!requireNamespace("tableone", quietly = TRUE)) {
     stop("Package 'tableone' is required but not installed.")
   }
@@ -40,11 +51,21 @@ stats_table <- function(
     strata = groups,
     data = data,
     addOverall = TRUE,
+    includeNA = table.includeNA,
     ...
   )
 
   # Make a nice table 1
-  table1 <- do.call(print, c(list(table1), printArgs))
+  table1 <- tableone::print.TableOne(
+    table1,
+    showAllLevels = print.showAllLevels,
+    printToggle = print.printToggle,
+    catDigits = print.catDigits,
+    contDigits = print.contDigits,
+    pDigits = print.pDigits,
+    missing = print.missing,
+    nonnormal = print.nonnormal
+  )
   return(table1)
 }
 
@@ -62,7 +83,7 @@ hypergeometric_scoring <- function(
   geneset <- gse@gene
 
   # Get the enrichment sets
-  
+
   enrichment <- gse@geneSets
 
   # Get the universe genes
