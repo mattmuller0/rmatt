@@ -9,9 +9,10 @@ test_that("stats_table creates correct table", {
   )
   
   result <- stats_table(data, "group", c("age", "sex", "bmi"))
+  print(result)
   
   expect_true(is.matrix(result))
-  expect_equal(ncol(result), 5)  # Labels + Overall + 2 groups + p-value
+  expect_equal(ncol(result), 6)  # Labels + level + Overall + 2 groups + p-value
   expect_true(all(c("Overall", "A", "B", "p") %in% colnames(result)))
 })
 

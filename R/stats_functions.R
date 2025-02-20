@@ -12,6 +12,8 @@ NULL
 #' @param groups character, column name(s) for group stratification
 #' @param vars character vector, optional list of variables to include in analysis (if NULL, uses all columns except groups)
 #' @param table.includeNA logical, whether to include NA as a valid category
+#' @param table.addOverall logical, whether to add an overall column
+#' @param table.test logical, whether to include statistical tests
 #' @param print.showAllLevels logical, whether to show all levels of categorical variables
 #' @param print.printToggle logical, whether to show variable labels
 #' @param print.catDigits integer, number of digits for categorical variables
@@ -27,6 +29,8 @@ stats_table <- function(
     vars = NULL,
     # Some parameters to pass to CreateTableOne
     table.includeNA = FALSE,
+    table.addOverall = TRUE,
+    table.test = TRUE,
     # Some arguments to pass to print
     print.showAllLevels = TRUE,
     print.printToggle = FALSE,
@@ -50,13 +54,13 @@ stats_table <- function(
     vars = vars,
     strata = groups,
     data = data,
-    addOverall = TRUE,
-    includeNA = table.includeNA,
-    ...
+    addOverall = table.addOverall,
+    test = table.test,
+    includeNA = table.includeNA
   )
 
   # Make a nice table 1
-  table1 <- tableone::print.TableOne(
+  table1 <- print(
     table1,
     showAllLevels = print.showAllLevels,
     printToggle = print.printToggle,
