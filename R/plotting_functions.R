@@ -91,7 +91,7 @@ plot_gene_heatmap <- function(dds, genes = NULL, annotations = NULL, normalize =
     )
   } else {
     cd_df <- as.data.frame(colData(dds))
-    selected_df <- dplyr::select(cd_df, annotations)
+    selected_df <- dplyr::select(cd_df, any_of(annotations))
     annotations_top <- HeatmapAnnotation(
       df = selected_df,
       col = color_mapping(selected_df),

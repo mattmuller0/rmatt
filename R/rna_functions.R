@@ -471,7 +471,11 @@ deseq_analysis <- function(dds, conditions, controls = NULL, outpath, ...) {
 #' @description Function to compare different DESeq results.
 #' @param res1 Results of differential expression analysis 1.
 #' @param res2 Results of differential expression analysis 2.
-#'  data frame of comparison results
+#' @param metric Metric to compare.
+#' @param by Column to join on.
+#' @param suffix Suffix for columns.
+#' @return Data frame of results.
+#' @export
 compare_results <- function(res1, res2, metric = "log2FoldChange", by = "rowname", suffix = c("_1", "_2")) {
   res1 <- as.data.frame(res1)
   res2 <- as.data.frame(res2)
