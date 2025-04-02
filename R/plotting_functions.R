@@ -76,11 +76,14 @@ plot_gene_heatmap <- function(dds, genes = NULL, annotations = NULL, normalize =
   norm_counts <- normalize_counts(dds, method = normalize)
   norm_counts <- t(scale(t(norm_counts)))
 
-  # Filter genes
+  # Ensure genes are in the matrix
   if (is.null(genes)) {
     genes <- rownames(norm_counts)
+  } else {
+    genes <- intersect(genes, rownames(norm_counts))
   }
-  norm_counts <- norm_counts[genes, ] # this is giving this error: An error occurred while generating the heatmap: object of type 'closure' is not subsettable
+
+  norm_counts <- norm_counts[genes, ]
 
   # Create heatmap
   if (is.null(annotations)) {
