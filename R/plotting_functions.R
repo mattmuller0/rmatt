@@ -28,7 +28,7 @@ NULL
 #' @param bins Number of bins for histogram
 #' @return ggplot object of library depth
 plot_library_depth <- function(dds, title, bins = 30) {
-  p <- ggplot(data.frame(log2(rowMeans(assay(dds)) + 1)), aes(x = log2(rowMeans(assay(dds)) + 1))) +
+  p <- ggplot(data.frame(log2(rowMeans(assay(dds)) + 0.001)), aes(x = log2(rowMeans(assay(dds)) + 0.001))) +
     geom_histogram(bins = bins, fill = "blue", alpha = 0.65) +
     labs(x = "Log Library Depth", y = "Count", title = title) +
     theme_classic2()
@@ -42,7 +42,7 @@ plot_library_depth <- function(dds, title, bins = 30) {
 #' @param bins Number of bins for histogram
 #' @return ggplot object of library size
 plot_library_size <- function(dds, title, bins = 10) {
-  p <- ggplot(data.frame(log(colSums(assay(dds)) + 1)), aes(x = log2(colSums(assay(dds)) + 1))) +
+  p <- ggplot(data.frame(log2(colSums(assay(dds)) + 0.001)), aes(x = log2(colSums(assay(dds)) + 0.001))) +
     geom_histogram(bins = bins, fill = "blue", alpha = 0.65) +
     labs(x = "Log Library Size", y = "Count", title = title) +
     theme_classic2()
@@ -91,7 +91,7 @@ plot_gene_heatmap <- function(dds, genes = NULL, annotations = NULL, normalize =
     )
   } else {
     cd_df <- as.data.frame(colData(dds))
-    selected_df <- dplyr::select(cd_df, annotations)
+    selected_df <- dplyr::select(cd_df, any_of(annotations))
     annotations_top <- HeatmapAnnotation(
       df = selected_df,
       col = color_mapping(selected_df),
