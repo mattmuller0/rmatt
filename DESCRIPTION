@@ -46,7 +46,7 @@ Suggests:
     msigdbr (>= 7.0.0),
     NMF (>= 0.25),
     OlinkAnalyze (>= 3.0.0),
-    rlang (= 1.1.5),
+    rlang (>= 1.1.5),
     rmarkdown (>= 2.20),
     rstatix (>= 0.7.0),
     singscore (>= 1.10.0),
