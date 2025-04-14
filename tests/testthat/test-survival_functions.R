@@ -192,7 +192,6 @@ test_that("hazard_ratios_table handles per_sd option correctly", {
 test_that("hazard_ratios_table handles tibble input correctly", {
     test_data <- create_mock_survival_data()
     test_data <- as_tibble(test_data)
-    print(test_data)
     
     result <- hazard_ratios_table(
         df = test_data,
@@ -218,7 +217,6 @@ test_that("hazard_ratios_table handles one-vs-rest correctly", {
         time_prefix = "time_to_",
         censor_prefix = "censor_"
     )
-    print(result)
     
     expect_true(is.data.frame(result))
     expect_equal(nrow(result), 3)  # One row per level of multigroup

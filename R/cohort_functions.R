@@ -10,7 +10,6 @@
 #' @param data Data frame containing the data to be checked
 #' @param required_columns Vector of required column names
 #' @return Logical value indicating whether the data is valid
-#' @export
 check_input_data <- function(data, required_columns) {
   # Check if all required columns are present in the data
   missing_columns <- setdiff(required_columns, colnames(data))

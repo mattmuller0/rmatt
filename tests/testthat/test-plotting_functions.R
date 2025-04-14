@@ -56,10 +56,7 @@ test_that("plot_gene_heatmap creates valid Heatmap object", {
 
 test_that("plot_gene_heatmap handles missing genes gracefully", {
     dds <- create_mock_dds()
-    expect_error(
-        plot_gene_heatmap(dds, genes = c("nonexistent_gene")),
-        "subscript out of bounds"
-    )
+    expect_warning(plot_gene_heatmap(dds, genes = c("nonexistent_gene")))
 })
 
 test_that("plot_gene_heatmap handles NULL gene list", {

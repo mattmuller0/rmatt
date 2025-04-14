@@ -77,10 +77,12 @@ plot_gene_heatmap <- function(dds, genes = NULL, annotations = NULL, normalize =
   norm_counts <- t(scale(t(norm_counts)))
 
   # Ensure genes are in the matrix
-  if (is.null(genes)) {
-    genes <- rownames(norm_counts)
-  } else {
-    genes <- intersect(genes, rownames(norm_counts))
+  if (is.null(genes)) {genes <- rownames(norm_counts)}
+  
+  # Check if any of the genes aren't in the matrix
+  if (any(!genes %in% rownames(norm_counts))) {
+    warning("Some genes are not in the matrix and will be removed (", paste(genes[!genes %in% rownames(norm_counts)], collapse = ", "), ")")
+    genes <- genes[genes %in% rownames(norm_counts)]
   }
 
   norm_counts <- norm_counts[genes, ]
