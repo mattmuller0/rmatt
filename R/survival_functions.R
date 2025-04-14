@@ -208,7 +208,7 @@ hazard_ratios_table <- function(
   # check if we are per_sd
   if (per_sd) {
     # make sure the condition is continuous
-    if (!is.numeric(df[, condition])) {
+    if (!is.numeric(df[[condition]])) {
       stop("condition must be numeric if per_sd is TRUE")
     }
     df[, condition] <- scale(df[, condition])
