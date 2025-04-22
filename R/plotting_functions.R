@@ -570,7 +570,7 @@ theme_matt <- function(base_size = 16, base_family = "", ...) {
       legend.text = element_text(size = base_size * 0.9, colour = "black"),
       legend.title = element_text(size = base_size * 0.9, colour = "black"),
       legend.background = element_blank(),
-      legend.box.background = element_rect(colour = "black", size = 0.5),
+      legend.box.background = element_rect(colour = "black", linewidth = 0.5),
       legend.box.margin = margin(6, 6, 6, 6),
       legend.margin = margin(0, 0, 0, 0),
       # Edits to labels
