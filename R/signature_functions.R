@@ -1,5 +1,5 @@
 #' @title Signature Functions
-#' @description This script contains functions for signature analysis. 
+#' @description This script contains functions for signature analysis.
 #' @details The functions include selecting top genes by variance, filtering genes by expression, filtering genes by lasso regression, and aligning a signature by average correlation with the derivation values.
 #' @name signature_functions
 #' @importFrom ggplot2 ggplot aes geom_point geom_smooth geom_boxplot labs ggsave
@@ -99,36 +99,43 @@ compare_one_to_many <- function(df, col, cols, outdir, plot = TRUE, method = "sp
         }
 
         data_type <- class(df[[x]])
-        base_plot <- ggplot2::ggplot(tidyr::drop_na(df, dplyr::any_of(c(col, x))), ggplot2::aes(!!rlang::sym(x), !!rlang::sym(col))) +
-            ggplot2::labs(title = glue::glue("{col} vs {x}"), x = x, y = col)
+
+        if (plot) {
+            base_plot <- ggplot2::ggplot(tidyr::drop_na(df, dplyr::any_of(c(col, x))), ggplot2::aes(!!rlang::sym(x), !!rlang::sym(col))) +
+                ggplot2::labs(title = glue::glue("{col} vs {x}"), x = x, y = col)
+        }
+
         if (data_type %in% c("integer", "numeric")) {
             # numeric data
             stats_results <- df %>%
                 rstatix::cor_test(col, x, method = method) %>%
-                dplyr::select(variable = var2, method = method, estimate = cor, p = p) # nolint
-            plot_results <- base_plot + ggplot2::geom_point() + ggplot2::geom_smooth(method = "lm") + ggpubr::stat_cor(method = method)
+                dplyr::select(variable = var2, method = method, estimate = cor, p = p)
+            if (plot) {
+                plot_results <- base_plot + ggplot2::geom_point() + ggplot2::geom_smooth(method = "lm") + ggpubr::stat_cor(method = method)
+            }
         } else if (data_type %in% c("character", "factor")) {
             # get the number of unique values
-            n_unique <- df %>%
-                dplyr::pull(x) %>%
-                stats::na.omit() %>%
-                unique() %>%
-                length()
+            column_data <- df[[x]]
+            n_unique <- length(unique(na.omit(column_data)))
             if (n_unique == 2) {
                 # categorical data with < 2 unique values
                 stats_results <- df %>%
                     rstatix::t_test(as.formula(glue::glue("{col} ~ {x}"))) %>%
                     dplyr::mutate(variable = x, method = "t.test") %>%
-                    dplyr::select(variable, method, estimate = statistic, p = p) # nolint
-                plot_results <- base_plot + ggplot2::geom_boxplot() + ggpubr::stat_compare_means(method = "t.test")
+                    dplyr::select(variable, method, estimate = statistic, p = p)
+                if (plot) {
+                    plot_results <- base_plot + ggplot2::geom_boxplot() + ggpubr::stat_compare_means(method = "t.test")
+                }
             } else {
                 # categorical data with > 2 unique values
                 stats_results <- df %>%
                     rstatix::anova_test(as.formula(glue::glue("{col} ~ {x}"))) %>%
                     dplyr::as_tibble() %>%
                     dplyr::mutate(method = "anova") %>%
-                    dplyr::select(variable = Effect, method, estimate = F, p = p) # nolint
-                plot_results <- base_plot + ggplot2::geom_boxplot() + ggpubr::stat_compare_means(method = "anova")
+                    dplyr::select(variable = Effect, method, estimate = F, p = p)
+                if (plot) {
+                    plot_results <- base_plot + ggplot2::geom_boxplot() + ggpubr::stat_compare_means(method = "anova")
+                }
             }
         } else {
             stop(glue::glue("Data type {data_type} not supported."))

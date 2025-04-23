@@ -140,6 +140,10 @@ survival_analysis <- function(
 #' @title Internal Hazard Ratios Helper
 #' @description Internal function to calculate hazard ratios.
 #' @param cs list, list of censors and time variables.
+#' @param df data.frame, data to make survival curves from.
+#' @param condition character, condition to make survival curves for.
+#' @param controls character, controls to include in the model. Default is NULL.
+#' @return data.frame, hazard ratios for the condition.
 hazards.internal <- function(cs, df, condition, controls) {
   fmla <- as.formula(glue::glue("survival::Surv({cs$time}, {cs$censor}) ~ {paste0(c(condition, controls), collapse = ' + ')}"))
   surv_obj <- do.call(survival::survfit, list(fmla, data = df))
@@ -204,7 +208,7 @@ hazard_ratios_table <- function(
   # check if we are per_sd
   if (per_sd) {
     # make sure the condition is continuous
-    if (!is.numeric(df[, condition])) {
+    if (!is.numeric(df[[condition]])) {
       stop("condition must be numeric if per_sd is TRUE")
     }
     df[, condition] <- scale(df[, condition])
@@ -220,10 +224,10 @@ hazard_ratios_table <- function(
     # one hot encode the condition
     message("one hot encoding condition")
     df_ <- one_hot_encode_ovr(df, condition, binary = FALSE)
-    vals <- unique(df_[, condition])
+    vals <- unique(df_[[condition]])
     columns_ovr <- colnames(df_)[colnames(df_) %in% paste0(condition, "_", vals)]
 
-    # lapply the function over the columns_ovr and censors
+    # map the function over the columns_ovr and censors
     HR_list <- purrr::map(columns_ovr, ~ hazard_ratios_table(df_, condition = .x, censors = censors, controls = controls, censor_prefix = censor_prefix, time_prefix = time_prefix, ovr = FALSE))
   }
 

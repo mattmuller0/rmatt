@@ -77,10 +77,12 @@ plot_gene_heatmap <- function(dds, genes = NULL, annotations = NULL, normalize =
   norm_counts <- t(scale(t(norm_counts)))
 
   # Ensure genes are in the matrix
-  if (is.null(genes)) {
-    genes <- rownames(norm_counts)
-  } else {
-    genes <- intersect(genes, rownames(norm_counts))
+  if (is.null(genes)) {genes <- rownames(norm_counts)}
+  
+  # Check if any of the genes aren't in the matrix
+  if (any(!genes %in% rownames(norm_counts))) {
+    warning("Some genes are not in the matrix and will be removed (", paste(genes[!genes %in% rownames(norm_counts)], collapse = ", "), ")")
+    genes <- genes[genes %in% rownames(norm_counts)]
   }
 
   norm_counts <- norm_counts[genes, ]
@@ -509,9 +511,9 @@ plot_forest <- function(
 plot_stratified_forest <- function(
     df,
     x = "x", y = "y",
-    estimate = "hazard_ratio",
-    error_lower = "ci_lower",
-    error_upper = "ci_upper",
+    estimate = "hazard.ratio",
+    error_lower = "ci.lower",
+    error_upper = "ci.upper",
     color,
     facet) {
   if (any(df[, estimate] > 20)) {
@@ -568,7 +570,7 @@ theme_matt <- function(base_size = 16, base_family = "", ...) {
       legend.text = element_text(size = base_size * 0.9, colour = "black"),
       legend.title = element_text(size = base_size * 0.9, colour = "black"),
       legend.background = element_blank(),
-      legend.box.background = element_rect(colour = "black", size = 0.5),
+      legend.box.background = element_rect(colour = "black", linewidth = 0.5),
       legend.box.margin = margin(6, 6, 6, 6),
       legend.margin = margin(0, 0, 0, 0),
       # Edits to labels
