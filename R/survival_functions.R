@@ -151,19 +151,13 @@ hazards.internal <- function(cs, df, condition, controls) {
 
   # make a dataframe of the HRs & pvalue and HR & pvalues
   o <- tidy(coxmodel)
-  o <- o %>% filter(grepl(condition, term))
-  o <- o %>%
-    mutate(
-      condition = condition,
-      censor = cs$censor,
-      hazard.ratio = exp(estimate),
-      ci.upper = exp(estimate + 1.96 * std.error),
-      ci.lower = exp(estimate - 1.96 * std.error)
-    ) %>%
-    select(
-      censor, condition, term,
-      hazard.ratio, ci.lower, ci.upper, p.value
-    )
+  o <- subset(o, grepl(condition, term))
+  o$condition <- condition
+  o$censor <- cs$censor
+  o$hazard.ratio <- exp(o$estimate)
+  o$ci.upper <- exp(o$estimate + 1.96 * o$std.error)
+  o$ci.lower <- exp(o$estimate - 1.96 * o$std.error)
+  o <- o[, c("censor", "condition", "term", "hazard.ratio", "ci.lower", "ci.upper", "p.value")]
   return(o)
 }
 
@@ -271,16 +265,16 @@ filtered_hazard_ratio_table <- function(
   surv_risk_res <- purrr::map(
     risks,
     function(x) {
-      vals <- na.omit(unique(data[, x]))
+      vals <- na.omit(unique(data[[x]]))
 
       if (verbose) {
-        message(glue::glue("Filtering for {x}"))
+        message(paste("Filtering for", x))
       }
 
       res <- purrr::map(
         vals,
         function(y) {
-          tmp <- dplyr::filter(data, !!sym(x) == y)
+            tmp <- subset(data, data[[x]] == y)
           if (verbose) {
             message(glue::glue("    Subfiltering {y}"))
             message(glue::glue("    N = {nrow(tmp)}"))
@@ -300,7 +294,8 @@ filtered_hazard_ratio_table <- function(
               )
               out$x <- x
               out$y <- y
-              out$n <- nrow(tmp)
+              out$n_total <- nrow(tmp)
+              out$n_censor <- sum(tmp[[censors]] == 1, na.rm = TRUE)
               return(out)
             },
             error = function(e) {
