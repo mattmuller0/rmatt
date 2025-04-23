@@ -146,7 +146,6 @@ survival_analysis <- function(
 #' @return data.frame, hazard ratios for the condition.
 hazards.internal <- function(cs, df, condition, controls) {
   fmla <- as.formula(glue::glue("survival::Surv({cs$time}, {cs$censor}) ~ {paste0(c(condition, controls), collapse = ' + ')}"))
-  surv_obj <- do.call(survival::survfit, list(fmla, data = df))
   coxmodel <- do.call(survival::coxph, list(fmla, data = df))
 
   # make a dataframe of the HRs & pvalue and HR & pvalues
