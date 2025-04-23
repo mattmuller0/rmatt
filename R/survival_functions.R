@@ -1,14 +1,6 @@
 #' @title Survival Analysis Functions
 #' @description Functions for survival analysis including log rank tests and hazard ratios.
 #' @name survival_functions
-#' @importFrom ggsurvfit ggsurvfit add_confidence_interval
-#' @importFrom survival Surv survfit survdiff coxph
-#' @importFrom ggplot2 ggplot coord_cartesian theme_classic theme labs lims annotate element_text ggsave
-#' @importFrom glue glue
-#' @importFrom broom tidy
-#' @importFrom purrr map
-#' @importFrom dplyr filter sym
-NULL
 
 #' @title Log Rank Test
 #' @description Perform a log rank test on a dataframe.
@@ -18,6 +10,7 @@ NULL
 #' @param censor_prefix character, prefix for censor columns. Default is 'C_'.
 #' @param time_prefix character, prefix for time columns. Default is 'T_'.
 #' @return data.frame, p-values from log rank test.
+#' @importFrom survival survdiff
 #' @export
 log_rank_test <- function(
     data,
@@ -37,7 +30,7 @@ log_rank_test <- function(
 
     # make sure censor and time are in the data
     if (!(time %in% colnames(data)) | !(censor %in% colnames(data))) {
-      message(glue::glue("Missing either time or censor column for {censor}"))
+      message(paste("Missing either time or censor column for", censor))
       next
     }
 
@@ -45,7 +38,7 @@ log_rank_test <- function(
     for (i in seq_along(comparisons)) {
       comparison <- comparisons[i]
       # Perform the log rank test
-      fmla <- as.formula(glue::glue("Surv({time}, {censor}) ~ {comparison}"))
+      fmla <- as.formula(paste("Surv(", time, ", ", censor, ") ~", comparison))
       fit <- do.call(survdiff, list(fmla, data = data))
       p_value <- fit$p
 
@@ -68,13 +61,15 @@ log_rank_test <- function(
 #' @param censor_prefix character, prefix for censor columns. Default is 'C_'.
 #' @param time_prefix character, prefix for time columns. Default is 'T_'.
 #' @return list, list of survival plots and HR plots.
+#' @importFrom ggsurvfit ggsurvfit add_confidence_interval
+#' @importFrom survival Surv survfit survdiff coxph
+#' @importFrom ggplot2 coord_cartesian theme_classic theme labs lims element_text ggsave
 #' @export
 survival_analysis <- function(
     df,
     condition,
     censors,
     outdir,
-    image_type = "pdf",
     censor_prefix = "censor_",
     time_prefix = "time_to_") {
   dir.create(file.path(outdir, "survival_plots"), showWarnings = FALSE, recursive = TRUE)
@@ -93,7 +88,7 @@ survival_analysis <- function(
   for (idx in seq_along(censors)) {
     time_var <- time_vars[idx]
     censor <- censors[idx]
-    fmla <- as.formula(glue::glue("survival::Surv({time_var}, {censor}) ~ {condition}"))
+    fmla <- as.formula(paste0("Surv(", time_var, ", ", censor, ") ~ ", condition))
 
     surv_obj <- do.call(survival::survfit, list(fmla, data = df))
     surv_diff <- do.call(survival::survdiff, list(fmla, data = df))
@@ -105,30 +100,24 @@ survival_analysis <- function(
       theme_classic(18) +
       theme(legend.position = "top") +
       lims(x = c(0, max(surv_obj$time) + 100)) +
-      labs(x = "Time (days)", title = glue::glue("Survival Analysis: {censor} (n={sum(surv_obj$n)})")) +
+      labs(x = "Time (days)", title = paste0("Survival Analysis: ", censor, " (n=", sum(surv_obj$n), ", events=", sum(surv_obj$n.event), ")")) +
       theme(axis.title.y = element_text(angle = 90, vjust = 0.5))
 
     # add the surv_plot to the list
     survival_plots[[censor]] <- surv_plot
-    ggplot2::ggsave(filename = file.path(outdir, "survival_plots", glue::glue("survival_plot_{censor}.{image_type}")), plot = surv_plot)
+    ggsave(file.path(outdir, "survival_plots", paste0("survival_plot_", censor, ".pdf")), surv_plot)
 
     # make a dataframe of the OR & pvalue and HR & pvalues
     o <- tidy(coxmodel)
-    o <- o %>%
-      mutate(
-        censor = censor,
-        logrank.chisq = surv_diff$chisq,
-        logrank.pvalue = surv_diff$pvalue,
-        hazard.ratio = exp(estimate),
-        ci.upper = exp(estimate + 1.96 * std.error),
-        ci.lower = exp(estimate - 1.96 * std.error)
-      ) %>%
-      select(
-        censor, term,
-        logrank.chisq, logrank.pvalue,
-        hazard.ratio, ci.lower, ci.upper, p.value
-      )
-
+    o$censor <- censor
+    o$logrank.chisq <- surv_diff$chisq
+    o$logrank.pvalue <- surv_diff$pvalue
+    o$hazard.ratio <- exp(o$estimate)
+    o$ci.upper <- exp(o$estimate + 1.96 * o$std.error)
+    o$ci.lower <- exp(o$estimate - 1.96 * o$std.error)
+    o <- o[, c("censor", "term", "logrank.chisq", "logrank.pvalue", "hazard.ratio", "ci.lower", "ci.upper", "p.value")]
+    
+    # add the condition to the dataframe
     HR_list[[censor]] <- o
   }
   HR_df <- do.call(rbind, HR_list)
@@ -144,9 +133,11 @@ survival_analysis <- function(
 #' @param condition character, condition to make survival curves for.
 #' @param controls character, controls to include in the model. Default is NULL.
 #' @return data.frame, hazard ratios for the condition.
+#' @importFrom survival coxph
+#' @importFrom broom tidy
 hazards.internal <- function(cs, df, condition, controls) {
-  fmla <- as.formula(glue::glue("survival::Surv({cs$time}, {cs$censor}) ~ {paste0(c(condition, controls), collapse = ' + ')}"))
-  coxmodel <- do.call(survival::coxph, list(fmla, data = df))
+  fmla <- as.formula(paste(paste0("survival::Surv(", cs$time, ", ", cs$censor, ")"), "~", paste0(c(condition, controls), collapse = " + ")))
+  coxmodel <- do.call(coxph, list(fmla, data = df))
 
   # make a dataframe of the HRs & pvalue and HR & pvalues
   o <- tidy(coxmodel)
@@ -171,9 +162,6 @@ hazards.internal <- function(cs, df, condition, controls) {
 #' @param censor_prefix character, prefix for censor columns. Default is 'C_'.
 #' @param time_prefix character, prefix for time columns. Default is 'T_'.
 #' @return data.frame, hazard ratios table.
-#' @importFrom ggsurvfit ggsurvfit
-#' @importFrom survival survfit survdiff coxph
-#' @importFrom broom tidy
 #' @importFrom purrr map
 #' @export
 hazard_ratios_table <- function(
@@ -242,8 +230,6 @@ hazard_ratios_table <- function(
 #' @param ... additional arguments passed to hazard_ratios_table.
 #' @return data.frame, filtered hazard ratios table.
 #' @importFrom purrr map
-#' @importFrom dplyr filter
-#' @importFrom glue glue
 #' @export
 filtered_hazard_ratio_table <- function(
     data,
@@ -261,7 +247,7 @@ filtered_hazard_ratio_table <- function(
     stop("risks must be characters")
   }
 
-  surv_risk_res <- purrr::map(
+  surv_risk_res <- map(
     risks,
     function(x) {
       vals <- na.omit(unique(data[[x]]))
@@ -270,13 +256,14 @@ filtered_hazard_ratio_table <- function(
         message(paste("Filtering for", x))
       }
 
-      res <- purrr::map(
+      res <- map(
         vals,
         function(y) {
-            tmp <- subset(data, data[[x]] == y)
+          tmp <- subset(data, data[[x]] == y)
+
           if (verbose) {
-            message(glue::glue("    Subfiltering {y}"))
-            message(glue::glue("    N = {nrow(tmp)}"))
+            message(paste("    Subfiltering", y))
+            message(paste("    N =", nrow(tmp)))
           }
 
           tryCatch(
@@ -299,7 +286,7 @@ filtered_hazard_ratio_table <- function(
             },
             error = function(e) {
               if (verbose) {
-                message(glue::glue("    ERROR: {e}"))
+                message(paste("    ERROR:", e))
               }
               return(NULL)
             }
