@@ -147,7 +147,9 @@ hazards.internal <- function(cs, df, condition, controls) {
   o$hazard.ratio <- exp(o$estimate)
   o$ci.upper <- exp(o$estimate + 1.96 * o$std.error)
   o$ci.lower <- exp(o$estimate - 1.96 * o$std.error)
-  o <- o[, c("censor", "condition", "term", "hazard.ratio", "ci.lower", "ci.upper", "p.value")]
+  o$n_total <- nrow(df)
+  o$n_event <- sum(df[[cs$censor]] == 1)
+  o <- o[, c("censor", "condition", "term", "n_total", "n_event", "hazard.ratio", "ci.lower", "ci.upper", "p.value")]
   return(o)
 }
 
@@ -281,7 +283,6 @@ filtered_hazard_ratio_table <- function(
               out$x <- x
               out$y <- y
               out$n_total <- nrow(tmp)
-              out$n_censor <- sum(tmp[[censors]] == 1, na.rm = TRUE)
               return(out)
             },
             error = function(e) {
