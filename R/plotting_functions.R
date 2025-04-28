@@ -208,7 +208,7 @@ color_mapping <- function(df, custom_colors = NULL, alpha = 1) {
       next
     }
 
-    levels <- unique(as.factor(df[[var]]))
+    levels <- unique(na.omit(as.factor(df[[var]])))
     n_levels <- length(levels)
 
     if (n_levels > 0) {
