@@ -200,41 +200,37 @@ filter_edgeR <- function(
 #' @param normalize Normalization method
 #' @return DESeq2 object after detecting WBC contamination
 #' @export
-detect_wbc <- function(dds, outpath, group = NULL, normalize = "vst") {
-  dir.create(outpath, showWarnings = FALSE, recursive = TRUE)
-
-  dds_before <- dds
-
-  counts <- normalize_counts(dds, normalize)
-
-  # ensure that the genes are present
-  if (!all(c("PTPRC", "ITGA2B") %in% rownames(counts))) {
-    stop("Genes PTPRC and ITGA2B not found in counts")
-  }
-
-  ratio <- counts["PTPRC", ] / counts["ITGA2B", ]
-
-  tryCatch(
-    grouping <- colData(dds)[, group],
-    error = function(e) {
-      message("No group specified or group does not exist")
-      grouping <- ratio > 1
+detect_wbc <- function (dds, outpath, group = NULL, normalize = "vst") {
+    dir.create(outpath, showWarnings = FALSE, recursive = TRUE)
+    dds_before <- dds
+    counts <- normalize_counts(dds, normalize)
+    
+    # Get the counts for PTPRC and ITGA2B
+    if (!all(c("PTPRC", "ITGA2B") %in% rownames(counts))) {
+        stop("Genes PTPRC and ITGA2B not found in counts")
     }
-  )
-  IDs <- rownames(colData(dds))
+    ratio <- counts["PTPRC", ] / counts["ITGA2B", ]
+    colnames(ratio) <- "PTPRC/ITGA2B"
 
-  plotting_df <- data.frame(IDs, ratio, grouping)
+    # get the group
+    if (is.null(group)) {
+        grouping <- ratio > 1
+    } else {
+        grouping <- dds[[group]]
+    }
 
-  plot <- ggplot(data.frame(ratio), aes(x = IDs, y = ratio, col = grouping)) +
-    geom_point() +
-    theme_matt(18) +
-    labs(title = "WBC Contamination", x = "PTPRC/ITGA2B", y = "Count") +
-    theme(axis.text.x = element_blank(), axis.ticks.x = element_blank()) +
-    geom_text_repel(label = IDs, size = 5, show.legend = FALSE)
+    # get the IDs
+    IDs <- rownames(colData(dds))
 
-  ggsave(file.path(outpath, "wbc_contamination.pdf"), plot)
-  write.csv(plotting_df, file.path(outpath, "wbc_contamination.csv"))
-  saveRDS(dds, file.path(outpath, "dds.rds"))
-
-  return(dds)
+    # plot the data
+    plotting_df <- data.frame(IDs, ratio, grouping)
+    plot <- ggplot(data.frame(ratio), aes(x = IDs, y = ratio, 
+        col = grouping)) + geom_point() + theme_matt(18) + labs(title = "WBC Contamination", 
+        x = "PTPRC/ITGA2B", y = "Count") + theme(axis.text.x = element_blank(), 
+        axis.ticks.x = element_blank()) + geom_text_repel(label = IDs, 
+        size = 5, show.legend = FALSE)
+    ggsave(file.path(outpath, "wbc_contamination.pdf"), plot)
+    write.csv(plotting_df, file.path(outpath, "wbc_contamination.csv"))
+    saveRDS(dds, file.path(outpath, "dds.rds"))
+    return(dds)
 }
