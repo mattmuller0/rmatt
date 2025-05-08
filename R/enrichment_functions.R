@@ -244,41 +244,35 @@ get_custom_genesets <- function() {
 gsea_analysis <- function(
     geneList, outpath,
     keyType = NULL,
-    ontology = "ALL") {
+    ontology = "ALL",
+    species = "Homo sapiens") {
   if (is.null(keyType)) {
     keyType <- detect_gene_id_type(names(geneList), strip = TRUE)
   }
-
-  dir.create(outpath, showWarnings = FALSE, recursive = TRUE)
-
-  msigdb <- msigdbr(species = "Homo sapiens")
-
+  
+  # ensure keytype is in our dict
+  gene_keys <- list(SYMBOL = "gene_symbol", ENTREZID = "entrez_gene", ENSEMBL = "ensembl_gene")
+  if (!(keyType %in% names(gene_keys))) {
+    stop("Invalid keyType. Please use one of: ", paste(names(gene_keys), collapse = ", "))
+  }
+  
   # match the keytype to the ID held in msigdbr
-  gene_keys <- list(
-    SYMBOL = "gene_symbol",
-    ENTREZID = "entrez_gene",
-    ENSEMBL = "ensembl_gene"
-  )
   gene_key <- gene_keys[[keyType]]
 
-  GO_t2g <- msigdb %>%
-    filter(gs_collection == "C5" & gs_subcollection != "HPO") %>%
-    dplyr::select(gs_name, all_of(gene_key))
+  dir.create(outpath, showWarnings = FALSE, recursive = TRUE)
+  # Get the species
+  msigdb <- msigdbr(species = species)
+
+  GO_t2g <- subset(msigdb, gs_collection == "C5" & gs_subcollection != "HPO", select = c("gs_name", gene_key))
   gse_go <- GSEA(geneList, TERM2GENE = GO_t2g, pvalueCutoff = Inf)
 
-  H_t2g <- msigdb %>%
-    filter(gs_collection == "H") %>%
-    dplyr::select(gs_name, all_of(gene_key))
+  H_t2g <- subset(msigdb, gs_collection == "H", select = c("gs_name", gene_key))
   gse_h <- GSEA(geneList, TERM2GENE = H_t2g, pvalueCutoff = Inf)
 
-  reactome_t2g <- msigdb %>%
-    filter(gs_collection == "C2" & gs_subcollection == "CP:REACTOME") %>%
-    dplyr::select(gs_name, all_of(gene_key))
+  reactome_t2g <- subset(msigdb, gs_collection == "C2" & gs_subcollection == "CP:REACTOME", select = c("gs_name", gene_key))
   gse_reactome <- GSEA(geneList, TERM2GENE = reactome_t2g, pvalueCutoff = Inf)
 
-  kegg_t2g <- msigdb %>%
-    filter(gs_collection == "C2" & gs_subcollection == "CP:KEGG") %>%
-    dplyr::select(gs_name, all_of(gene_key))
+  kegg_t2g <- subset(msigdb, gs_collection == "C2" & gs_subcollection == "CP:KEGG", select = c("gs_name", gene_key))
   gse_kegg <- GSEA(geneList, TERM2GENE = kegg_t2g, pvalueCutoff = Inf)
 
   # Custom t2g terms
@@ -322,12 +316,8 @@ stratified_ora <- function(
     padj_cutoff = 0.05,
     max_pathways = 5,
     ...) {
-  up_genes <- gene_dataframe %>%
-    filter(direction == "up") %>%
-    pull(features)
-  down_genes <- gene_dataframe %>%
-    filter(direction == "down") %>%
-    pull(features)
+  up_genes <- subset(gene_dataframe, direction == "up")$features
+  down_genes <- subset(gene_dataframe, direction == "down")$features
 
   methods <- c("enrichGO", "groupGO")
   if (!(method %in% methods)) {
