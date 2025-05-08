@@ -251,7 +251,7 @@ gsea_analysis <- function(
   }
   
   # ensure keytype is in our dict
-  gene_keys <- list(SYMBOL = "gene_symbol", ENTREZID = "entrez_gene", ENSEMBL = "ensembl_gene")
+  gene_keys <- list(SYMBOL = "gene_symbol", ENSEMBL = "ensembl_gene")
   if (!(keyType %in% names(gene_keys))) {
     stop("Invalid keyType. Please use one of: ", paste(names(gene_keys), collapse = ", "))
   }
@@ -272,7 +272,7 @@ gsea_analysis <- function(
   reactome_t2g <- subset(msigdb, gs_collection == "C2" & gs_subcollection == "CP:REACTOME", select = c("gs_name", gene_key))
   gse_reactome <- GSEA(geneList, TERM2GENE = reactome_t2g, pvalueCutoff = Inf)
 
-  kegg_t2g <- subset(msigdb, gs_collection == "C2" & gs_subcollection == "CP:KEGG", select = c("gs_name", gene_key))
+  kegg_t2g <- subset(msigdb, gs_collection == "C2" & gs_subcollection == "CP:KEGG_MEDICUS", select = c("gs_name", gene_key))
   gse_kegg <- GSEA(geneList, TERM2GENE = kegg_t2g, pvalueCutoff = Inf)
 
   # Custom t2g terms
