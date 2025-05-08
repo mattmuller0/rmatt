@@ -119,7 +119,7 @@ save_gse <- function(gse, outpath, ...) {
     message("GSE object is NULL")
     return(NULL)
   }
-
+  
   write.csv(gse@result, file.path(outpath, "enrichment_results.csv"), quote = TRUE, row.names = FALSE)
   write.csv(filter(gse@result, qvalue < 0.1), file.path(outpath, "enrichment_results_sig.csv"), quote = TRUE, row.names = FALSE)
   saveRDS(gse, file.path(outpath, "enrichment_results.rds"))
