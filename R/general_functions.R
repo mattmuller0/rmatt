@@ -151,6 +151,18 @@ make_se <- function(countsMatr, colData) {
   return(se)
 }
 
+#' Function to make a DESeqDataSet object
+#' @param countsMatr matrix of counts, rows = genes, cols = samples
+#' @param colData data.frame of sample metadata, rows = samples
+#' @param design formula for the design matrix
+#' @return DESeqDataSet object
+#' @export
+make_dds <- function(countsMatr, colData, design = ~ 1) {
+  sample_ids <- intersect(colnames(countsMatr), row.names(colData))
+  dds <- DESeqDataSetFromMatrix(countData = as.matrix(countsMatr[, sample_ids]), colData = colData[sample_ids, ], design = design)
+  return(dds)
+}
+
 #' Function to save a SummarizedExperiment object into multiple files if the slots are filled in the object
 #' @param se SummarizedExperiment object
 #' @param path path to save files

@@ -74,18 +74,17 @@ gene_wilcox_test <- function(
   dir.create(outpath, showWarnings = FALSE, recursive = TRUE)
 
   # Extract count data from the DESeq object
-  counts_data_raw <- normalize_counts(dds, method = "log2-mor")
+  count_data <- normalize_counts(dds, method = "log2-mor")
 
   # Extract metadata from the DESeq object
-  meta <- as.data.frame(SummarizedExperiment::colData(dds)) %>%
-    dplyr::select(all_of(condition))
+  meta <- as.data.frame(SummarizedExperiment::colData(dds))[, condition, drop = FALSE]
 
   # get the conditions
   conditions <- unique(meta[, condition])
 
   # Run the wilcoxon test for each gene using map
-  test_res <- purrr::map(
-    count_data,
+  test_res <- apply(
+    count_data, 1,
     function(x) {
       # run the test
       test <- stats::wilcox.test(
@@ -104,33 +103,35 @@ gene_wilcox_test <- function(
       log2FoldChange <- mean(x[meta[, condition] == conditions[2]]) - mean(x[meta[, condition] == conditions[1]])
 
       # return the test
-      return(list(basemean = basemean, log2FoldChange = log2FoldChange, pvalue = pvalue))
+      o <- list(
+        basemean = basemean,
+        log2FoldChange = log2FoldChange,
+        pvalue = pvalue
+      )
+      return(o)
     }
   )
-  names(test_res) <- colnames(count_data)
+  res <- bind_rows(test_res)
+
+  # order things well
+  rownames(res) <- rownames(count_data)
+  res <- res[, c("gene", "basemean", "log2FoldChange", "pvalue")]
 
   # Extract p-values and adjust for multiple testing using the Benjamini-Hochberg method
-  res <- list_of_lists_to_df(test_res)
   res <- res %>% mutate(padj = p.adjust(pvalue, method = "BH"))
 
   # wrote the results to a csv
   utils::write.csv(res, file.path(outpath, "wilcox_results.csv"))
 
   # make a volcano plot
-  volcanoP <- EnhancedVolcano::EnhancedVolcano(
-    res,
-    lab = rownames(res),
-    x = "log2FoldChange", y = "pvalue",
-    title = "Volcano Plot", subtitle = "",
-    pCutoff = pCutoff, FCcutoff = FCcutoff
-  )
+  volcanoP <- plot_volcano(res, labels = "gene", pCutoff = pCutoff, fcCutOff = FCcutoff)
   ggplot2::ggsave(file.path(outpath, "volcanoPlot.pdf"), volcanoP)
 
   # get the fc list
   fc <- get_fc_list(res, "log2FoldChange")
 
   # run enrichment
-  gse <- rna_enrichment(fc, outpath)
+  gse <- gsea_analysis(fc, outpath)
 
   # View results
   return(res)

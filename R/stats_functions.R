@@ -79,6 +79,7 @@ stats_table <- function(
 #' @param method character, method to use ('fisher' or 'chisq')
 #' @param ... other arguments to pass to the test function
 #' @return gse object with odds ratio and p-value added
+#' @export
 hypergeometric_scoring <- function(
     gse,
     method = "fisher",

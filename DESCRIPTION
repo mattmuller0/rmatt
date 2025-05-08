@@ -43,7 +43,7 @@ Suggests:
     jsonlite (>= 1.8.0),
     knitr (>= 1.40),
     limma (>= 3.50.0),
-    msigdbr (>= 7.0.0),
+    msigdbr (>= 10.0.1),
     NMF (>= 0.25),
     OlinkAnalyze (>= 3.0.0),
     rlang (>= 1.1.5),
