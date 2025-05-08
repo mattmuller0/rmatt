@@ -114,14 +114,14 @@ gene_wilcox_test <- function(
   res <- bind_rows(test_res)
 
   # order things well
-  res$gene <- rownames(count_data)
-  res <- res[order(res$pvalue), c("gene", "basemean", "log2FoldChange", "pvalue")]
+  rownames(res) <- rownames(count_data)
+  res <- res[, c("gene", "basemean", "log2FoldChange", "pvalue")]
 
   # Extract p-values and adjust for multiple testing using the Benjamini-Hochberg method
   res <- res %>% mutate(padj = p.adjust(pvalue, method = "BH"))
 
   # wrote the results to a csv
-  utils::write.csv(res, file.path(outpath, "wilcox_results.csv"), row.names = FALSE)
+  utils::write.csv(res, file.path(outpath, "wilcox_results.csv"))
 
   # make a volcano plot
   volcanoP <- plot_volcano(res, labels = "gene", pCutoff = pCutoff, fcCutOff = FCcutoff)
@@ -131,7 +131,7 @@ gene_wilcox_test <- function(
   fc <- get_fc_list(res, "log2FoldChange")
 
   # run enrichment
-  gse <- rna_enrichment(fc, outpath)
+  gse <- gsea_analysis(fc, outpath)
 
   # View results
   return(res)

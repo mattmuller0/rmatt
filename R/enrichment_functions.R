@@ -101,7 +101,7 @@ rna_enrichment <- function(
   gse <- do.call(enricher_function, list(geneList, org.Hs.eg.db, keyType = keyType, ont = ontology, pvalueCutoff = Inf, ...))
   write.csv(gse@result, file.path(outpath, "enrichment_results.csv"), quote = TRUE, row.names = FALSE)
   saveRDS(gse, file.path(outpath, "enrichment_results.rds"))
-  save_gse(gse, outpath, image_type = image_type)
+  save_gse(gse, outpath)
   return(gse)
 }
 
@@ -262,22 +262,22 @@ gsea_analysis <- function(
   gene_key <- gene_keys[[keyType]]
 
   GO_t2g <- msigdb %>%
-    filter(gs_cat == "C5" & gs_subcat != "HPO") %>%
+    filter(gs_collection == "C5" & gs_subcollection != "HPO") %>%
     dplyr::select(gs_name, all_of(gene_key))
   gse_go <- GSEA(geneList, TERM2GENE = GO_t2g, pvalueCutoff = Inf)
 
   H_t2g <- msigdb %>%
-    filter(gs_cat == "H") %>%
+    filter(gs_collection == "H") %>%
     dplyr::select(gs_name, all_of(gene_key))
   gse_h <- GSEA(geneList, TERM2GENE = H_t2g, pvalueCutoff = Inf)
 
   reactome_t2g <- msigdb %>%
-    filter(gs_cat == "C2" & gs_subcat == "CP:REACTOME") %>%
+    filter(gs_collection == "C2" & gs_subcollection == "CP:REACTOME") %>%
     dplyr::select(gs_name, all_of(gene_key))
   gse_reactome <- GSEA(geneList, TERM2GENE = reactome_t2g, pvalueCutoff = Inf)
 
   kegg_t2g <- msigdb %>%
-    filter(gs_cat == "C2" & gs_subcat == "CP:KEGG") %>%
+    filter(gs_collection == "C2" & gs_subcollection == "CP:KEGG") %>%
     dplyr::select(gs_name, all_of(gene_key))
   gse_kegg <- GSEA(geneList, TERM2GENE = kegg_t2g, pvalueCutoff = Inf)
 
