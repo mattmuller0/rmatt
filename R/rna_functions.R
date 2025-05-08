@@ -61,20 +61,24 @@ CountTableFromFeatureCounts <- function(directory = ".", pattern = "featureCount
 #' @param outpath Output path for results
 #' @param condition Column of interest
 #' @param pCutoff p-value cutoff for volcano plot
-#' @param FCcutoff Fold change cutoff for volcano plot
-#' @param ... Additional arguments to pass to wilcox.test
+#' @param fcCutoff Fold change cutoff for volcano plot
+#' @param normalize Normalization method to use
+#' @param paired Logical, whether to run a paired test
 #' @return Data frame of p-values and adjusted p-values
 #' @export
 gene_wilcox_test <- function(
     dds, outpath,
     condition,
-    pCutoff = 0.05, FCcutoff = 0.5,
-    ...) {
+    pCutoff = 0.05, 
+    fcCutoff = 0.5,
+    normalize = "log2-mor",
+    paired = FALSE
+    ) {
   # make the outpath
   dir.create(outpath, showWarnings = FALSE, recursive = TRUE)
 
   # Extract count data from the DESeq object
-  count_data <- normalize_counts(dds, method = "log2-mor")
+  count_data <- normalize_counts(dds, method = normalize)
 
   # Extract metadata from the DESeq object
   meta <- as.data.frame(SummarizedExperiment::colData(dds))[, condition, drop = FALSE]
@@ -87,11 +91,7 @@ gene_wilcox_test <- function(
     count_data, 1,
     function(x) {
       # run the test
-      test <- stats::wilcox.test(
-        x[meta[, condition] == conditions[1]],
-        x[meta[, condition] == conditions[2]],
-        ...
-      )
+      test <- wilcox.test(x[meta[, condition] == conditions[1]], x[meta[, condition] == conditions[2]], paired = paired)
 
       # get the pvalue
       pvalue <- test$p.value
@@ -103,19 +103,15 @@ gene_wilcox_test <- function(
       log2FoldChange <- mean(x[meta[, condition] == conditions[2]]) - mean(x[meta[, condition] == conditions[1]])
 
       # return the test
-      o <- list(
-        basemean = basemean,
-        log2FoldChange = log2FoldChange,
-        pvalue = pvalue
-      )
+      o <- list(basemean = basemean, log2FoldChange = log2FoldChange, pvalue = pvalue)
       return(o)
     }
   )
-  res <- bind_rows(test_res)
+  res <- as.data.frame(bind_rows(test_res))
 
   # order things well
   rownames(res) <- rownames(count_data)
-  res <- res[, c("gene", "basemean", "log2FoldChange", "pvalue")]
+  res <- res[, c("basemean", "log2FoldChange", "pvalue")]
 
   # Extract p-values and adjust for multiple testing using the Benjamini-Hochberg method
   res <- res %>% mutate(padj = p.adjust(pvalue, method = "BH"))
@@ -124,7 +120,7 @@ gene_wilcox_test <- function(
   utils::write.csv(res, file.path(outpath, "wilcox_results.csv"))
 
   # make a volcano plot
-  volcanoP <- plot_volcano(res, labels = "gene", pCutoff = pCutoff, fcCutOff = FCcutoff)
+  volcanoP <- plot_volcano(res, pCutoff = pCutoff, fcCutoff = fcCutoff)
   ggplot2::ggsave(file.path(outpath, "volcanoPlot.pdf"), volcanoP)
 
   # get the fc list
@@ -144,32 +140,26 @@ gene_wilcox_test <- function(
 #' @param condition Vector of conditions
 #' @param controls Vector of control groups
 #' @param pCutoff p-value cutoff for volcano plot
-#' @param FCcutoff Fold change cutoff for volcano plot
+#' @param fcCutoff Fold change cutoff for volcano plot
 #' @param ... Additional arguments to pass to voom
 #' @return Data frame of p-values and adjusted p-values
 #' @export
 run_limma <- function(
     se, outpath,
     condition, controls = NULL,
-    pCutoff = 0.05, FCcutoff = 0.5,
+    pCutoff = 0.05, fcCutoff = 0.5,
     ...) {
   # make the directory if it doesn"t exist
   dir.create(outpath, showWarnings = FALSE, recursive = TRUE)
 
-  # Convert the counts matrix to a matrix if it"s not already
-  counts <- SummarizedExperiment::assay(se)
-  if (!is.matrix(counts)) {
-    counts <- as.matrix(counts)
-  }
-
+  # Extract the condition vector from the SummarizedExperiment object
   condition <- se[[condition]]
-
   if (!is.null(controls)) {
     controls <- se[[controls]]
   }
 
   # Normalize the counts matrix using TMM normalization
-  norm_conuts <- normalize_counts(norm_counts, method = "TMM", log2 = TRUE)
+  norm_counts <- normalize_counts(se, method = "tmm", log2 = TRUE)
 
   # Create the design matrix
   if (is.null(controls)) {
@@ -186,7 +176,7 @@ run_limma <- function(
   results <- limma::topTable(fit, coef = 2, number = Inf, ...)
 
   # make a volcano plot
-  volcanoP <- plot_volcano(results, title = "limma", color = "adj.P.Val", pCutoff = pCutoff)
+  volcanoP <- plot_volcano(results, x = "logFC", y = "P.Value", color = "adj.P.Val", pCutoff = pCutoff)
   ggplot2::ggsave(file.path(outpath, "volcanoPlot.pdf"), volcanoP)
 
   # save the results
@@ -239,14 +229,14 @@ calculate_correlations <- function(dds, condition, normalize = "mor", method = "
 #' @param contrast Contrast to run
 #' @param pvalue p-value column name
 #' @param pCutoff p-value cutoff for volcano plot
-#' @param FCcutoff Fold change cutoff for volcano plot
+#' @param fcCutoff Fold change cutoff for volcano plot
 #' @param ... Additional arguments to pass to DESeq2
 #' @return Results of differential expression analysis
 #' @export
 run_deseq <- function(
     dds, outpath,
     contrast = NA,
-    pvalue = "padj", pCutoff = 0.05, FCcutoff = 0,
+    pvalue = "padj", pCutoff = 0.05, fcCutoff = 0,
     ...) {
   # This function will run differential expression on a premade dds object.
   # Gives most metrics you"ll need, and also returns the results
@@ -270,19 +260,14 @@ run_deseq <- function(
     ggplot2::ggsave(file.path(outpath, "volcanoPlot.pdf"), volcanoP)
 
     # make a heatmap of the significant genes
-    tryCatch(
-      {
-        sign_genes <- res[, pvalue] < pCutoff & abs(res[, "log2FoldChange"]) > FCcutoff
-        sign_genes[is.na(sign_genes)] <- FALSE # some error handing for outliers as NA
-        heatmapP <- plot_gene_heatmap(dds, genes = sign_genes, annotations = contrast[1], normalize = "log2-mor", show_row_names = FALSE, show_column_names = FALSE)
-        pdf(file.path(outpath, "dge_heatmap.pdf"))
-        print(heatmapP)
-        dev.off()
-      },
-      error = function(e) {
-        message("An error occurred while generating the heatmap: ", conditionMessage(e))
-      }
-    )
+    sign_genes <- rownames(res)[res$pvalue < pCutoff & abs(res$log2FoldChange) > fcCutoff]
+    if (!is.null(sign_genes)) {
+      # sign_genes[is.na(sign_genes)] <- FALSE # some error handing for outliers as NA
+      heatmapP <- plot_gene_heatmap(dds, genes = sign_genes, annotations = contrast[1], normalize = "log2-mor", show_row_names = FALSE, show_column_names = FALSE)
+      pdf(file.path(outpath, "dge_heatmap.pdf"))
+      print(heatmapP)
+      dev.off()
+    }
 
     # make gene list
     geneList <- get_fc_list(res)
@@ -309,7 +294,7 @@ run_deseq <- function(
   ggplot2::ggsave(file.path(outpath, "volcanoPlot.pdf"), volcanoP)
 
   # make a heatmap
-  sign_genes <- rownames(res)[res$pvalue < pCutoff & abs(res$log2FoldChange) > FCcutoff]
+  sign_genes <- rownames(res)[res$pvalue < pCutoff & abs(res$log2FoldChange) > fcCutoff]
   if (length(sign_genes) == 0) {
     message("No significant genes found")
   } else {
@@ -353,7 +338,7 @@ ovr_deseq_results <- function(dds, column, outpath, controls = NULL) {
 
   # loop over condition levels in a one versus rest manner
   list_out <- purrr::map(lvls, function(lvl) {
-    print(paste0("Testing ", column, " ", lvl, " versus rest"))
+    message(paste0("Testing ", column, " ", lvl, " versus rest"))
     path <- file.path(outpath, paste0(column, "__", lvl, "_v_rest"))
     dir.create(path, showWarnings = FALSE, recursive = TRUE)
 
