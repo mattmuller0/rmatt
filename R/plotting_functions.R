@@ -81,7 +81,8 @@ plot_gene_heatmap <- function(dds, genes = NULL, annotations = NULL, normalize =
   
   # Check if any of the genes aren't in the matrix
   if (any(!genes %in% rownames(norm_counts))) {
-    warning("Some genes are not in the matrix and will be removed (", paste(genes[!genes %in% rownames(norm_counts)], collapse = ", "), ")")
+    missing <- genes[!genes %in% rownames(norm_counts)]
+    warning("Some genes are not in the matrix and will be removed (", paste0(missing, collapse = ", "), ")")
     genes <- genes[genes %in% rownames(norm_counts)]
   }
 
@@ -374,7 +375,7 @@ plot_odds_volcano <- function(
 #' @param title Title of the plot
 #' @param n_labels Logical, whether to show number of labels
 #' @param pCutoff P-value cutoff for significance
-#' @param fcCutOff Fold change cutoff for significance
+#' @param fcCutoff Fold change cutoff for significance
 #' @param xlim Limits for x-axis
 #' @param ylim Limits for y-axis
 #' @return ggplot object
@@ -388,7 +389,7 @@ plot_volcano <- function(
     title = NULL,
     n_labels = TRUE,
     pCutoff = 0.05,
-    fcCutOff = NULL,
+    fcCutoff = NULL,
     xlim = c(min(dge[, x]) - 0.5, max(dge[, x], na.rm = TRUE) + 0.5),
     ylim = c(0, max(-log10(dge[, y]), na.rm = TRUE) * 1.25)) {
   dge <- as.data.frame(dge)
@@ -398,9 +399,9 @@ plot_volcano <- function(
   }
 
   dge[, color] <- ifelse(is.na(dge[, color]), 1, dge[, color])
-  if (!is.null(fcCutOff)) {
+  if (!is.null(fcCutoff)) {
     dge$signf <- case_when(
-      dge[, color] < pCutoff & abs(dge[, x]) > fcCutOff ~ paste0(color, " < ", pCutoff, " & |", x, "| > ", fcCutOff),
+      dge[, color] < pCutoff & abs(dge[, x]) > fcCutoff ~ paste0(color, " < ", pCutoff, " & |", x, "| > ", fcCutoff),
       TRUE ~ "NS"
     )
   } else {
