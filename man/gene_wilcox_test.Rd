@@ -4,7 +4,15 @@
 \alias{gene_wilcox_test}
 \title{Wilcoxon Ranked Sum testing on genes in two summarized experiments}
 \usage{
-gene_wilcox_test(dds, outpath, condition, pCutoff = 0.05, FCcutoff = 0.5, ...)
+gene_wilcox_test(
+  dds,
+  outpath,
+  condition,
+  pCutoff = 0.05,
+  fcCutoff = 0.5,
+  normalize = "log2-mor",
+  paired = FALSE
+)
 }
 \arguments{
 \item{dds}{DESeq2 object}
@@ -15,9 +23,11 @@ gene_wilcox_test(dds, outpath, condition, pCutoff = 0.05, FCcutoff = 0.5, ...)
 
 \item{pCutoff}{p-value cutoff for volcano plot}
 
-\item{FCcutoff}{Fold change cutoff for volcano plot}
+\item{fcCutoff}{Fold change cutoff for volcano plot}
 
-\item{...}{Additional arguments to pass to wilcox.test}
+\item{normalize}{Normalization method to use}
+
+\item{paired}{Logical, whether to run a paired test}
 }
 \value{
 Data frame of p-values and adjusted p-values

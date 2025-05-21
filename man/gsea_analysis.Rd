@@ -4,7 +4,13 @@
 \alias{gsea_analysis}
 \title{Run a GSEA analysis}
 \usage{
-gsea_analysis(geneList, outpath, keyType = NULL, ontology = "ALL")
+gsea_analysis(
+  geneList,
+  outpath,
+  keyType = NULL,
+  ontology = "ALL",
+  species = "Homo sapiens"
+)
 }
 \arguments{
 \item{geneList}{List of genes to run enrichment on.}

@@ -10,7 +10,7 @@ run_limma(
   condition,
   controls = NULL,
   pCutoff = 0.05,
-  FCcutoff = 0.5,
+  fcCutoff = 0.5,
   ...
 )
 }
@@ -25,7 +25,7 @@ run_limma(
 
 \item{pCutoff}{p-value cutoff for volcano plot}
 
-\item{FCcutoff}{Fold change cutoff for volcano plot}
+\item{fcCutoff}{Fold change cutoff for volcano plot}
 
 \item{...}{Additional arguments to pass to voom}
 }

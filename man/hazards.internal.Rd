@@ -8,6 +8,15 @@ hazards.internal(cs, df, condition, controls)
 }
 \arguments{
 \item{cs}{list, list of censors and time variables.}
+
+\item{df}{data.frame, data to make survival curves from.}
+
+\item{condition}{character, condition to make survival curves for.}
+
+\item{controls}{character, controls to include in the model. Default is NULL.}
+}
+\value{
+data.frame, hazard ratios for the condition.
 }
 \description{
 Internal function to calculate hazard ratios.

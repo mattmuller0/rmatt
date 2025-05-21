@@ -2,7 +2,33 @@
 % Please edit documentation in R/survival_functions.R
 \name{survival_functions}
 \alias{survival_functions}
+\alias{log_rank_test}
 \title{Survival Analysis Functions}
+\usage{
+log_rank_test(
+  data,
+  comparisons,
+  censors,
+  censor_prefix = "censor_",
+  time_prefix = "time_to_"
+)
+}
+\arguments{
+\item{data}{data.frame, data to perform log rank test on.}
+
+\item{comparisons}{character, comparisons to perform log rank test on.}
+
+\item{censors}{character, censors to perform log rank test on.}
+
+\item{censor_prefix}{character, prefix for censor columns. Default is 'C_'.}
+
+\item{time_prefix}{character, prefix for time columns. Default is 'T_'.}
+}
+\value{
+data.frame, p-values from log rank test.
+}
 \description{
 Functions for survival analysis including log rank tests and hazard ratios.
+
+Perform a log rank test on a dataframe.
 }

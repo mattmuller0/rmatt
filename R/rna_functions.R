@@ -263,7 +263,7 @@ run_deseq <- function(
     sign_genes <- rownames(res)[res$pvalue < pCutoff & abs(res$log2FoldChange) > fcCutoff]
     if (!is.null(sign_genes)) {
       # sign_genes[is.na(sign_genes)] <- FALSE # some error handing for outliers as NA
-      heatmapP <- plot_gene_heatmap(dds, genes = sign_genes, annotations = contrast[1], normalize = "log2-mor", show_row_names = FALSE, show_column_names = FALSE)
+      heatmapP <- plot_heatmap(dds, genes = sign_genes, annotations = contrast[1], normalize = "log2-mor", show_row_names = FALSE, show_column_names = FALSE)
       pdf(file.path(outpath, "dge_heatmap.pdf"))
       print(heatmapP)
       dev.off()
@@ -298,7 +298,7 @@ run_deseq <- function(
   if (length(sign_genes) == 0) {
     message("No significant genes found")
   } else {
-    heatmapP <- plot_gene_heatmap(dds, genes = sign_genes, annotations = contrast[1], normalize = "vst")
+    heatmapP <- plot_heatmap(dds, genes = sign_genes, annotations = contrast[1], normalize = "vst")
     pdf(file.path(outpath, "dge_heatmap.pdf"))
     print(heatmapP)
     dev.off()

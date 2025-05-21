@@ -66,12 +66,13 @@ plot_percent_genes_detected <- function(dds, title, min_value = 0) {
 #' @title Plot Gene Heatmap
 #' @description Function to plot complex heatmap from DESeq2 object
 #' @param dds DESeq2 object
-#' @param title Title of plot
-#' @param annotations List of annotations to plot
-#' @param normalize Type of normalization to use
+#' @param genes Vector of gene names to include in the heatmap (default: all genes)
+#' @param annotations Vector of column names in colData(dds) to use as annotations (default: NULL)
+#' @param normalize Type of normalization to use (default: "vst")
 #' @param ... Additional arguments to pass to ComplexHeatmap
 #' @return ComplexHeatmap object of gene heatmap
-plot_gene_heatmap <- function(dds, genes = NULL, annotations = NULL, normalize = "vst", ...) {
+#' @export
+plot_heatmap <- function(dds, genes = NULL, annotations = NULL, normalize = "vst", ...) {
   # Normalize counts
   norm_counts <- normalize_counts(dds, method = normalize)
   norm_counts <- t(scale(t(norm_counts)))

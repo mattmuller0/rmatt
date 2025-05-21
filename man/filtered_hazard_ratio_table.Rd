@@ -11,7 +11,7 @@ filtered_hazard_ratio_table(
   censors,
   censor_prefix = "censor_",
   time_prefix = "time_to_",
-  per_sd = TRUE,
+  per_sd = FALSE,
   ovr = FALSE,
   verbose = FALSE,
   ...

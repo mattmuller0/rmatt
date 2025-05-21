@@ -8,24 +8,48 @@ stats_table(
   data,
   groups,
   vars = NULL,
-  printArgs = list(showAllLevels = FALSE, printToggle = FALSE),
-  ...
+  table.includeNA = FALSE,
+  table.addOverall = TRUE,
+  table.test = TRUE,
+  print.showAllLevels = TRUE,
+  print.printToggle = FALSE,
+  print.catDigits = 1,
+  print.contDigits = 2,
+  print.pDigits = 3,
+  print.missing = FALSE,
+  print.nonnormal = NULL
 )
 }
 \arguments{
-\item{data}{data.frame, data to make table 1 from}
+\item{data}{data.frame, input data for statistical analysis}
 
-\item{groups}{character, groups to stratify by}
+\item{groups}{character, column name(s) for group stratification}
 
-\item{vars}{character, variables to include in table 1}
+\item{vars}{character vector, optional list of variables to include in analysis (if NULL, uses all columns except groups)}
 
-\item{printArgs}{list, arguments to pass to print}
+\item{table.includeNA}{logical, whether to include NA as a valid category}
 
-\item{...}{other arguments to pass to CreateTableOne}
+\item{table.addOverall}{logical, whether to add an overall column}
+
+\item{table.test}{logical, whether to include statistical tests}
+
+\item{print.showAllLevels}{logical, whether to show all levels of categorical variables}
+
+\item{print.printToggle}{logical, whether to show variable labels}
+
+\item{print.catDigits}{integer, number of digits for categorical variables}
+
+\item{print.contDigits}{integer, number of digits for continuous variables}
+
+\item{print.pDigits}{integer, number of digits for p-values}
+
+\item{print.missing}{logical, whether to show missing data information}
+
+\item{print.nonnormal}{character vector, variables to be summarized with median/IQR}
 }
 \value{
-data.frame, table 1
+matrix containing descriptive statistics table
 }
 \description{
-Create a stats table from a data.frame
+Create a comprehensive descriptive statistics table from a data.frame
 }
