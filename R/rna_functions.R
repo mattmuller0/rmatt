@@ -141,55 +141,83 @@ gene_wilcox_test <- function(
 #' @param controls Vector of control groups
 #' @param pCutoff p-value cutoff for volcano plot
 #' @param fcCutoff Fold change cutoff for volcano plot
-#' @param ... Additional arguments to pass to voom
-#' @return Data frame of p-values and adjusted p-values
+#' @param topTable.coef Coefficient to test in topTable
+#' @param topTable.n Number of top results to return
+#' @param topTable.adjust.method Method for adjusting p-values in topTable
+#' @param voom.plot Logical indicating whether to plot the voom results
+#' @importFrom edgeR DGEList calcNormFactors cpm
+#' @importFrom limma voom lmFit eBayes topTable
+#' @importFrom SummarizedExperiment assay colData
+#' @importFrom ggplot2 ggsave
+#' @importFrom glue glue
+#' @importFrom rmatt plot_volcano get_fc_list gsea_analysis
+#' @return Data frame of results from limma analysis
 #' @export
 run_limma <- function(
-    se, outpath,
-    condition, controls = NULL,
-    pCutoff = 0.05, fcCutoff = 0.5,
-    ...) {
-  # make the directory if it doesn"t exist
-  dir.create(outpath, showWarnings = FALSE, recursive = TRUE)
+    se,
+    outpath,
+    condition,
+    controls = NULL,
+    pCutoff = 0.05,
+    fcCutoff = 0.5,
+    topTable.coef = 2,
+    topTable.n = Inf,
+    topTable.adjust.method = "BH",
+    voom.plot = TRUE) {
+    # make the directory if it doesn"t exist
+    dir.create(outpath, showWarnings = FALSE, recursive = TRUE)
 
-  # Extract the condition vector from the SummarizedExperiment object
-  condition <- se[[condition]]
-  if (!is.null(controls)) {
-    controls <- se[[controls]]
-  }
+    # Extract the condition vector from the SummarizedExperiment object
+    metadata <- as.data.frame(SummarizedExperiment::colData(se))
 
-  # Normalize the counts matrix using TMM normalization
-  norm_counts <- normalize_counts(se, method = "tmm", log2 = TRUE)
+    # Normalize the counts matrix using TMM normalization
+    if (!requireNamespace("edgeR", quietly = TRUE)) {
+        stop("edgeR package is required for TMM normalization. Please install it.")
+    }
+    dge <- edgeR::DGEList(counts = SummarizedExperiment::assay(se))
+    norm_counts <- SummarizedExperiment::assay(se)
 
-  # Create the design matrix
-  if (is.null(controls)) {
-    design <- model.matrix(~condition)
-  } else {
-    design <- model.matrix(~ condition + controls)
-  }
+    # Create the design matrix
+    if (is.null(controls)) {
+        fmla <- as.formula(paste("~", paste(condition, collapse = " + ")))
+    } else {
+        fmla <- as.formula(paste("~", paste(c(condition, controls), collapse = " + ")))
+    }
+    design <- model.matrix(fmla, data = metadata)
 
-  # Perform differential expression analysis
-  fit <- limma::lmFit(norm_counts, design)
-  fit <- limma::eBayes(fit)
+    # Perform differential expression analysis
+    if (voom.plot) {
+        message("Running voom with plot enabled...")
+        pdf(file.path(outpath, "voom_plot.pdf"), width = 10, height = 8)
+        on.exit(dev.off(), add = TRUE)
+    } else {
+        message("Running voom without plot...")
+    }
 
-  # Get the differential expression results
-  results <- limma::topTable(fit, coef = 2, number = Inf, ...)
+    # Perform voom transformation
+    v <- voom(norm_counts, design, plot = voom.plot)
+    fit <- lmFit(v, design)
+    fit <- eBayes(fit)
 
-  # make a volcano plot
-  volcanoP <- plot_volcano(results, x = "logFC", y = "P.Value", color = "adj.P.Val", pCutoff = pCutoff)
-  ggplot2::ggsave(file.path(outpath, "volcanoPlot.pdf"), volcanoP)
+    # Print the name of the coefficient being tested
+    message(glue::glue("Testing coefficient: {colnames(design)[topTable.coef]}"))
 
-  # save the results
-  utils::write.csv(results, file.path(outpath, "limma_results.csv"))
+    results <- topTable(fit, coef = topTable.coef, number = topTable.n, adjust.method = topTable.adjust.method)
+    write.csv(results, file.path(outpath, "limma_results.csv"))
 
-  # get the fc list
-  fc <- get_fc_list(results, "logFC")
+    # make a volcano plot
+    volcanoP <- plot_volcano(results, x = "logFC", y = "P.Value", color = "adj.P.Val", pCutoff = pCutoff)
+    ggsave(file.path(outpath, "volcanoPlot.pdf"), volcanoP)
 
-  # run enrichment
-  gse <- gsea_analysis(fc, outpath)
+    # get the fc list
+    fc <- get_fc_list(results, "logFC")
 
-  return(results)
+    # run enrichment
+    gse <- gsea_analysis(fc, outpath)
+
+    return(results)
 }
+
 
 #' Calculate Correlations
 #' @param dds DESeq2 object
