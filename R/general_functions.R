@@ -113,7 +113,7 @@ getGenes <- function(results, pval = 0.05, metric = 0, name_col = "rownames", pv
     filter(!!sym(pval_col) < pval & !!sym(metric_col) > metric) %>%
     pull(!!sym(name_col))
   down <- results %>%
-    filter(!!sym(pval_col) < pval & !!sym(metric_col) < metric) %>%
+    filter(!!sym(pval_col) < pval & !!sym(metric_col) < -metric) %>%
     pull(!!sym(name_col))
   out <- data.frame(features = c(up, down), direction = c(rep("up", length(up)), rep("down", length(down))))
   return(out)
