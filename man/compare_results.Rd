@@ -15,8 +15,16 @@ compare_results(
 \arguments{
 \item{res1}{Results of differential expression analysis 1.}
 
-\item{res2}{Results of differential expression analysis 2.
-data frame of comparison results}
+\item{res2}{Results of differential expression analysis 2.}
+
+\item{metric}{Metric to compare.}
+
+\item{by}{Column to join on.}
+
+\item{suffix}{Suffix for columns.}
+}
+\value{
+Data frame of results.
 }
 \description{
 Function to compare different DESeq results.

@@ -1,10 +1,6 @@
 #' @title Clustering Functions
 #' @description Functions for preparing data and performing clustering using NMF, k-means, and hierarchical clustering.
-#' @details This script contains functions to prepare a counts matrix for NMF, estimate the rank of a matrix using NMF, plot the results of NMF, estimate k-means clustering using the elbow method, and estimate hierarchical clustering.
 #' @name clustering_functions
-#' @importFrom NMF nmf randomize
-#' @importFrom ggplot2 ggplot aes geom_point labs theme_bw
-NULL
 
 #' Prepare a counts matrix for NMF
 #' @param counts_matr A matrix with rows as genes and columns as samples.
@@ -29,13 +25,13 @@ prep_nmf_data <- function(counts_matr) {
 #' @param ranks A vector of ranks to test. Default is 2:8.
 #' @param runs Number of runs to test. Default is 30.
 #' @param options Options for NMF. Default is 'v'.
-#' @param ... Other arguments to pass to NMF.
 #' @return A list of NMF and random NMF results.
+#' @importFrom NMF nmf randomize
 #' @export
-nmf_estimator <- function(counts_matr, outfile, ranks = 2:8, runs = 30, options = "v", ...) {
+nmf_estimator <- function(counts_matr, outfile, ranks = 2:8, runs = 30, options = "v") {
   require(NMF)
-  nmf_ranks_out <- nmf(counts_matr, ranks, nrun = runs, .opt = options, ...)
-  rng_ranks_out <- nmf(randomize(counts_matr), ranks, nrun = runs, .opt = options, ...)
+  nmf_ranks_out <- nmf(counts_matr, ranks, nrun = runs, .opt = options)
+  rng_ranks_out <- nmf(randomize(counts_matr), ranks, nrun = runs, .opt = options)
   output <- list("nmf_ranks_out" = nmf_ranks_out, "rng_ranks_out" = rng_ranks_out)
   saveRDS(output, file = outfile)
   return(output)
@@ -44,6 +40,7 @@ nmf_estimator <- function(counts_matr, outfile, ranks = 2:8, runs = 30, options 
 #' Plot the results of NMF estimation
 #' @param nmf_out Output from \code{nmf_estimator}.
 #' @return A ggplot object.
+#' @importFrom ggplot2 ggplot aes geom_point labs theme_bw
 #' @export
 nmf_plotter <- function(nmf_out) {
   require(NMF)

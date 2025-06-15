@@ -10,7 +10,7 @@ run_deseq(
   contrast = NA,
   pvalue = "padj",
   pCutoff = 0.05,
-  FCcutoff = 0,
+  fcCutoff = 0,
   ...
 )
 }
@@ -25,7 +25,7 @@ run_deseq(
 
 \item{pCutoff}{p-value cutoff for volcano plot}
 
-\item{FCcutoff}{Fold change cutoff for volcano plot}
+\item{fcCutoff}{Fold change cutoff for volcano plot}
 
 \item{...}{Additional arguments to pass to DESeq2}
 }

@@ -26,9 +26,6 @@ plot_odds_volcano(
 
 \item{pCutoff}{P-value cutoff for significance}
 }
-\value{
-ggplot object
-}
 \description{
 Function to plot the volcano plot of an odds ratio
 }

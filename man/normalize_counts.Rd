@@ -17,5 +17,5 @@ normalize_counts(dds, method = "mor", log2 = FALSE)
 normalized counts
 }
 \description{
-Function to normalize dds object and return counts
+Function to normalize DESeq2 dds object and return counts.
 }

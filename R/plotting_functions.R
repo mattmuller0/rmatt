@@ -3,22 +3,6 @@
 #' @name plotting_functions
 #' @author Matthew Muller
 #' @import ggplot2
-#' @importFrom SummarizedExperiment assay colData
-#' @importFrom DESeq2 DESeqDataSet
-#' @importFrom ggpubr theme_classic2 stat_cor
-#' @importFrom cowplot plot_grid
-#' @importFrom ggtree ggtree
-#' @importFrom ComplexHeatmap Heatmap HeatmapAnnotation
-#' @importFrom ggsci pal_npg
-#' @importFrom ggrepel geom_text_repel
-#' @importFrom dplyr select_if mutate filter case_when
-#' @importFrom tidyr pivot_longer
-#' @importFrom circlize colorRamp2
-#' @importFrom RColorBrewer brewer.pal
-#' @importFrom glue glue
-#' @importFrom stringr str_wrap
-#' @importFrom grid grid.text gpar
-NULL
 
 # ======================== Plotting Functions ========================
 #' @title Plot Library Depth
@@ -27,6 +11,8 @@ NULL
 #' @param title Title of plot
 #' @param bins Number of bins for histogram
 #' @return ggplot object of library depth
+#' @importFrom SummarizedExperiment assay
+#' @importFrom ggpubr theme_classic2
 plot_library_depth <- function(dds, title, bins = 30) {
   p <- ggplot(data.frame(log2(rowMeans(assay(dds)) + 0.001)), aes(x = log2(rowMeans(assay(dds)) + 0.001))) +
     geom_histogram(bins = bins, fill = "blue", alpha = 0.65) +
@@ -41,6 +27,8 @@ plot_library_depth <- function(dds, title, bins = 30) {
 #' @param title Title of plot
 #' @param bins Number of bins for histogram
 #' @return ggplot object of library size
+#' @importFrom SummarizedExperiment assay
+#' @importFrom ggpubr theme_classic2
 plot_library_size <- function(dds, title, bins = 10) {
   p <- ggplot(data.frame(log2(colSums(assay(dds)) + 0.001)), aes(x = log2(colSums(assay(dds)) + 0.001))) +
     geom_histogram(bins = bins, fill = "blue", alpha = 0.65) +
@@ -55,6 +43,7 @@ plot_library_size <- function(dds, title, bins = 10) {
 #' @param title Title of plot
 #' @param min_value Minimum value for detection
 #' @return ggplot object of percent of genes detected
+#' @importFrom ggpubr theme_classic2
 plot_percent_genes_detected <- function(dds, title, min_value = 0) {
   p <- ggplot(data.frame(percent_genes_detected = percentGenesDetected(dds, min_value)), aes(x = percent_genes_detected)) +
     geom_histogram(fill = "blue", alpha = 0.65) +
@@ -63,22 +52,34 @@ plot_percent_genes_detected <- function(dds, title, min_value = 0) {
   return(p)
 }
 
-#' @title Plot Gene Heatmap
+#' @title Plot Heatmap
 #' @description Function to plot complex heatmap from DESeq2 object
 #' @param dds DESeq2 object
-#' @param title Title of plot
-#' @param annotations List of annotations to plot
-#' @param normalize Type of normalization to use
+#' @param genes Vector of gene names to include in the heatmap (default: all genes)
+#' @param annotations Vector of column names in colData(dds) to use as annotations (default: NULL)
+#' @param normalize Type of normalization to use (default: "vst")
+#' @param width Width of the heatmap (default: 4 + 0.2 * ncol(dds))
+#' @param height Height of the heatmap (default: 4 + 0.1 * length(genes %||% rownames(dds)))
 #' @param ... Additional arguments to pass to ComplexHeatmap
 #' @return ComplexHeatmap object of gene heatmap
-plot_gene_heatmap <- function(dds, genes = NULL, annotations = NULL, normalize = "vst", ...) {
+#' @importFrom SummarizedExperiment colData
+#' @importFrom ComplexHeatmap Heatmap HeatmapAnnotation
+#' @importFrom dplyr select any_of
+#' @export
+plot_heatmap <- function(
+    dds, genes = NULL, annotations = NULL, normalize = "vst",
+    width = unit(max(4, min(12, 4 + 0.2 * ncol(dds))), "cm"),
+    height = unit(max(4, min(12, 4 + 0.1 * length(genes %||% rownames(dds)))), "cm"),
+    ...) {
   # Normalize counts
   norm_counts <- normalize_counts(dds, method = normalize)
   norm_counts <- t(scale(t(norm_counts)))
 
   # Ensure genes are in the matrix
-  if (is.null(genes)) {genes <- rownames(norm_counts)}
-  
+  if (is.null(genes)) {
+    genes <- rownames(norm_counts)
+  }
+
   # Check if any of the genes aren't in the matrix
   if (any(!genes %in% rownames(norm_counts))) {
     missing <- genes[!genes %in% rownames(norm_counts)]
@@ -87,15 +88,16 @@ plot_gene_heatmap <- function(dds, genes = NULL, annotations = NULL, normalize =
   }
 
   norm_counts <- norm_counts[genes, ]
+  # Create heatmap using do.call
+  heatmap_args <- list(
+    matrix = norm_counts,
+    name = "Z-Score",
+    width = width,
+    height = height,
+    ...
+  )
 
-  # Create heatmap
-  if (is.null(annotations)) {
-    heatmap <- Heatmap(
-      matrix = norm_counts,
-      name = "Z-Score",
-      ...
-    )
-  } else {
+  if (!is.null(annotations)) {
     cd_df <- as.data.frame(colData(dds))
     selected_df <- dplyr::select(cd_df, any_of(annotations))
     annotations_top <- HeatmapAnnotation(
@@ -104,14 +106,10 @@ plot_gene_heatmap <- function(dds, genes = NULL, annotations = NULL, normalize =
       annotation_name_side = "left",
       na_col = "white"
     )
-
-    heatmap <- Heatmap(
-      matrix = norm_counts,
-      name = "Z-Score",
-      top_annotation = annotations_top,
-      ...
-    )
+    heatmap_args$top_annotation <- annotations_top
   }
+
+  heatmap <- do.call(Heatmap, heatmap_args)
   return(heatmap)
 }
 
@@ -125,6 +123,10 @@ plot_gene_heatmap <- function(dds, genes = NULL, annotations = NULL, normalize =
 #' @param max_terms Maximum number of terms to plot
 #' @param ... Additional arguments to pass to ggplot
 #' @return ggplot object of enrichment terms
+#' @importFrom dplyr arrange mutate filter
+#' @importFrom forcats fct_reorder
+#' @importFrom stringr str_wrap
+#' @importFrom ggpubr theme_classic2
 #' @export
 plot_enrichment_terms <- function(
     gse,
@@ -171,6 +173,8 @@ plot_enrichment_terms <- function(
 #' @param custom_colors Optional list of custom color mappings
 #' @param alpha Color transparency (0-1, default: 0.8)
 #' @return List of color mappings for continuous and categorical variables
+#' @importFrom circlize colorRamp2
+#' @importFrom RColorBrewer brewer.pal
 #' @export
 color_mapping <- function(df, custom_colors = NULL, alpha = 1) {
   if (!is.data.frame(df)) stop("Input must be a data frame")
@@ -273,6 +277,9 @@ plot_ggplot_table <- function(df, columns, axis, size = 5, ...) {
 #' @param height Height of the heatmap
 #' @param ... Additional arguments to pass to ComplexHeatmap
 #' @return ComplexHeatmap object
+#' @importFrom ComplexHeatmap Heatmap
+#' @importFrom circlize colorRamp2
+#' @importFrom grid grid.text gpar unit
 #' @export
 plot_clinical_factors_heatmap <- function(
     cohort_tab,
@@ -324,7 +331,9 @@ plot_clinical_factors_heatmap <- function(
 #' @param color Column name for adjusted p-value
 #' @param labels Column name for labels
 #' @param pCutoff P-value cutoff for significance
-#' @return ggplot object
+#' @importFrom dplyr case_when
+#' @importFrom glue glue
+#' @importFrom ggrepel geom_text_repel
 plot_odds_volcano <- function(
     odds_ratio_df,
     x = "odds.ratio",
@@ -379,6 +388,8 @@ plot_odds_volcano <- function(
 #' @param xlim Limits for x-axis
 #' @param ylim Limits for y-axis
 #' @return ggplot object
+#' @importFrom dplyr case_when
+#' @importFrom ggrepel geom_text_repel
 #' @export
 plot_volcano <- function(
     dge,
@@ -438,6 +449,8 @@ plot_volcano <- function(
 #' @param y_order Order of y-axis variables
 #' @param ... Additional arguments to pass to ggplot
 #' @return ggplot object
+#' @importFrom tibble rownames_to_column
+#' @importFrom tidyr pivot_longer
 #' @export
 plot_correlation_matrix <- function(cor_mat, title = "", xlab = "", ylab = "", x_order = NULL, y_order = NULL, ...) {
   long_cor_mat <- as.data.frame(cor_mat) %>%
@@ -508,6 +521,9 @@ plot_forest <- function(
 #' @param color Column name for color grouping
 #' @param facet Column name for facet grouping
 #' @return ggplot object of stratified forest plot
+#' @importFrom dplyr mutate
+#' @importFrom glue glue
+#' @importFrom cowplot plot_grid
 #' @export
 plot_stratified_forest <- function(
     df,

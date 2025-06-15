@@ -43,10 +43,10 @@ test_that("plot_library_size creates valid ggplot object", {
     expect_s3_class(p, "ggplot")
 })
 
-# Test plot_gene_heatmap
-test_that("plot_gene_heatmap creates valid Heatmap object", {
+# Test plot_heatmap
+test_that("plot_heatmap creates valid Heatmap object", {
     dds <- create_mock_dds()
-    hm <- plot_gene_heatmap(dds,
+    hm <- plot_heatmap(dds,
         genes = rownames(dds)[1:10],
         annotations = c("condition", "batch")
     )
@@ -54,14 +54,14 @@ test_that("plot_gene_heatmap creates valid Heatmap object", {
     expect_s4_class(hm, "Heatmap")
 })
 
-test_that("plot_gene_heatmap handles missing genes gracefully", {
+test_that("plot_heatmap handles missing genes gracefully", {
     dds <- create_mock_dds()
-    expect_warning(plot_gene_heatmap(dds, genes = c("nonexistent_gene")))
+    expect_warning(plot_heatmap(dds, genes = c("nonexistent_gene")))
 })
 
-test_that("plot_gene_heatmap handles NULL gene list", {
+test_that("plot_heatmap handles NULL gene list", {
     dds <- create_mock_dds()
-    hm <- plot_gene_heatmap(dds, annotations = c("condition", "batch"))
+    hm <- plot_heatmap(dds, annotations = c("condition", "batch"))
     expect_s4_class(hm, "Heatmap")
 })
 
@@ -118,7 +118,7 @@ test_that("plot_volcano handles custom cutoffs", {
         row.names = paste0("gene", 1:100)
     )
 
-    p <- plot_volcano(mock_results, pCutoff = 0.1, fcCutOff = 1)
+    p <- plot_volcano(mock_results, pCutoff = 0.1, fcCutoff = 1)
     expect_s3_class(p, "ggplot")
 })
 

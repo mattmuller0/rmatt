@@ -4,7 +4,20 @@
 \alias{eigen_ica}
 \title{Calculate eigengenes by independent component analysis (WIP)}
 \usage{
-eigen_ica(df, outdir, n.comp = 1, align = FALSE, ...)
+eigen_ica(
+  df,
+  outdir,
+  n.comp = 1,
+  align = FALSE,
+  alg.typ = "parallel",
+  fun = "logcosh",
+  alpha = 1,
+  method = "R",
+  row.norm = FALSE,
+  maxit = 200,
+  tol = 1e-04,
+  verbose = FALSE
+)
 }
 \arguments{
 \item{df}{data frame [samples x genes]}
@@ -15,7 +28,21 @@ eigen_ica(df, outdir, n.comp = 1, align = FALSE, ...)
 
 \item{align}{logical, align eigengenes by average expression}
 
-\item{...}{additional arguments to pass to stats functions}
+\item{alg.typ}{algorithm type for ICA}
+
+\item{fun}{contrast function for ICA}
+
+\item{alpha}{parameter for contrast function}
+
+\item{method}{method for ICA}
+
+\item{row.norm}{logical, whether to normalize rows}
+
+\item{maxit}{maximum number of iterations}
+
+\item{tol}{tolerance for convergence}
+
+\item{verbose}{logical, print verbose output}
 }
 \value{
 dataframe with eigengenes

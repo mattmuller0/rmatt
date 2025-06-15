@@ -1,17 +1,6 @@
 #' @title Signature Functions
 #' @description This script contains functions for signature analysis.
-#' @details The functions include selecting top genes by variance, filtering genes by expression, filtering genes by lasso regression, and aligning a signature by average correlation with the derivation values.
 #' @name signature_functions
-#' @importFrom ggplot2 ggplot aes geom_point geom_smooth geom_boxplot labs ggsave
-#' @importFrom ggpubr stat_cor stat_compare_means
-#' @importFrom ggrepel geom_text_repel
-#' @importFrom singscore rankGenes
-#' @importFrom dplyr select mutate bind_rows pull any_of as_tibble
-#' @importFrom glue glue
-#' @importFrom rstatix cor_test t_test anova_test
-#' @importFrom glmnet cv.glmnet
-#' @importFrom tidyr drop_na
-NULL
 
 # ======================== Data Preprocessing Functions ========================
 
@@ -47,6 +36,8 @@ select_top_expression <- function(df, min_expr = 1) {
 #' @param nfolds number of cross-validation folds
 #' @param ... additional arguments to pass to lasso function
 #' @return data frame with filtered genes [genes, coefficient]
+#' @importFrom glmnet cv.glmnet
+#' @importFrom glue glue
 #' @export
 select_top_lasso <- function(df, y, lambda = NULL, nfolds = 10, ...) {
     if (!requireNamespace("glmnet", quietly = TRUE)) {
@@ -54,7 +45,7 @@ select_top_lasso <- function(df, y, lambda = NULL, nfolds = 10, ...) {
     }
     lasso_res <- glmnet::cv.glmnet(df, y, alpha = 1, lambda = lambda, nfolds = nfolds, ...)
     message(glue::glue("Selected lambda: {lasso_res$lambda.min}"))
-    coef <- as.data.frame(as.matrix(glmnet::coef(lasso_res, s = "lambda.min")))
+    coef <- as.data.frame(as.matrix(coef(lasso_res, s = "lambda.min")))
     coef <- coef[coef[, 1] != 0, , drop = FALSE]
     return(coef)
 }
@@ -81,11 +72,26 @@ align_signature <- function(sig, dat, by = "mean") {
 #' @param cols columns to compare to
 #' @param outdir output directory
 #' @param plot logical, whether to plot the results
-#' @param method correlation method (default is "spearman")
-#' @param ... additional arguments to pass to stats functions
+#' @param method.continuous correlation method (default is "spearman")
+#' @param method.two_group test method for two-group comparisons (default is "t.test")
+#' @param method.multi_group test method for multi-group comparisons (default is "anova")
+#' @param cor_args additional arguments to pass to correlation test
+#' @param t_test_args additional arguments to pass to t-test
+#' @param anova_args additional arguments to pass to ANOVA test
+#' @param wilcox_args additional arguments to pass to wilcoxon test
+#' @param kruskal_args additional arguments to pass to kruskal-wallis test
 #' @return list of stats results and plots
+#' @importFrom ggplot2 ggplot aes geom_point geom_smooth geom_boxplot labs ggsave
+#' @importFrom ggpubr stat_cor stat_compare_means
+#' @importFrom dplyr select mutate bind_rows any_of as_tibble
+#' @importFrom glue glue
+#' @importFrom rstatix cor_test t_test anova_test wilcox_test kruskal_test
+#' @importFrom tidyr drop_na
 #' @export
-compare_one_to_many <- function(df, col, cols, outdir, plot = TRUE, method = "spearman", ...) {
+compare_one_to_many <- function(df, col, cols, outdir, plot = TRUE, method.continuous = "spearman", 
+                                method.two_group = "t.test", method.multi_group = "anova",
+                                cor_args = list(), t_test_args = list(), anova_args = list(),
+                                wilcox_args = list(), kruskal_args = list()) {
     # set up output directory
     dir.create(outdir, showWarnings = FALSE, recursive = TRUE)
     stats_list <- list()
@@ -94,7 +100,7 @@ compare_one_to_many <- function(df, col, cols, outdir, plot = TRUE, method = "sp
         message(glue::glue("Comparing {col} to {x}..."))
         # check if column exists
         if (!(x %in% colnames(df))) {
-            message(glue::glue("Column {col} not found in data frame."))
+            message(glue::glue("Column {x} not found in data frame."))
             next
         }
 
@@ -107,34 +113,47 @@ compare_one_to_many <- function(df, col, cols, outdir, plot = TRUE, method = "sp
 
         if (data_type %in% c("integer", "numeric")) {
             # numeric data
-            stats_results <- df %>%
-                rstatix::cor_test(col, x, method = method) %>%
-                dplyr::select(variable = var2, method = method, estimate = cor, p = p)
+            stats_results <- do.call(rstatix::cor_test, c(list(data = df, vars = c(col, x), method = method.continuous), cor_args)) %>%
+                dplyr::select(variable = var2, method = method.continuous, estimate = cor, p = p)
             if (plot) {
-                plot_results <- base_plot + ggplot2::geom_point() + ggplot2::geom_smooth(method = "lm") + ggpubr::stat_cor(method = method)
+                plot_results <- base_plot + ggplot2::geom_point() + ggplot2::geom_smooth(method = "lm") + ggpubr::stat_cor(method = method.continuous)
             }
         } else if (data_type %in% c("character", "factor")) {
             # get the number of unique values
             column_data <- df[[x]]
             n_unique <- length(unique(na.omit(column_data)))
             if (n_unique == 2) {
-                # categorical data with < 2 unique values
-                stats_results <- df %>%
-                    rstatix::t_test(as.formula(glue::glue("{col} ~ {x}"))) %>%
-                    dplyr::mutate(variable = x, method = "t.test") %>%
-                    dplyr::select(variable, method, estimate = statistic, p = p)
+                # two-group comparison
+                if (method.two_group == "t.test") {
+                    stats_results <- do.call(rstatix::t_test, c(list(data = df, formula = as.formula(glue::glue("{col} ~ {x}"))), t_test_args)) %>%
+                        dplyr::mutate(variable = x, method = "t.test") %>%
+                        dplyr::select(variable, method, estimate = statistic, p = p)
+                } else if (method.two_group == "wilcox.test") {
+                    stats_results <- do.call(rstatix::wilcox_test, c(list(data = df, formula = as.formula(glue::glue("{col} ~ {x}"))), wilcox_args)) %>%
+                        dplyr::mutate(variable = x, method = "wilcox.test") %>%
+                        dplyr::select(variable, method, estimate = statistic, p = p)
+                } else {
+                    stop(glue::glue("Two-group method {method.two_group} not supported."))
+                }
                 if (plot) {
-                    plot_results <- base_plot + ggplot2::geom_boxplot() + ggpubr::stat_compare_means(method = "t.test")
+                    plot_results <- base_plot + ggplot2::geom_boxplot() + ggpubr::stat_compare_means(method = method.two_group)
                 }
             } else {
-                # categorical data with > 2 unique values
-                stats_results <- df %>%
-                    rstatix::anova_test(as.formula(glue::glue("{col} ~ {x}"))) %>%
-                    dplyr::as_tibble() %>%
-                    dplyr::mutate(method = "anova") %>%
-                    dplyr::select(variable = Effect, method, estimate = F, p = p)
+                # multi-group comparison
+                if (method.multi_group == "anova") {
+                    stats_results <- do.call(rstatix::anova_test, c(list(data = df, formula = as.formula(glue::glue("{col} ~ {x}"))), anova_args)) %>%
+                        dplyr::as_tibble() %>%
+                        dplyr::mutate(method = "anova") %>%
+                        dplyr::select(variable = Effect, method, estimate = F, p = p)
+                } else if (method.multi_group == "kruskal.test") {
+                    stats_results <- do.call(rstatix::kruskal_test, c(list(data = df, formula = as.formula(glue::glue("{col} ~ {x}"))), kruskal_args)) %>%
+                        dplyr::mutate(variable = x, method = "kruskal.test") %>%
+                        dplyr::select(variable, method, estimate = statistic, p = p)
+                } else {
+                    stop(glue::glue("Multi-group method {method.multi_group} not supported."))
+                }
                 if (plot) {
-                    plot_results <- base_plot + ggplot2::geom_boxplot() + ggpubr::stat_compare_means(method = "anova")
+                    plot_results <- base_plot + ggplot2::geom_boxplot() + ggpubr::stat_compare_means(method = method.multi_group)
                 }
             }
         } else {
@@ -153,23 +172,25 @@ compare_one_to_many <- function(df, col, cols, outdir, plot = TRUE, method = "sp
 }
 
 # ======================== Eigengene Functions ========================
-
 #' Calculate eigengenes by principal component analysis
 #' @description Calculate eigengenes by principal component analysis
 #' @param df data frame [samples x genes]
 #' @param outdir output directory
 #' @param pcs number of principal components to return
 #' @param align logical, align eigengenes by average expression
-#' @param ... additional arguments to pass to stats functions
+#' @param center logical, whether to center the data
+#' @param scale logical, whether to scale the data
 #' @return dataframe with eigengenes
-eigen_pca <- function(df, outdir, pcs = 1, align = TRUE, ...) {
+#' @importFrom ggplot2 ggsave
+#' @importFrom glue glue
+eigen_pca <- function(df, outdir, pcs = 1, align = TRUE, center = TRUE, scale = FALSE) {
     if (!requireNamespace("ggbiplot", quietly = TRUE)) {
         stop("Package 'ggbiplot' is required but not installed.")
     }
     dir.create(outdir, showWarnings = FALSE, recursive = TRUE)
 
     # run PCA
-    pca_res <- stats::prcomp(df, ...)
+    pca_res <- stats::prcomp(df, center = center, scale. = scale)
 
     biplot <- ggbiplot::ggbiplot(pca_res, obs.scale = 1, var.scale = 0.5, groups = NULL, ellipse = TRUE)
     ggplot2::ggsave(glue::glue("{outdir}/biplot.pdf"), biplot)
@@ -196,13 +217,15 @@ eigen_pca <- function(df, outdir, pcs = 1, align = TRUE, ...) {
 #' @param outdir output directory
 #' @param pcs number of principal components to return
 #' @param align logical, align eigengenes by average expression
-#' @param ... additional arguments to pass to stats functions
+#' @param nu number of left singular vectors to compute
+#' @param nv number of right singular vectors to compute
 #' @return dataframe with eigengenes
-eigen_svd <- function(df, outdir, pcs = 1, align = FALSE, ...) {
+#' @importFrom glue glue
+eigen_svd <- function(df, outdir, pcs = 1, align = FALSE, nu = min(1, pcs), nv = min(1, pcs)) {
     dir.create(outdir, showWarnings = FALSE, recursive = TRUE)
 
     # run SVD
-    svd_res <- base::svd(df, nu = min(1, pcs), nv = min(1, pcs), ...)
+    svd_res <- base::svd(df, nu = nu, nv = nv)
 
     eigengenes <- as.data.frame(svd_res$v[, pcs])
     colnames(eigengenes) <- glue::glue("eigen_{pcs}")
@@ -226,6 +249,7 @@ eigen_svd <- function(df, outdir, pcs = 1, align = FALSE, ...) {
 #' @param method distance method
 #' @param verbose logical, print verbose output
 #' @return dataframe with eigengenes
+#' @importFrom glue glue
 eigen_reg_svd <- function(M, samples = nrow(M), vectors = 1:3, tau = 1, lap = FALSE, method = "euclidian", verbose = FALSE) {
     A <- as.matrix(stats::dist(M, method = method))
     if (verbose) message(glue::glue("Average degree: {mean(colSums(A))}"))
@@ -258,16 +282,19 @@ eigen_reg_svd <- function(M, samples = nrow(M), vectors = 1:3, tau = 1, lap = FA
 #' @param outdir output directory
 #' @param pcs number of principal components to return
 #' @param align logical, align eigengenes by average expression
-#' @param ... additional arguments to pass to stats functions
+#' @param method NMF algorithm method
+#' @param seed random seed for reproducibility
+#' @param nrun number of runs
 #' @return dataframe with eigengenes
-eigen_nmf <- function(df, outdir, pcs = 1, align = FALSE, ...) {
+#' @importFrom glue glue
+eigen_nmf <- function(df, outdir, pcs = 1, align = FALSE, method = "brunet", seed = 420, nrun = 1) {
     if (!requireNamespace("NMF", quietly = TRUE)) {
         stop("Package 'NMF' is required but not installed.")
     }
     dir.create(outdir, showWarnings = FALSE, recursive = TRUE)
 
     # run NMF
-    nmf_res <- NMF::nmf(as.matrix(df), rank = pcs, seed = 420)
+    nmf_res <- NMF::nmf(as.matrix(df), rank = pcs, method = method, seed = seed, nrun = nrun)
 
     eigengenes <- as.data.frame(NMF::basis(nmf_res))
     colnames(eigengenes) <- glue::glue("eigen_{pcs}")
@@ -287,16 +314,29 @@ eigen_nmf <- function(df, outdir, pcs = 1, align = FALSE, ...) {
 #' @param outdir output directory
 #' @param n.comp number of components to return
 #' @param align logical, align eigengenes by average expression
-#' @param ... additional arguments to pass to stats functions
+#' @param alg.typ algorithm type for ICA
+#' @param fun contrast function for ICA
+#' @param alpha parameter for contrast function
+#' @param method method for ICA
+#' @param row.norm logical, whether to normalize rows
+#' @param maxit maximum number of iterations
+#' @param tol tolerance for convergence
+#' @param verbose logical, print verbose output
 #' @return dataframe with eigengenes
-eigen_ica <- function(df, outdir, n.comp = 1, align = FALSE, ...) {
+#' @importFrom glue glue
+eigen_ica <- function(df, outdir, n.comp = 1, align = FALSE, alg.typ = "parallel", 
+                      fun = "logcosh", alpha = 1, method = "R", row.norm = FALSE, 
+                      maxit = 200, tol = 1e-04, verbose = FALSE) {
     if (!requireNamespace("fastICA", quietly = TRUE)) {
         stop("Package 'fastICA' is required but not installed.")
     }
     dir.create(outdir, showWarnings = FALSE, recursive = TRUE)
 
     # run ICA
-    ica_res <- fastICA::fastICA(df, n.comp = n.comp, ...)
+    ica_res <- fastICA::fastICA(df, n.comp = n.comp, alg.typ = alg.typ, 
+                                fun = fun, alpha = alpha, method = method, 
+                                row.norm = row.norm, maxit = maxit, tol = tol, 
+                                verbose = verbose)
 
     eigengenes <- as.data.frame(ica_res$S)
     colnames(eigengenes) <- glue::glue("eigen_{n.comp}")

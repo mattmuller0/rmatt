@@ -4,7 +4,15 @@
 \alias{eigen_nmf}
 \title{Calculate eigengenes by non-negative matrix factorization (WIP)}
 \usage{
-eigen_nmf(df, outdir, pcs = 1, align = FALSE, ...)
+eigen_nmf(
+  df,
+  outdir,
+  pcs = 1,
+  align = FALSE,
+  method = "brunet",
+  seed = 420,
+  nrun = 1
+)
 }
 \arguments{
 \item{df}{data frame [samples x genes]}
@@ -15,7 +23,11 @@ eigen_nmf(df, outdir, pcs = 1, align = FALSE, ...)
 
 \item{align}{logical, align eigengenes by average expression}
 
-\item{...}{additional arguments to pass to stats functions}
+\item{method}{NMF algorithm method}
+
+\item{seed}{random seed for reproducibility}
+
+\item{nrun}{number of runs}
 }
 \value{
 dataframe with eigengenes

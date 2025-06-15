@@ -1,18 +1,6 @@
 #' @title RNA-seq filtering and preprocessing functions
 #' @description Functions for filtering and preprocessing RNA-seq data.
 #' @name expr_filtering_functions
-#' @importFrom dplyr select filter mutate
-#' @importFrom ggplot2 ggplot aes geom_point theme element_blank element_text labs theme_classic
-#' @importFrom ggpubr theme_classic2
-#' @importFrom SummarizedExperiment SummarizedExperiment assay colData
-#' @importFrom DESeq2 DESeqDataSet vst
-#' @importFrom edgeR filterByExpr
-#' @importFrom ggrepel geom_text_repel
-#' @importFrom ggtree ggtree geom_tiplab theme_tree2
-#' @importFrom ggbiplot ggbiplot
-#' @importFrom cowplot plot_grid
-#' @importFrom glue glue
-NULL
 
 # ======================== CODE ========================#
 
@@ -20,6 +8,7 @@ NULL
 #' @param dds DESeq2 object
 #' @param min_value Minimum value to consider a gene detected
 #' @return Data frame of percent of genes detected
+#' @importFrom SummarizedExperiment assay
 percentGenesDetected <- function(dds, min_value = 0) {
   counts <- assay(dds)
   percent_genes_detected <- rowMeans(counts > min_value)
@@ -35,6 +24,14 @@ percentGenesDetected <- function(dds, min_value = 0) {
 #' @param normalize Normalization method
 #' @param group Column of interest
 #' @return DESeq2 object after preprocessing
+#' @importFrom SummarizedExperiment assay colData
+#' @importFrom DESeq2 vst
+#' @importFrom ggplot2 ggplot aes geom_point theme element_blank element_text labs ggsave
+#' @importFrom ggpubr theme_classic2
+#' @importFrom ggrepel geom_text_repel
+#' @importFrom ggtree ggtree geom_tiplab theme_tree2
+#' @importFrom ggbiplot ggbiplot
+#' @importFrom cowplot plot_grid
 #' @export
 rna_preprocessing <- function(
     dds, outpath,
@@ -130,6 +127,15 @@ rna_preprocessing <- function(
 #' @param min.prop Minimum proportion of samples to keep
 #' @param ... Additional arguments to pass to FilterByExpr
 #' @return DESeq2 object after filtering
+#' @importFrom edgeR filterByExpr
+#' @importFrom SummarizedExperiment assay colData
+#' @importFrom DESeq2 vst
+#' @importFrom ggplot2 ggplot aes geom_point theme element_blank element_text labs ggsave
+#' @importFrom ggpubr theme_classic2
+#' @importFrom ggrepel geom_text_repel
+#' @importFrom ggtree ggtree geom_tiplab theme_tree2
+#' @importFrom ggbiplot ggbiplot
+#' @importFrom cowplot plot_grid
 #' @export
 filter_edgeR <- function(
     dds, outpath,
@@ -199,6 +205,9 @@ filter_edgeR <- function(
 #' @param group Column of interest
 #' @param normalize Normalization method
 #' @return DESeq2 object after detecting WBC contamination
+#' @importFrom SummarizedExperiment colData
+#' @importFrom ggplot2 ggplot aes geom_point theme element_blank element_text labs ggsave
+#' @importFrom ggrepel geom_text_repel
 #' @export
 detect_wbc <- function (dds, outpath, group = NULL, normalize = "vst") {
     dir.create(outpath, showWarnings = FALSE, recursive = TRUE)

@@ -4,7 +4,7 @@
 \alias{eigen_pca}
 \title{Calculate eigengenes by principal component analysis}
 \usage{
-eigen_pca(df, outdir, pcs = 1, align = TRUE, ...)
+eigen_pca(df, outdir, pcs = 1, align = TRUE, center = TRUE, scale = FALSE)
 }
 \arguments{
 \item{df}{data frame [samples x genes]}
@@ -15,7 +15,9 @@ eigen_pca(df, outdir, pcs = 1, align = TRUE, ...)
 
 \item{align}{logical, align eigengenes by average expression}
 
-\item{...}{additional arguments to pass to stats functions}
+\item{center}{logical, whether to center the data}
+
+\item{scale}{logical, whether to scale the data}
 }
 \value{
 dataframe with eigengenes

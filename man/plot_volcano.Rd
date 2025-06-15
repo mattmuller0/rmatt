@@ -13,7 +13,7 @@ plot_volcano(
   title = NULL,
   n_labels = TRUE,
   pCutoff = 0.05,
-  fcCutOff = NULL,
+  fcCutoff = NULL,
   xlim = c(min(dge[, x]) - 0.5, max(dge[, x], na.rm = TRUE) + 0.5),
   ylim = c(0, max(-log10(dge[, y]), na.rm = TRUE) * 1.25)
 )
@@ -35,7 +35,7 @@ plot_volcano(
 
 \item{pCutoff}{P-value cutoff for significance}
 
-\item{fcCutOff}{Fold change cutoff for significance}
+\item{fcCutoff}{Fold change cutoff for significance}
 
 \item{xlim}{Limits for x-axis}
 

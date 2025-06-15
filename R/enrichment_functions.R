@@ -1,25 +1,6 @@
 #' @title Enrichment Functions
 #' @description Functions for gene set enrichment analysis.
 #' @name enrichment_functions
-#' @importFrom dplyr filter mutate group_by arrange slice select pull bind_rows
-#' @importFrom ggplot2 ggplot aes geom_col scale_fill_continuous labs ggsave guide_colorbar
-#' @importFrom forcats fct_reorder
-#' @importFrom stringr str_wrap
-#' @importFrom purrr map map_dfr
-#' @importFrom clusterProfiler enrichGO gseGO GSEA groupGO
-#' @importFrom enrichplot dotplot cnetplot ridgeplot heatplot
-#' @importFrom AnnotationDbi mapIds
-#' @importFrom enrichR enrichr
-#' @importFrom msigdbr msigdbr
-#' @importFrom SummarizedExperiment assay
-#' @importFrom ggpubr theme_classic2
-NULL
-
-# # LOAD FUNCTIONS
-# #' @importFrom utils source
-# source("https://raw.githubusercontent.com/mattmuller0/Rtools/main/general_functions.R")
-# source("https://raw.githubusercontent.com/mattmuller0/Rtools/main/plotting_functions.R")
-# source("https://raw.githubusercontent.com/mattmuller0/Rtools/main/converting_functions.R")
 
 # ======================== CODE ========================#
 
@@ -80,6 +61,7 @@ get_fc_list <- function(res, fc_col = "log2FoldChange", names = NULL) {
 #' @param terms2plot Terms to plot.
 #' @param ... Additional arguments to pass to enricher.
 #' @return Enrichment results.
+#' @importFrom clusterProfiler gseGO
 #' @export
 rna_enrichment <- function(
     geneList, outpath,
@@ -110,6 +92,12 @@ rna_enrichment <- function(
 #' @param outpath Path to save to.
 #' @param ... Additional arguments to pass to ggsave.
 #' @return None.
+#' @importFrom dplyr filter mutate group_by arrange slice
+#' @importFrom ggplot2 ggplot aes geom_col scale_fill_continuous labs ggsave guide_colorbar ggtitle
+#' @importFrom forcats fct_reorder
+#' @importFrom stringr str_wrap
+#' @importFrom enrichplot dotplot cnetplot ridgeplot heatplot
+#' @importFrom ggpubr theme_classic2
 #' @export
 save_gse <- function(gse, outpath, ...) {
   dir.create(outpath, showWarnings = FALSE, recursive = TRUE)
@@ -226,10 +214,6 @@ save_gse <- function(gse, outpath, ...) {
 #' Load custom gene sets
 #' @return List of custom gene sets.
 get_custom_genesets <- function() {
-  # Load custom gene sets
-  mpa_geneset <- read.csv("https://raw.githubusercontent.com/mattmuller0/rmatt/refs/heads/main/data/genesets/mpa_signature.csv", header = TRUE)
-  press_geneset <- read.csv("https://raw.githubusercontent.com/mattmuller0/rmatt/refs/heads/main/data/genesets/press451_genes.csv", header = TRUE)
-
   t2g <- rbind(mpa_geneset, press_geneset)
   return(t2g)
 }
@@ -240,6 +224,8 @@ get_custom_genesets <- function() {
 #' @param keyType Key type for gene list.
 #' @param ontology Ontology to use (default is ALL).
 #' @return Enrichment results for each level of column of interest.
+#' @importFrom msigdbr msigdbr
+#' @importFrom clusterProfiler GSEA
 #' @export
 gsea_analysis <- function(
     geneList, outpath,
@@ -308,6 +294,13 @@ gsea_analysis <- function(
 #' @param max_pathways Maximum number of pathways to display (default is 5).
 #' @param ... Additional arguments to pass to the enrichment function.
 #' @return Overrepresentation analysis results.
+#' @importFrom purrr map_dfr
+#' @importFrom dplyr filter arrange slice mutate
+#' @importFrom clusterProfiler enrichGO groupGO
+#' @importFrom ggplot2 ggplot aes geom_col labs ggsave
+#' @importFrom forcats fct_reorder
+#' @importFrom stringr str_wrap
+#' @importFrom ggpubr theme_classic2
 #' @export
 stratified_ora <- function(
     gene_dataframe,
@@ -366,6 +359,13 @@ stratified_ora <- function(
 #' @param max_pathways Maximum number of pathways to display (default is 5).
 #' @param ... Additional arguments to pass to the enrichment function.
 #' @return Enrichment results for each database.
+#' @importFrom dplyr filter pull bind_rows group_by arrange slice mutate
+#' @importFrom purrr map
+#' @importFrom enrichR enrichr
+#' @importFrom ggplot2 ggplot aes geom_col labs ggsave
+#' @importFrom forcats fct_reorder
+#' @importFrom stringr str_wrap
+#' @importFrom ggpubr theme_classic2
 #' @export
 stratified_enrichr <- function(
     gene_dataframe,

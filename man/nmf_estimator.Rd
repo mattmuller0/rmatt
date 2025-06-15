@@ -4,7 +4,7 @@
 \alias{nmf_estimator}
 \title{Estimate the rank of a matrix using NMF}
 \usage{
-nmf_estimator(counts_matr, outfile, ranks = 2:8, runs = 30, options = "v", ...)
+nmf_estimator(counts_matr, outfile, ranks = 2:8, runs = 30, options = "v")
 }
 \arguments{
 \item{counts_matr}{A matrix with rows as genes and columns as samples.}
@@ -16,8 +16,6 @@ nmf_estimator(counts_matr, outfile, ranks = 2:8, runs = 30, options = "v", ...)
 \item{runs}{Number of runs to test. Default is 30.}
 
 \item{options}{Options for NMF. Default is 'v'.}
-
-\item{...}{Other arguments to pass to NMF.}
 }
 \value{
 A list of NMF and random NMF results.

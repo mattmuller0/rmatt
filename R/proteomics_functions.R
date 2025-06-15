@@ -1,16 +1,6 @@
 #' @title Olink proteomics functions
 #' @description Functions for analyzing Olink proteomics data.
 #' @name olink_functions
-#' @importFrom dplyr select filter mutate pull bind_rows any_of
-#' @importFrom tidyr pivot_wider drop_na
-#' @importFrom glue glue
-#' @importFrom purrr map
-#' @importFrom broom tidy
-#' @importFrom clusterProfiler enrichGO enrichKEGG
-#' @importFrom OlinkAnalyze olink_pca_plot olink_umap_plot olink_wilcox olink_volcano_plot olink_pathway_enrichment olink_pathway_visualization olink_pathway_heatmap
-#' @importFrom ggplot2 ggplot aes geom_histogram facet_wrap theme_bw theme ggsave
-#' @importFrom tibble column_to_rownames
-NULL
 
 # ======================== CODE ========================#
 
@@ -43,6 +33,10 @@ olink_info <- function(data) {
 #' @param byPanel Boolean to plot by panel
 #' @param ... Additional arguments to pass to olink_pca_plot
 #' @return List containing PCA results and outliers
+#' @importFrom OlinkAnalyze olink_pca_plot
+#' @importFrom ggplot2 ggsave
+#' @importFrom glue glue
+#' @importFrom dplyr bind_rows filter select
 #' @export
 olink_pca_outliers <- function(data, outdir, outlierDefX = 2.5, outlierDefY = 4, byPanel = TRUE, ...) {
     dir.create(outdir, showWarnings = FALSE)
@@ -72,6 +66,10 @@ olink_pca_outliers <- function(data, outdir, outlierDefX = 2.5, outlierDefY = 4,
 #' @param byPanel Boolean to plot by panel
 #' @param ... Additional arguments to pass to olink_umap_plot
 #' @return List containing UMAP results and outliers
+#' @importFrom OlinkAnalyze olink_umap_plot
+#' @importFrom ggplot2 ggsave
+#' @importFrom glue glue
+#' @importFrom dplyr bind_rows filter select
 #' @export
 olink_umap_outliers <- function(data, outdir, outlierDefX = 2.5, outlierDefY = 4, byPanel = TRUE, ...) {
     dir.create(outdir, showWarnings = FALSE)
@@ -98,6 +96,9 @@ olink_umap_outliers <- function(data, outdir, outlierDefX = 2.5, outlierDefY = 4
 #' @param outdir Output directory
 #' @param plot Boolean to indicate if plots should be generated
 #' @return List containing LOD results and outliers
+#' @importFrom dplyr mutate filter
+#' @importFrom glue glue
+#' @importFrom ggplot2 ggplot aes geom_histogram facet_wrap theme_bw theme ggsave
 #' @export
 olink_lod_qc <- function(data, outdir, plot = TRUE) {
     dir.create(outdir, showWarnings = FALSE)
@@ -126,6 +127,9 @@ olink_lod_qc <- function(data, outdir, plot = TRUE) {
 #' @param assay Assay column
 #' @param value Value column
 #' @return Count table
+#' @importFrom dplyr select
+#' @importFrom tidyr pivot_wider
+#' @importFrom tibble column_to_rownames
 #' @export
 olink_count_table <- function(data, sampleID = "SampleID", assay = "Assay", value = "NPX") {
     count_table <- data %>%
@@ -143,6 +147,8 @@ olink_count_table <- function(data, sampleID = "SampleID", assay = "Assay", valu
 #' @param umap_args List of arguments to pass to UMAP function
 #' @param lod_args List of arguments to pass to LOD function
 #' @return List containing filtered data, count table, and outliers
+#' @importFrom glue glue
+#' @importFrom dplyr filter pull
 #' @export
 olink_filtering <- function(data, outdir, pca_args = list(), umap_args = list(), lod_args = list()) {
     dir.create(outdir, showWarnings = FALSE)
@@ -204,6 +210,9 @@ olink_filtering <- function(data, outdir, pca_args = list(), umap_args = list(),
 #' @param volcano_args Arguments to pass to volcano plot function
 #' @param gsea_args Arguments to pass to pathway analysis function
 #' @return List of differential expression and pathway analysis results
+#' @importFrom OlinkAnalyze olink_wilcox olink_volcano_plot olink_pathway_enrichment olink_pathway_visualization olink_pathway_heatmap
+#' @importFrom glue glue
+#' @importFrom ggplot2 ggsave
 #' @export
 olink_analysis <- function(
     data,
@@ -261,6 +270,10 @@ olink_analysis <- function(
 #' @param events Vector of events to calculate odds ratios for
 #' @param adjustments Vector of variables to adjust for
 #' @return List of odds ratios for each event
+#' @importFrom purrr map
+#' @importFrom dplyr select any_of filter mutate
+#' @importFrom tidyr drop_na
+#' @importFrom broom tidy
 #' @export
 olink_odds_ratios <- function(data, proteins, events, adjustments = NULL) {
     or.df <- purrr::map(

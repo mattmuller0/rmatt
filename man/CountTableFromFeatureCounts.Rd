@@ -8,7 +8,10 @@ CountTableFromFeatureCounts(
   directory = ".",
   pattern = "featureCounts.txt$",
   idx = 7,
-  ...
+  sep = "\\t",
+  skip = 1,
+  comment.char = "#",
+  stringsAsFactors = FALSE
 )
 }
 \arguments{
@@ -18,7 +21,13 @@ CountTableFromFeatureCounts(
 
 \item{idx}{Columns to extract for (1) gene name and (2) counts.}
 
-\item{...}{Additional arguments to pass to ReadFeatureCounts.}
+\item{sep}{Field separator character.}
+
+\item{skip}{Number of lines to skip at the beginning of the file.}
+
+\item{comment.char}{Character indicating comment lines to ignore.}
+
+\item{stringsAsFactors}{Logical indicating whether strings should be converted to factors.}
 }
 \value{
 Data frame of counts.

@@ -9,7 +9,6 @@ survival_analysis(
   condition,
   censors,
   outdir,
-  image_type = "pdf",
   censor_prefix = "censor_",
   time_prefix = "time_to_"
 )
@@ -23,11 +22,11 @@ survival_analysis(
 
 \item{outdir}{character, output directory to save plots to.}
 
-\item{image_type}{character, type of image to save. Default is 'pdf'.}
-
 \item{censor_prefix}{character, prefix for censor columns. Default is 'C_'.}
 
 \item{time_prefix}{character, prefix for time columns. Default is 'T_'.}
+
+\item{image_type}{character, type of image to save. Default is 'pdf'.}
 }
 \value{
 list, list of survival plots and HR plots.

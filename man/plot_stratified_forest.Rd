@@ -8,9 +8,9 @@ plot_stratified_forest(
   df,
   x = "x",
   y = "y",
-  estimate = "hazard_ratio",
-  error_lower = "ci_lower",
-  error_upper = "ci_upper",
+  estimate = "hazard.ratio",
+  error_lower = "ci.lower",
+  error_upper = "ci.upper",
   color,
   facet
 )

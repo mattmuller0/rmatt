@@ -10,8 +10,14 @@ compare_one_to_many(
   cols,
   outdir,
   plot = TRUE,
-  method = "spearman",
-  ...
+  method.continuous = "spearman",
+  method.two_group = "t.test",
+  method.multi_group = "anova",
+  cor_args = list(),
+  t_test_args = list(),
+  anova_args = list(),
+  wilcox_args = list(),
+  kruskal_args = list()
 )
 }
 \arguments{
@@ -25,9 +31,21 @@ compare_one_to_many(
 
 \item{plot}{logical, whether to plot the results}
 
-\item{method}{correlation method (default is "spearman")}
+\item{method.continuous}{correlation method (default is "spearman")}
 
-\item{...}{additional arguments to pass to stats functions}
+\item{method.two_group}{test method for two-group comparisons (default is "t.test")}
+
+\item{method.multi_group}{test method for multi-group comparisons (default is "anova")}
+
+\item{cor_args}{additional arguments to pass to correlation test}
+
+\item{t_test_args}{additional arguments to pass to t-test}
+
+\item{anova_args}{additional arguments to pass to ANOVA test}
+
+\item{wilcox_args}{additional arguments to pass to wilcoxon test}
+
+\item{kruskal_args}{additional arguments to pass to kruskal-wallis test}
 }
 \value{
 list of stats results and plots

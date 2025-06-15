@@ -1,16 +1,13 @@
 #' @title Phenomics Functions
 #' @description Functions for EHR / Biobank data processing.
 #' @name phenomics_functions
-#' @importFrom dplyr filter pull mutate group_by summarise n_distinct bind_rows
-#' @importFrom glue glue
-#' @importFrom purrr map
-#' @importFrom tidyr pivot_longer pivot_wider
-NULL
 
 #' Make Composite Coding CSV
 #' @param lol List of lists containing the codes
 #' @param composite_name Name of the composite variable
 #' @return Data frame with composite variable mapping
+#' @importFrom purrr map
+#' @importFrom dplyr bind_rows
 #' @export
 make_composite_coding <- function(lol, composite_name) {
   if (!is.list(lol) || !all(sapply(lol, is.vector))) {
@@ -37,6 +34,10 @@ make_composite_coding <- function(lol, composite_name) {
 #' @param hesin Data frame with columns [dnx_hesin_id, Participant ID, field, value]
 #' @param encoding Data frame with columns [key, field, value]
 #' @return Data frame with matched phenotypes
+#' @importFrom dplyr filter mutate group_by n_distinct ungroup
+#' @importFrom glue glue
+#' @importFrom purrr map
+#' @importFrom magrittr %>%
 #' @export
 make_phenotypes <- function(hesin, encoding) {
   required_hesin <- c("field", "value")
