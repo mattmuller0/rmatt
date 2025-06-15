@@ -4,7 +4,14 @@
 \alias{eigen_svd}
 \title{Calculate eigengenes by singular value decomposition (WIP)}
 \usage{
-eigen_svd(df, outdir, pcs = 1, align = FALSE, ...)
+eigen_svd(
+  df,
+  outdir,
+  pcs = 1,
+  align = FALSE,
+  nu = min(1, pcs),
+  nv = min(1, pcs)
+)
 }
 \arguments{
 \item{df}{data frame [samples x genes]}
@@ -15,7 +22,9 @@ eigen_svd(df, outdir, pcs = 1, align = FALSE, ...)
 
 \item{align}{logical, align eigengenes by average expression}
 
-\item{...}{additional arguments to pass to stats functions}
+\item{nu}{number of left singular vectors to compute}
+
+\item{nv}{number of right singular vectors to compute}
 }
 \value{
 dataframe with eigengenes

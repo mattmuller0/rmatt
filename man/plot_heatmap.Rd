@@ -2,20 +2,32 @@
 % Please edit documentation in R/plotting_functions.R
 \name{plot_heatmap}
 \alias{plot_heatmap}
-\title{Plot Gene Heatmap}
+\title{Plot Heatmap}
 \usage{
-plot_heatmap(dds, genes = NULL, annotations = NULL, normalize = "vst", ...)
+plot_heatmap(
+  dds,
+  genes = NULL,
+  annotations = NULL,
+  normalize = "vst",
+  width = unit(max(4, min(12, 4 + 0.2 * ncol(dds))), "cm"),
+  height = unit(max(4, min(12, 4 + 0.1 * length(genes \%||\% rownames(dds)))), "cm"),
+  ...
+)
 }
 \arguments{
 \item{dds}{DESeq2 object}
 
-\item{annotations}{List of annotations to plot}
+\item{genes}{Vector of gene names to include in the heatmap (default: all genes)}
 
-\item{normalize}{Type of normalization to use}
+\item{annotations}{Vector of column names in colData(dds) to use as annotations (default: NULL)}
+
+\item{normalize}{Type of normalization to use (default: "vst")}
+
+\item{width}{Width of the heatmap (default: 4 + 0.2 * ncol(dds))}
+
+\item{height}{Height of the heatmap (default: 4 + 0.1 * length(genes %||% rownames(dds)))}
 
 \item{...}{Additional arguments to pass to ComplexHeatmap}
-
-\item{title}{Title of plot}
 }
 \value{
 ComplexHeatmap object of gene heatmap

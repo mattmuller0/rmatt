@@ -3,17 +3,28 @@
 \name{plotting_functions}
 \alias{plotting_functions}
 \alias{check_input_data}
+\alias{plot_library_depth}
 \title{Plotting Functions}
 \usage{
 check_input_data(data, required_columns)
+
+plot_library_depth(dds, title, bins = 30)
 }
 \arguments{
 \item{data}{Data frame containing the data to be checked}
 
 \item{required_columns}{Vector of required column names}
+
+\item{dds}{DESeq2 object}
+
+\item{title}{Title of plot}
+
+\item{bins}{Number of bins for histogram}
 }
 \value{
 Logical value indicating whether the data is valid
+
+ggplot object of library depth
 }
 \description{
 Functions for pooled cohort risk analysis.
@@ -21,6 +32,8 @@ Functions for pooled cohort risk analysis.
 Function to check input data
 
 Functions for plotting data.
+
+Function to plot library depth of summarized experiment object
 }
 \author{
 Matthew Muller

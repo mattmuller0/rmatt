@@ -1,10 +1,6 @@
 #' @title stats_functions
 #' @description This script contains functions for statistical analysis.
-#' @details The functions include creating a statistics table, hypergeometric scoring, creating a correlation matrix, softmaxing a vector, and min-max normalizing a vector.
 #' @name stats_functions
-#' @importFrom tableone CreateTableOne
-#' @importFrom purrr map
-NULL
 
 #' Create a Table 1
 #' @description Create a comprehensive descriptive statistics table from a data.frame
@@ -22,53 +18,54 @@ NULL
 #' @param print.missing logical, whether to show missing data information
 #' @param print.nonnormal character vector, variables to be summarized with median/IQR
 #' @return matrix containing descriptive statistics table
+#' @importFrom tableone CreateTableOne
 #' @export
 stats_table <- function(
-    data,
-    groups,
-    vars = NULL,
-    # Some parameters to pass to CreateTableOne
-    table.includeNA = FALSE,
-    table.addOverall = TRUE,
-    table.test = TRUE,
-    # Some arguments to pass to print
-    print.showAllLevels = TRUE,
-    print.printToggle = FALSE,
-    print.catDigits = 1,
-    print.contDigits = 2,
-    print.pDigits = 3,
-    print.missing = FALSE,
-    print.nonnormal = NULL) {
+  data,
+  groups,
+  vars = NULL,
+  # Some parameters to pass to CreateTableOne
+  table.includeNA = FALSE,
+  table.addOverall = TRUE,
+  table.test = TRUE,
+  # Some arguments to pass to print
+  print.showAllLevels = TRUE,
+  print.printToggle = FALSE,
+  print.catDigits = 1,
+  print.contDigits = 2,
+  print.pDigits = 3,
+  print.missing = FALSE,
+  print.nonnormal = NULL) {
   if (!requireNamespace("tableone", quietly = TRUE)) {
-    stop("Package 'tableone' is required but not installed.")
+  stop("Package 'tableone' is required but not installed.")
   }
 
   # Get all the variables if none are specified
   if (is.null(vars)) {
-    vars <- colnames(data)
-    vars <- vars[!vars %in% groups]
+  vars <- colnames(data)
+  vars <- vars[!vars %in% groups]
   }
 
   # Make a table 1
   table1 <- tableone::CreateTableOne(
-    vars = vars,
-    strata = groups,
-    data = data,
-    addOverall = table.addOverall,
-    test = table.test,
-    includeNA = table.includeNA
+  vars = vars,
+  strata = groups,
+  data = data,
+  addOverall = table.addOverall,
+  test = table.test,
+  includeNA = table.includeNA
   )
 
   # Make a nice table 1
   table1 <- print(
-    table1,
-    showAllLevels = print.showAllLevels,
-    printToggle = print.printToggle,
-    catDigits = print.catDigits,
-    contDigits = print.contDigits,
-    pDigits = print.pDigits,
-    missing = print.missing,
-    nonnormal = print.nonnormal
+  table1,
+  showAllLevels = print.showAllLevels,
+  printToggle = print.printToggle,
+  catDigits = print.catDigits,
+  contDigits = print.contDigits,
+  pDigits = print.pDigits,
+  missing = print.missing,
+  nonnormal = print.nonnormal
   )
   return(table1)
 }
@@ -81,9 +78,9 @@ stats_table <- function(
 #' @return gse object with odds ratio and p-value added
 #' @export
 hypergeometric_scoring <- function(
-    gse,
-    method = "fisher",
-    ...) {
+  gse,
+  method = "fisher",
+  ...) {
   # Get the geneset
   geneset <- gse@gene
 
@@ -96,30 +93,30 @@ hypergeometric_scoring <- function(
 
   # Make a dataframe where each row is the universe
   df <- data.frame(
-    row.names = universe,
-    in_geneset = universe %in% geneset
+  row.names = universe,
+  in_geneset = universe %in% geneset
   )
   # Now add each enrichment set as a new column
   for (i in 1:length(enrichment)) {
-    df[, names(enrichment)[i]] <- universe %in% enrichment[[i]]
+  df[, names(enrichment)[i]] <- universe %in% enrichment[[i]]
   }
 
   # Error handling on the method
   if (!method %in% c("fisher", "chisq")) {
-    stop("method must be either fisher or chisq")
+  stop("method must be either fisher or chisq")
   }
 
   # Let's do the OR test for each enrichment set
   if (method == "fisher") {
-    ORs <- sapply(
-      df[, -1],
-      function(x) stats::fisher.test(table(x, df[, "in_geneset"]), ...)$estimate
-    )
+  ORs <- sapply(
+    df[, -1],
+    function(x) stats::fisher.test(table(x, df[, "in_geneset"]), ...)$estimate
+  )
   } else if (method == "chisq") {
-    ORs <- sapply(
-      df[, -1],
-      function(x) stats::chisq.test(table(x, df[, "in_geneset"]), ...)$estimate
-    )
+  ORs <- sapply(
+    df[, -1],
+    function(x) stats::chisq.test(table(x, df[, "in_geneset"]), ...)$estimate
+  )
   }
 
   # Fix the names
@@ -142,6 +139,7 @@ hypergeometric_scoring <- function(
 #' @param use character, method for handling missing values
 #' @param ... other arguments to pass to cor.test
 #' @return list with correlation matrix, p-value matrix, and filtered correlation matrix
+#' @importFrom purrr map
 #' @export
 correlation_matrix <- function(data, vars1, vars2, method = "pearson", use = "pairwise.complete.obs", ...) {
   # Make a placeholder for the correlation matrix
@@ -149,17 +147,17 @@ correlation_matrix <- function(data, vars1, vars2, method = "pearson", use = "pa
   p_mat <- data.frame()
   # Map the correlation function over the data
   cor_res <- purrr::map(
-    vars1,
-    function(x) {
-      purrr::map(
-        vars2,
-        function(y) {
-          res <- cor.test(data[, x], data[, y], method = method, use = use, ...)
-          cor_mat[x, y] <<- res$estimate
-          p_mat[x, y] <<- res$p.value
-        }
-      )
+  vars1,
+  function(x) {
+    purrr::map(
+    vars2,
+    function(y) {
+      res <- cor.test(data[, x], data[, y], method = method, use = use, ...)
+      cor_mat[x, y] <<- res$estimate
+      p_mat[x, y] <<- res$p.value
     }
+    )
+  }
   )
   # Make a correlation matrix filtered by p-value
   cor_mat_filtr <- cor_mat

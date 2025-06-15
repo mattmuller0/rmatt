@@ -2,7 +2,36 @@
 % Please edit documentation in R/rna_functions.R
 \name{rna_functions}
 \alias{rna_functions}
+\alias{ReadFeatureCounts}
 \title{RNA Functions}
+\usage{
+ReadFeatureCounts(
+  f,
+  idx,
+  sep = "\\t",
+  skip = 1,
+  comment.char = "#",
+  stringsAsFactors = FALSE
+)
+}
+\arguments{
+\item{f}{File path to the feature counts output.}
+
+\item{idx}{Columns to extract for (1) gene name and (2) counts.}
+
+\item{sep}{Field separator character.}
+
+\item{skip}{Number of lines to skip at the beginning of the file.}
+
+\item{comment.char}{Character indicating comment lines to ignore.}
+
+\item{stringsAsFactors}{Logical indicating whether strings should be converted to factors.}
+}
+\value{
+Data frame of counts.
+}
 \description{
 A collection of functions for RNA analysis.
+
+Function to read a feature counts output file.
 }

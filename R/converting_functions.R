@@ -1,17 +1,6 @@
 #' @title Converting Functions
 #' @description This script contains functions for converting gene IDs and normalizing data.
-#' @details The functions include mapping gene IDs using `AnnotationDbi`, converting gene IDs using `biomaRt`, detecting gene ID types, and normalizing data.
 #' @name converting_functions
-#' @importFrom org.Hs.eg.db org.Hs.eg.db 
-#' @importFrom AnnotationDbi mapIds
-#' @importFrom DESeq2 sizeFactors estimateSizeFactors counts varianceStabilizingTransformation rlog
-#' @importFrom SummarizedExperiment assay
-#' @importFrom edgeR cpm rpkm calcNormFactors
-#' @importFrom singscore rankGenes
-#' @importFrom stringr str_split
-#' @importFrom glue glue
-#' @importFrom dplyr %>%
-NULL
 
 #' Map Gene IDs
 #'
@@ -23,6 +12,9 @@ NULL
 #' @param remove_missing logical, keep unmatched gene IDs.
 #' @param ... additional arguments to pass to `AnnotationDbi::mapIds`.
 #' @return list, converted gene IDs.
+#' @importFrom org.Hs.eg.db org.Hs.eg.db 
+#' @importFrom AnnotationDbi mapIds
+#' @importFrom stringr str_split
 map_gene_ids <- function(geneList, from = NULL, to, orgDb = org.Hs.eg.db, remove_missing = FALSE, ...) {
   if (is.null(from)) {
     from <- detect_gene_id_type(geneList)
@@ -51,6 +43,8 @@ map_gene_ids <- function(geneList, from = NULL, to, orgDb = org.Hs.eg.db, remove
 #' @param geneList list or vector of gene IDs.
 #' @param strip logical, whether to strip version numbers from gene IDs.
 #' @return character, type of gene ID.
+#' @importFrom stringr str_split
+#' @importFrom glue glue
 detect_gene_id_type <- function(geneList, strip = TRUE) {
   id_types <- list(
     # Start with the most common gene ID types
@@ -101,12 +95,16 @@ detect_gene_id_type <- function(geneList, strip = TRUE) {
 }
 
 #' Function to normalize dds object and return counts
-#'
+#' @description Function to normalize DESeq2 dds object and return counts.
 #' @param dds DESeq2 object
 #' @param method normalization method
 #' @param log2 logical, whether to log2 transform the counts
 #' @return normalized counts
 #' @export
+#' @importFrom DESeq2 sizeFactors estimateSizeFactors counts varianceStabilizingTransformation rlog
+#' @importFrom SummarizedExperiment assay
+#' @importFrom edgeR cpm rpkm calcNormFactors
+#' @importFrom singscore rankGenes
 normalize_counts <- function(dds, method = "mor", log2 = FALSE) {
   options <- c("mor", "vst", "vsd", "log2", "rld", "cpm", "rlog", "rpkm", "none", "tmm", "log2-mor", "rank")
   if (method %in% options) {

@@ -30,8 +30,8 @@ create_mock_dds <- function(n_genes = 100, n_samples = 6) {
   return(DESeqDataSetFromMatrix(counts, coldata, design = ~ condition))
 }
 
-# Test gene_wilcox_test function
-test_that("gene_wilcox_test works with valid input", {
+# Test run_wilcox function
+test_that("run_wilcox works with valid input", {
   dds <- create_mock_dds()
   dds <- estimateSizeFactors(dds)
   
@@ -39,16 +39,16 @@ test_that("gene_wilcox_test works with valid input", {
   temp_dir <- tempdir()
   
   expect_warning(
-    result <- gene_wilcox_test(
+    result <- run_wilcox(
       dds = dds,
       outpath = temp_dir,
-      condition = "condition"
+      group = "condition"
     ),
     regexp = "ggrepel" # Suppress warning for test clarity
   )
   
   expect_true(is.data.frame(result))
-  expect_true(all(c("basemean", "log2FoldChange", "pvalue", "padj") %in% colnames(result)))
+  expect_true(all(c("gene","estimate","statistic","p.value","conf.low","conf.high","method","alternative","padj") %in% colnames(result)))
   expect_true(file.exists(file.path(temp_dir, "wilcox_results.csv")))
   expect_true(file.exists(file.path(temp_dir, "volcanoPlot.pdf")))
 })

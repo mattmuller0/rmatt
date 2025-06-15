@@ -1,18 +1,12 @@
 #' @title Utility functions
 #' @description Utility functions for general tasks.
 #' @name utility_functions
-#' @importFrom BiocManager install
-#' @importFrom jsonlite fromJSON toJSON
-#' @importFrom parallel detectCores makeCluster stopCluster
-#' @importFrom dplyr rowwise ungroup filter select where across everything
-#' @importFrom tidyr drop_na
-NULL
 
 #' Install all required packages from a script
-#'
 #' @description Install all required packages from a script
 #' @param script character, path to script
 #' @return none
+#' @importFrom BiocManager install
 #' @export
 install_packages_from_script <- function(script) {
   script <- utils::readLines(script)
@@ -66,27 +60,12 @@ install_packages_from_script <- function(script) {
   return(output)
 }
 
-#' Time a function
-#'
-#' @description Time a function
-#' @param func function to time
-#' @return time time it took to run the function
-#' @export
-time_function <- function(func) {
-  start_time <- Sys.time()
-  func
-  end_time <- Sys.time()
-  time <- end_time - start_time
-  return(time)
-}
-
 #' Drop rows with NA values based on a threshold
-#'
 #' @description Drop rows with NA values based on a threshold
 #' @param data data frame
 #' @param percent_allowed_missing numeric, threshold for allowed missing values
 #' @return data frame with rows dropped
-#' @export
+#' @importFrom dplyr rowwise ungroup filter across everything
 drop_na_rows <- function(data, percent_allowed_missing) {
   if (percent_allowed_missing < 0 | percent_allowed_missing > 1) {
     stop("percent_allowed_missing must be between 0 and 1")
@@ -104,7 +83,7 @@ drop_na_rows <- function(data, percent_allowed_missing) {
 #' @param data data frame
 #' @param percent_allowed_missing numeric, threshold for allowed missing values
 #' @return data frame with columns dropped
-#' @export
+#' @importFrom dplyr select where
 drop_na_cols <- function(data, percent_allowed_missing) {
   if (percent_allowed_missing < 0 | percent_allowed_missing > 1) {
     stop("percent_allowed_missing must be between 0 and 1")

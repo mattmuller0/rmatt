@@ -11,7 +11,10 @@ run_limma(
   controls = NULL,
   pCutoff = 0.05,
   fcCutoff = 0.5,
-  ...
+  topTable.coef = 2,
+  topTable.n = Inf,
+  topTable.adjust.method = "BH",
+  voom.plot = TRUE
 )
 }
 \arguments{
@@ -27,10 +30,16 @@ run_limma(
 
 \item{fcCutoff}{Fold change cutoff for volcano plot}
 
-\item{...}{Additional arguments to pass to voom}
+\item{topTable.coef}{Coefficient to test in topTable}
+
+\item{topTable.n}{Number of top results to return}
+
+\item{topTable.adjust.method}{Method for adjusting p-values in topTable}
+
+\item{voom.plot}{Logical indicating whether to plot the voom results}
 }
 \value{
-Data frame of p-values and adjusted p-values
+Data frame of results from limma analysis
 }
 \description{
 Function to run limma on a summarized experiment object with TMM normalization

@@ -1,27 +1,19 @@
 #' @title RNA Functions
 #' @description A collection of functions for RNA analysis.
 #' @name rna_functions
-#' @importFrom dplyr select inner_join mutate
-#' @importFrom tibble rownames_to_column
-#' @importFrom purrr map reduce
-#' @importFrom DESeq2 DESeq results lfcShrink plotMA DESeqDataSet
-#' @importFrom SummarizedExperiment colData assay
-#' @importFrom ggplot2 ggsave
-#' @importFrom EnhancedVolcano EnhancedVolcano
-#' @importFrom edgeR calcNormFactors
-#' @importFrom limma lmFit eBayes topTable
-#' @importFrom rstatix wilcox_test
-NULL
 
 # ======================== Reading Functions ========================
 #' @title Read Feature Counts
 #' @description Function to read a feature counts output file.
 #' @param f File path to the feature counts output.
 #' @param idx Columns to extract for (1) gene name and (2) counts.
-#' @param ... Additional arguments to pass to read.table.
+#' @param sep Field separator character.
+#' @param skip Number of lines to skip at the beginning of the file.
+#' @param comment.char Character indicating comment lines to ignore.
+#' @param stringsAsFactors Logical indicating whether strings should be converted to factors.
 #' @return Data frame of counts.
-#' @export
-ReadFeatureCounts <- function(f, idx, ...) {
+#' @importFrom dplyr select
+ReadFeatureCounts <- function(f, idx, sep = "\t", skip = 1, comment.char = "#", stringsAsFactors = FALSE) {
   if (missing(f)) {
     stop("f is missing")
   }
@@ -29,7 +21,7 @@ ReadFeatureCounts <- function(f, idx, ...) {
     stop("file not found")
   }
   message("reading ", f, " ...")
-  a <- utils::read.table(f, header = TRUE, ...)
+  a <- utils::read.table(f, header = TRUE, sep = sep, skip = skip, comment.char = comment.char, stringsAsFactors = stringsAsFactors)
   a <- dplyr::select(a, 1, idx)
   return(a)
 }
@@ -39,97 +31,120 @@ ReadFeatureCounts <- function(f, idx, ...) {
 #' @param directory Directory containing feature counts output.
 #' @param pattern Pattern to match for feature counts output.
 #' @param idx Columns to extract for (1) gene name and (2) counts.
-#' @param ... Additional arguments to pass to ReadFeatureCounts.
+#' @param sep Field separator character.
+#' @param skip Number of lines to skip at the beginning of the file.
+#' @param comment.char Character indicating comment lines to ignore.
+#' @param stringsAsFactors Logical indicating whether strings should be converted to factors.
 #' @return Data frame of counts.
+#' @importFrom purrr map reduce
+#' @importFrom dplyr inner_join
 #' @export
-CountTableFromFeatureCounts <- function(directory = ".", pattern = "featureCounts.txt$", idx = 7, ...) {
+CountTableFromFeatureCounts <- function(directory = ".", pattern = "featureCounts.txt$", idx = 7, sep = "\t", skip = 1, comment.char = "#", stringsAsFactors = FALSE) {
   if (missing(directory)) {
     stop("directory is missing")
   }
   fl <- list.files(directory, pattern = pattern, full.names = TRUE, recursive = TRUE)
   message("reading ", length(fl), " samples ...")
   sample_names <- utils::basename(fl)
-  l <- purrr::map(fl, ReadFeatureCounts, idx = idx, ...)
+  l <- purrr::map(fl, ReadFeatureCounts, idx = idx, sep = sep, skip = skip, comment.char = comment.char, stringsAsFactors = stringsAsFactors)
   tbl <- purrr::reduce(l, dplyr::inner_join)
   return(tbl)
 }
 
 # ======================== Testing Functions ========================
-#' Wilcoxon Ranked Sum testing on genes in two summarized experiments
-#' @description Function to run a wilcoxon ranked sum test on genes in two summarized experiments
+#' @title Wilcoxon Test
+#' @description Function to perform Wilcoxon test on a dds object
 #' @param dds DESeq2 object
-#' @param outpath Output path for results
-#' @param condition Column of interest
-#' @param pCutoff p-value cutoff for volcano plot
-#' @param fcCutoff Fold change cutoff for volcano plot
-#' @param normalize Normalization method to use
-#' @param paired Logical, whether to run a paired test
-#' @return Data frame of p-values and adjusted p-values
-#' @export
-gene_wilcox_test <- function(
-    dds, outpath,
-    condition,
-    pCutoff = 0.05, 
-    fcCutoff = 0.5,
-    normalize = "log2-mor",
-    paired = FALSE
-    ) {
-  # make the outpath
+#' @param group Column in colData to group by
+#' @param outdir Output directory for results
+#' @param normalize.method Normalization method to use (default is "mor")
+#' @param wilcox.exact Logical indicating whether to use exact Wilcoxon test (default is FALSE)
+#' @param wilcox.paired Logical indicating whether to use paired Wilcoxon test (default is FALSE)
+#' @param wilcox.alternative Alternative hypothesis for Wilcoxon test (default is "two.sided")
+#' @param volcano.pCutoff p-value cutoff for volcano plot (default is 0.05)
+#' @return Data frame of results with Wilcoxon test statistics
+run_wilcox <- function(
+    dds,
+    group,
+    outpath,
+    normalize.method = "mor",
+    wilcox.exact = FALSE,
+    wilcox.paired = FALSE,
+    wilcox.alternative = "two.sided",
+    volcano.pCutoff = 0.05) {
+  require(DESeq2)
+  require(dplyr)
+  require(broom)
+  require(purrr)
+
+  # make the directory if it doesn't exist
   dir.create(outpath, showWarnings = FALSE, recursive = TRUE)
 
-  # Extract count data from the DESeq object
-  count_data <- normalize_counts(dds, method = normalize)
+  # Ensure the group is in colData
+  if (!group %in% colnames(colData(dds))) {
+    stop("Group not found in colData")
+  }
 
-  # Extract metadata from the DESeq object
-  meta <- as.data.frame(SummarizedExperiment::colData(dds))[, condition, drop = FALSE]
+  # Get the counts matrix and colData
+  counts <- normalize_counts(dds, method = normalize.method)
+  col_data <- as.data.frame(colData(dds))
 
-  # get the conditions
-  conditions <- unique(meta[, condition])
+  # Check if the group column has any NA values and combine counts with colData
+  dat <- cbind(col_data, t(counts))
+  dat <- subset(dat, !is.na(dat[[group]]))
 
-  # Run the wilcoxon test for each gene using map
-  test_res <- apply(
-    count_data, 1,
-    function(x) {
-      # run the test
-      test <- wilcox.test(x[meta[, condition] == conditions[1]], x[meta[, condition] == conditions[2]], paired = paired)
+  # verify that the group column is a factor
+  if (!is.factor(dat[[group]])) {
+    dat[[group]] <- as.factor(dat[[group]])
+    message(paste0("Converting to factor with reference level: ", levels(dat[[group]])[1]))
+  }
 
-      # get the pvalue
-      pvalue <- test$p.value
+  # Create a data frame to store results
+  genes <- rownames(counts)
+  res <- map(genes, function(gene) {
+    # Split data by group levels
+    group_levels <- levels(dat[[group]])
+    x1 <- dat[[gene]][dat[[group]] == group_levels[1]] # Reference group
+    x2 <- dat[[gene]][dat[[group]] == group_levels[2]] # Second group
 
-      # get the basemean
-      basemean <- 2^mean(x)
+    w <- wilcox.test(
+      x1, x2,
+      exact = wilcox.exact,
+      paired = wilcox.paired,
+      alternative = wilcox.alternative,
+      conf.int = TRUE # Include confidence interval
+    )
+    o <- tidy(w)
+    o$gene <- gene
+    return(o)
+  })
+  res <- bind_rows(res)
 
-      # get the log2FC
-      log2FoldChange <- mean(x[meta[, condition] == conditions[2]]) - mean(x[meta[, condition] == conditions[1]])
+  # Adjust p-values
+  res$padj <- p.adjust(res$p.value, method = "BH")
 
-      # return the test
-      o <- list(basemean = basemean, log2FoldChange = log2FoldChange, pvalue = pvalue)
-      return(o)
-    }
-  )
-  res <- as.data.frame(bind_rows(test_res))
+  # order the results
+  res <- res %>% select(gene, everything())
 
-  # order things well
-  rownames(res) <- rownames(count_data)
-  res <- res[, c("basemean", "log2FoldChange", "pvalue")]
+  # save the results
+  write.csv(res, file.path(outpath, "wilcox_results.csv"), row.names = FALSE)
 
-  # Extract p-values and adjust for multiple testing using the Benjamini-Hochberg method
-  res <- res %>% mutate(padj = p.adjust(pvalue, method = "BH"))
+  # make a histogram of the p-values
+  p_hist <- ggplot(res, aes(x = p.value)) +
+    geom_histogram(aes(y = after_stat(density)), alpha = 0.7) +
+    geom_density(color = "red", linewidth = 1) +
+    labs(title = "Histogram of P-values", x = "P-value", y = "Frequency") +
+    theme_minimal()
+  ggsave(file.path(outpath, "wilcox_pvalue_histogram.pdf"), p_hist)
 
-  # wrote the results to a csv
-  utils::write.csv(res, file.path(outpath, "wilcox_results.csv"))
-
-  # make a volcano plot
-  volcanoP <- plot_volcano(res, pCutoff = pCutoff, fcCutoff = fcCutoff)
-  ggplot2::ggsave(file.path(outpath, "volcanoPlot.pdf"), volcanoP)
+  # create a volcano plot
+  v <- plot_volcano(res, x = "estimate", y = "p.value", color = "padj", labels = "gene", pCutoff = volcano.pCutoff)
+  ggsave(file.path(outpath, "wilcox_volcano.pdf"), v)
 
   # get the fc list
-  fc <- get_fc_list(res, "log2FoldChange")
+  fc_list <- get_fc_list(res, fc_col = "estimate", names = "gene")
+  gsea_out <- gsea_analysis(fc_list, file.path(outpath, "gsea"))
 
-  # run enrichment
-  gse <- gsea_analysis(fc, outpath)
-
-  # View results
   return(res)
 }
 
@@ -164,58 +179,65 @@ run_limma <- function(
     topTable.n = Inf,
     topTable.adjust.method = "BH",
     voom.plot = TRUE) {
-    # make the directory if it doesn"t exist
-    dir.create(outpath, showWarnings = FALSE, recursive = TRUE)
+  # make the directory if it doesn"t exist
+  dir.create(outpath, showWarnings = FALSE, recursive = TRUE)
 
-    # Extract the condition vector from the SummarizedExperiment object
-    metadata <- as.data.frame(SummarizedExperiment::colData(se))
+  # Extract the condition vector from the SummarizedExperiment object
+  # Remove samples with NA in condition or controls
+  metadata <- as.data.frame(colData(se))
+  vars_to_check <- c(condition, controls)
+  keep <- complete.cases(metadata[, vars_to_check, drop = FALSE])
+  se <- se[, keep]
+  metadata <- metadata[keep, , drop = FALSE]
 
-    # Normalize the counts matrix using TMM normalization
-    if (!requireNamespace("edgeR", quietly = TRUE)) {
-        stop("edgeR package is required for TMM normalization. Please install it.")
-    }
-    dge <- edgeR::DGEList(counts = SummarizedExperiment::assay(se))
-    norm_counts <- SummarizedExperiment::assay(se)
+  # Normalize the counts matrix using TMM normalization
+  if (!requireNamespace("edgeR", quietly = TRUE)) {
+    stop("edgeR package is required for TMM normalization. Please install it.")
+  }
 
-    # Create the design matrix
-    if (is.null(controls)) {
-        fmla <- as.formula(paste("~", paste(condition, collapse = " + ")))
-    } else {
-        fmla <- as.formula(paste("~", paste(c(condition, controls), collapse = " + ")))
-    }
-    design <- model.matrix(fmla, data = metadata)
+  dge <- DGEList(counts = assay(se))
+  norm_counts <- calcNormFactors(dge, method = "TMM")
+  # norm_counts <- cpm(norm_counts)
 
-    # Perform differential expression analysis
-    if (voom.plot) {
-        message("Running voom with plot enabled...")
-        pdf(file.path(outpath, "voom_plot.pdf"), width = 10, height = 8)
-        on.exit(dev.off(), add = TRUE)
-    } else {
-        message("Running voom without plot...")
-    }
+  # Create the design matrix
+  if (is.null(controls)) {
+    fmla <- as.formula(paste("~", paste(condition, collapse = " + ")))
+  } else {
+    fmla <- as.formula(paste("~", paste(c(condition, controls), collapse = " + ")))
+  }
+  design <- model.matrix(fmla, data = metadata)
 
-    # Perform voom transformation
-    v <- voom(norm_counts, design, plot = voom.plot)
-    fit <- lmFit(v, design)
-    fit <- eBayes(fit)
+  # Perform differential expression analysis
+  if (voom.plot) {
+    message("Running voom with plot enabled...")
+    pdf(file.path(outpath, "voom_plot.pdf"), width = 10, height = 8)
+    on.exit(dev.off(), add = TRUE)
+  } else {
+    message("Running voom without plot...")
+  }
 
-    # Print the name of the coefficient being tested
-    message(glue::glue("Testing coefficient: {colnames(design)[topTable.coef]}"))
+  # Perform voom transformation
+  v <- voom(norm_counts, design, plot = voom.plot)
+  fit <- lmFit(v, design = design)
+  fit <- eBayes(fit)
 
-    results <- topTable(fit, coef = topTable.coef, number = topTable.n, adjust.method = topTable.adjust.method)
-    write.csv(results, file.path(outpath, "limma_results.csv"))
+  # Print the name of the coefficient being tested
+  message(glue::glue("Testing coefficient: {colnames(design)[topTable.coef]}"))
 
-    # make a volcano plot
-    volcanoP <- plot_volcano(results, x = "logFC", y = "P.Value", color = "adj.P.Val", pCutoff = pCutoff)
-    ggsave(file.path(outpath, "volcanoPlot.pdf"), volcanoP)
+  results <- topTable(fit, coef = topTable.coef, number = topTable.n, adjust.method = topTable.adjust.method)
+  write.csv(results, file.path(outpath, "limma_results.csv"))
 
-    # get the fc list
-    fc <- get_fc_list(results, "logFC")
+  # make a volcano plot
+  volcanoP <- plot_volcano(results, x = "logFC", y = "P.Value", color = "adj.P.Val", pCutoff = pCutoff)
+  ggsave(file.path(outpath, "volcanoPlot.pdf"), volcanoP)
 
-    # run enrichment
-    gse <- gsea_analysis(fc, outpath)
+  # get the fc list
+  fc <- get_fc_list(results, "logFC")
 
-    return(results)
+  # run enrichment
+  gse <- gsea_analysis(fc, outpath)
+
+  return(results)
 }
 
 
@@ -226,6 +248,7 @@ run_limma <- function(
 #' @param method Correlation method to use
 #' @param ... Additional arguments to pass to cor.test
 #' @return Correlation results for each gene
+#' @importFrom SummarizedExperiment colData
 #' @export
 calculate_correlations <- function(dds, condition, normalize = "mor", method = "spearman", ...) {
   # Extract the condition vector
@@ -260,6 +283,8 @@ calculate_correlations <- function(dds, condition, normalize = "mor", method = "
 #' @param fcCutoff Fold change cutoff for volcano plot
 #' @param ... Additional arguments to pass to DESeq2
 #' @return Results of differential expression analysis
+#' @importFrom DESeq2 DESeq results lfcShrink plotMA resultsNames
+#' @importFrom ggplot2 ggsave
 #' @export
 run_deseq <- function(
     dds, outpath,
@@ -353,6 +378,8 @@ run_deseq <- function(
 #' @param controls Control groups
 #' @param ... Additional arguments to pass to DESeq2
 #' @return OVR results for each level of column of interest
+#' @importFrom SummarizedExperiment assay colData
+#' @importFrom purrr map
 #' @export
 ovr_deseq_results <- function(dds, column, outpath, controls = NULL) {
   dir.create(outpath, showWarnings = FALSE, recursive = TRUE)
@@ -395,6 +422,9 @@ ovr_deseq_results <- function(dds, column, outpath, controls = NULL) {
 #' @param outpath Path to save results
 #' @param ... Additional arguments to pass to DESeq2 for volcano plots
 #' @return List of results of differential expression analysis
+#' @importFrom SummarizedExperiment colData
+#' @importFrom DESeq2 DESeqDataSet
+#' @importFrom ggplot2 ggsave
 #' @export
 deseq_analysis <- function(dds, conditions, controls = NULL, outpath, ...) {
   # Create output directory
@@ -489,6 +519,8 @@ deseq_analysis <- function(dds, conditions, controls = NULL, outpath, ...) {
 #' @param by Column to join on.
 #' @param suffix Suffix for columns.
 #' @return Data frame of results.
+#' @importFrom dplyr inner_join
+#' @importFrom tibble rownames_to_column
 #' @export
 compare_results <- function(res1, res2, metric = "log2FoldChange", by = "rowname", suffix = c("_1", "_2")) {
   res1 <- as.data.frame(res1)

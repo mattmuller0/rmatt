@@ -1,6 +1,6 @@
 Package: rmatt
 Title: A Collection of R Tools
-Version: 0.2.7
+Version: 0.3.0
 Maintainer: Matthew Muller <mm12865@nyu.edu>
 Description: This package contains a collection of all the R tools I've made during my PhD. It covers mainly multiomic analyses, statistical methods, and data wrangling.
 Author: Matthew Muller
@@ -20,7 +20,6 @@ Imports:
     org.Hs.eg.db (>= 3.12.0),
     purrr (>= 1.0.4),
     S4Vectors (>= 0.30.0),
-    stats,
     stringr (>= 1.4.0),
     SummarizedExperiment (>= 1.20.0),
     tibble (>= 3.0.0),
@@ -38,18 +37,17 @@ Imports:
     forcats (>= 0.5.0),
     ggbiplot (>= 0.5.0),
     ggrepel (>= 0.9.0),
-    ggsci (>= 3.0.0),
     ggsurvfit (>= 1.0.0),
     glmnet (>= 4.1-0),
-    jsonlite (>= 1.8.0),
     limma (>= 3.50.0),
     msigdbr (>= 10.0.1),
-    rlang (>= 1.1.5),
+    rlang (>= 1.0.0),
     rstatix (>= 0.7.0),
     singscore (>= 1.10.0),
     survival (>= 3.3.0),
     ggtree (>= 3.0.0),
-    tableone (>= 0.13.0)
+    tableone (>= 0.13.0),
+    magrittr (>= 2.0.0),
 Suggests:
     biomaRt (>= 2.50.0),
     cluster (>= 2.1.0),
@@ -62,3 +60,4 @@ Encoding: UTF-8
 URL: https://github.com/mattmuller0/rmatt
 BugReports: https://github.com/mattmuller0/rmatt/issues
 RoxygenNote: 7.3.2
+LazyData: true
