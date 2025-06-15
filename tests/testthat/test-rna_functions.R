@@ -50,7 +50,8 @@ test_that("run_wilcox works with valid input", {
   expect_true(is.data.frame(result))
   expect_true(all(c("gene","estimate","statistic","p.value","conf.low","conf.high","method","alternative","padj") %in% colnames(result)))
   expect_true(file.exists(file.path(temp_dir, "wilcox_results.csv")))
-  expect_true(file.exists(file.path(temp_dir, "volcanoPlot.pdf")))
+  expect_true(file.exists(file.path(temp_dir, "wilcox_pvalue_histogram.pdf")))
+  expect_true(file.exists(file.path(temp_dir, "wilcox_volcano.pdf")))
 })
 
 # Test run_limma function

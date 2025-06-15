@@ -1,7 +1,3 @@
-#' @title Signature Functions
-#' @description This script contains functions for signature analysis.
-#' @name signature_functions
-
 # ======================== Data Preprocessing Functions ========================
 
 #' Select top genes by variance

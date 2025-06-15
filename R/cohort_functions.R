@@ -1,10 +1,3 @@
-#' @title Plotting Functions
-#' @description Functions for pooled cohort risk analysis.
-#' @name plotting_functions
-#' @author Matthew Muller
-
-# ======================== Helper Functions ========================
-
 #' @title Function to check input data
 #' @description Function to check input data
 #' @param data Data frame containing the data to be checked

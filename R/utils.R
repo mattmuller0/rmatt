@@ -1,7 +1,3 @@
-#' @title Utility functions
-#' @description Utility functions for general tasks.
-#' @name utility_functions
-
 #' Install all required packages from a script
 #' @description Install all required packages from a script
 #' @param script character, path to script

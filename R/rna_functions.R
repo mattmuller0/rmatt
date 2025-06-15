@@ -1,7 +1,3 @@
-#' @title RNA Functions
-#' @description A collection of functions for RNA analysis.
-#' @name rna_functions
-
 # ======================== Reading Functions ========================
 #' @title Read Feature Counts
 #' @description Function to read a feature counts output file.

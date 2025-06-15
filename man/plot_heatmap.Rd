@@ -10,7 +10,7 @@ plot_heatmap(
   annotations = NULL,
   normalize = "vst",
   width = unit(max(4, min(12, 4 + 0.2 * ncol(dds))), "cm"),
-  height = unit(max(4, min(12, 4 + 0.1 * length(genes \%||\% rownames(dds)))), "cm"),
+  height = unit(max(4, min(12, 4 + 0.1 * length(intersect(genes, rownames(dds))))), "cm"),
   ...
 )
 }
@@ -25,7 +25,7 @@ plot_heatmap(
 
 \item{width}{Width of the heatmap (default: 4 + 0.2 * ncol(dds))}
 
-\item{height}{Height of the heatmap (default: 4 + 0.1 * length(genes %||% rownames(dds)))}
+\item{height}{Height of the heatmap (default: 4 + 0.1 * length(intersect(genes, rownames(dds))))}
 
 \item{...}{Additional arguments to pass to ComplexHeatmap}
 }
