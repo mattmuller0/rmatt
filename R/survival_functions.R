@@ -1,7 +1,3 @@
-#' @title Survival Analysis Functions
-#' @description Functions for survival analysis including log rank tests and hazard ratios.
-#' @name survival_functions
-
 #' @title Log Rank Test
 #' @description Perform a log rank test on a dataframe.
 #' @param data data.frame, data to perform log rank test on.

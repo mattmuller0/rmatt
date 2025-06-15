@@ -1,0 +1,167 @@
+---
+title: "Transcriptomics Analysis with rmatt"
+author: "Matthew Muller"
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+    code_folding: show
+    theme: flatly
+    highlight: tango
+bibliography: references.bib
+vignette: >
+  %\VignetteIndexEntry{Transcriptomics Analysis with rmatt}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 8,
+  fig.height = 6,
+  message = FALSE,
+  warning = FALSE
+)
+```
+
+# Introduction
+
+The `rmatt` package provides a comprehensive suite of tools for transcriptomics analysis, from data preprocessing and normalization to differential expression analysis, enrichment analysis, and visualization. This vignette demonstrates a complete transcriptomics workflow using the key functions available in the package.
+
+## Overview of Analysis Steps
+
+1. **Data Import and Preprocessing**
+   - Reading count data from FeatureCounts
+   - Quality control and filtering
+   - Creating DESeq2 objects
+
+2. **Exploratory Data Analysis**
+   - Library size and depth visualization
+   - Principal component analysis
+   - Sample clustering
+
+3. **Differential Expression Analysis**
+   - DESeq2, limma-voom, and Wilcoxon rank-sum tests
+   - Multiple comparison correction
+   - Volcano plots and MA plots
+
+4. **Gene Set Enrichment Analysis**
+   - GO term enrichment
+   - KEGG pathway analysis
+   - Custom gene set analysis
+
+5. **Advanced Analysis**
+   - Correlation analysis
+   - Clustering and dimensionality reduction
+   - Signature analysis
+
+Let's start by loading the necessary libraries:
+
+```{r libraries}
+library(rmatt)
+library(DESeq2)
+library(SummarizedExperiment)
+library(ggplot2)
+library(dplyr)
+library(ComplexHeatmap)
+
+# Set random seed for reproducibility
+set.seed(123)
+```
+
+# Data Import and Preprocessing
+
+## Reading Count Data
+
+The `rmatt` package provides convenient functions for reading count data from various sources. The most common scenario is reading FeatureCounts output:
+
+```{r data_import, eval=FALSE}
+# Read count data from FeatureCounts output directory
+count_table <- CountTableFromFeatureCounts(
+  directory = "path/to/featurecounts/output",
+  pattern = "featureCounts.txt$",
+  idx = 7  # Column containing count data
+)
+
+# Alternatively, read individual FeatureCounts files
+single_file <- ReadFeatureCounts(
+  f = "sample1.featureCounts.txt",
+  idx = 7
+)
+```
+
+For demonstration purposes, let's create a simulated dataset:
+
+```{r simulate_data}
+# Create simulated count data for demonstration
+set.seed(123)
+n_genes <- 2000
+n_samples <- 24
+
+# Gene names
+gene_names <- paste0("GENE_", sprintf("%04d", 1:n_genes))
+
+# Sample metadata
+sample_metadata <- data.frame(
+  sample_id = paste0("Sample_", 1:n_samples),
+  condition = rep(c("Control", "Treatment"), each = n_samples/2),
+  batch = rep(c("Batch1", "Batch2"), times = n_samples/2),
+  age = round(rnorm(n_samples, 45, 10)),
+  sex = sample(c("M", "F"), n_samples, replace = TRUE),
+  stringsAsFactors = FALSE
+)
+
+# Simulate count data with some differential expression
+base_counts <- matrix(
+  rnbinom(n_genes * n_samples, mu = 100, size = 10),
+  nrow = n_genes,
+  ncol = n_samples,
+  dimnames = list(gene_names, sample_metadata$sample_id)
+)
+
+# Add differential expression for some genes
+de_genes <- sample(1:n_genes, 200)
+treatment_samples <- which(sample_metadata$condition == "Treatment")
+
+for (i in de_genes) {
+  fold_change <- sample(c(0.3, 0.5, 2, 3, 4), 1)
+  base_counts[i, treatment_samples] <- round(base_counts[i, treatment_samples] * fold_change)
+}
+
+# Create SummarizedExperiment object
+rownames(sample_metadata) <- sample_metadata$sample_id
+se <- SummarizedExperiment(
+  assays = list(counts = base_counts),
+  colData = sample_metadata
+)
+
+print(se)
+```
+
+## Quality Control and Filtering
+
+Before proceeding with analysis, it's important to perform quality control and filter low-quality samples and genes:
+
+```{r qc_filtering}
+# Create DESeq2 object for easier manipulation
+dds <- make_dds(se, design = ~ condition + batch)
+
+# Run the preprocessing steps
+dds_filtered <- rna_preprocessing(dds)
+```
+
+# Differential Expression Analysis
+
+## DESeq2 Analysis
+
+The primary method for differential expression analysis in `rmatt` uses DESeq2:
+
+```{r deseq_analysis}
+
+# Run DESeq2 analysis
+
+```
+

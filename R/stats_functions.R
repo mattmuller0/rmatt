@@ -1,7 +1,3 @@
-#' @title stats_functions
-#' @description This script contains functions for statistical analysis.
-#' @name stats_functions
-
 #' Create a Table 1
 #' @description Create a comprehensive descriptive statistics table from a data.frame
 #' @param data data.frame, input data for statistical analysis

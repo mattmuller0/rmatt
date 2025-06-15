@@ -1,8 +1,4 @@
-#' @title Clustering Functions
-#' @description Functions for preparing data and performing clustering using NMF, k-means, and hierarchical clustering.
-#' @name clustering_functions
-
-#' Prepare a counts matrix for NMF
+#' @title Prepare a counts matrix for NMF
 #' @param counts_matr A matrix with rows as genes and columns as samples.
 #' @return A combined matrix with positive and negative values separated.
 #' @export
@@ -19,7 +15,7 @@ prep_nmf_data <- function(counts_matr) {
   return(combined_matr)
 }
 
-#' Estimate the rank of a matrix using NMF
+#' @title Estimate the rank of a matrix using NMF
 #' @param counts_matr A matrix with rows as genes and columns as samples.
 #' @param outfile A file to save the output to.
 #' @param ranks A vector of ranks to test. Default is 2:8.
@@ -37,7 +33,7 @@ nmf_estimator <- function(counts_matr, outfile, ranks = 2:8, runs = 30, options 
   return(output)
 }
 
-#' Plot the results of NMF estimation
+#' @title Plot the results of NMF estimation
 #' @param nmf_out Output from \code{nmf_estimator}.
 #' @return A ggplot object.
 #' @importFrom ggplot2 ggplot aes geom_point labs theme_bw
@@ -72,7 +68,7 @@ nmf_plotter <- function(nmf_out) {
   return(cophenetic_plot)
 }
 
-#' Estimate k-means clustering using the elbow method
+#' @title Estimate k-means clustering using the elbow method
 #' @param counts_matr A matrix with rows as genes and columns as samples.
 #' @param ks A vector of ks to test. Default is 2:8.
 #' @param outfile A file to save the output to.
@@ -89,7 +85,7 @@ kmeans_estimator <- function(counts_matr, ks = 2:8, outfile, ...) {
   return(output)
 }
 
-#' Estimate hierarchical clustering of a matrix
+#' @title Estimate hierarchical clustering of a matrix
 #' @param counts_matr A matrix with rows as genes and columns as samples.
 #' @param clusters A vector of clusters to test. Default is 2:8.
 #' @param outfile A file to save the output to.

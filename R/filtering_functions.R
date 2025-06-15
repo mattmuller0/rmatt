@@ -1,9 +1,3 @@
-#' @title RNA-seq filtering and preprocessing functions
-#' @description Functions for filtering and preprocessing RNA-seq data.
-#' @name expr_filtering_functions
-
-# ======================== CODE ========================#
-
 #' Get percent of genes detected
 #' @param dds DESeq2 object
 #' @param min_value Minimum value to consider a gene detected

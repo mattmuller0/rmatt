@@ -1,7 +1,3 @@
-#' @title Converting Functions
-#' @description This script contains functions for converting gene IDs and normalizing data.
-#' @name converting_functions
-
 #' Map Gene IDs
 #'
 #' @description Function to map gene IDs with `AnnotationDbi`.

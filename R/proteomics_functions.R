@@ -1,9 +1,3 @@
-#' @title Olink proteomics functions
-#' @description Functions for analyzing Olink proteomics data.
-#' @name olink_functions
-
-# ======================== CODE ========================#
-
 #' Get Olink sample info
 #' @description Get sample IDs, plates, proteins, and panels from Olink data
 #' @param data Data frame of Olink data

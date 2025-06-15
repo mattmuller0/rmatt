@@ -1,7 +1,3 @@
-#' @title General functions
-#' @description General functions for data manipulation and analysis
-#' @name general_functions
-
 #' Summarize differential expression results
 #' @param results results of differential expression analysis
 #' @param logFC_column column to use for logFC

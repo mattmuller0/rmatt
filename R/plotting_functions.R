@@ -1,9 +1,3 @@
-#' @title Plotting Functions
-#' @description Functions for plotting data.
-#' @name plotting_functions
-#' @author Matthew Muller
-#' @import ggplot2
-
 # ======================== Plotting Functions ========================
 #' @title Plot Library Depth
 #' @description Function to plot library depth of summarized experiment object
@@ -59,7 +53,7 @@ plot_percent_genes_detected <- function(dds, title, min_value = 0) {
 #' @param annotations Vector of column names in colData(dds) to use as annotations (default: NULL)
 #' @param normalize Type of normalization to use (default: "vst")
 #' @param width Width of the heatmap (default: 4 + 0.2 * ncol(dds))
-#' @param height Height of the heatmap (default: 4 + 0.1 * length(genes %||% rownames(dds)))
+#' @param height Height of the heatmap (default: 4 + 0.1 * length(intersect(genes, rownames(dds))))
 #' @param ... Additional arguments to pass to ComplexHeatmap
 #' @return ComplexHeatmap object of gene heatmap
 #' @importFrom SummarizedExperiment colData
@@ -69,7 +63,7 @@ plot_percent_genes_detected <- function(dds, title, min_value = 0) {
 plot_heatmap <- function(
     dds, genes = NULL, annotations = NULL, normalize = "vst",
     width = unit(max(4, min(12, 4 + 0.2 * ncol(dds))), "cm"),
-    height = unit(max(4, min(12, 4 + 0.1 * length(genes %||% rownames(dds)))), "cm"),
+    height = unit(max(4, min(12, 4 + 0.1 * length(intersect(genes, rownames(dds))))), "cm"),
     ...) {
   # Normalize counts
   norm_counts <- normalize_counts(dds, method = normalize)

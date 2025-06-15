@@ -1,10 +1,4 @@
-#' @title Enrichment Functions
-#' @description Functions for gene set enrichment analysis.
-#' @name enrichment_functions
-
-# ======================== CODE ========================#
-
-#' Create a sorted fold change vector from results
+#' @title Create a sorted fold change vector from results
 #'
 #' @description
 #' Takes a results data frame and creates a named vector of fold changes sorted in

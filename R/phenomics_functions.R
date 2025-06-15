@@ -1,7 +1,3 @@
-#' @title Phenomics Functions
-#' @description Functions for EHR / Biobank data processing.
-#' @name phenomics_functions
-
 #' Make Composite Coding CSV
 #' @param lol List of lists containing the codes
 #' @param composite_name Name of the composite variable
