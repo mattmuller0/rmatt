@@ -96,113 +96,78 @@ rna_enrichment <- function(
 save_gse <- function(gse, outpath, ...) {
   dir.create(outpath, showWarnings = FALSE, recursive = TRUE)
 
-  # make sure gse isn't null for error handling
+  # Check if gse object is valid
   if (is.null(gse)) {
     message("GSE object is NULL")
     return(NULL)
   }
   
+  # Save results as CSV and RDS
   write.csv(gse@result, file.path(outpath, "enrichment_results.csv"), quote = TRUE, row.names = FALSE)
   write.csv(filter(gse@result, qvalue < 0.1), file.path(outpath, "enrichment_results_sig.csv"), quote = TRUE, row.names = FALSE)
   saveRDS(gse, file.path(outpath, "enrichment_results.rds"))
 
-  tryCatch(
-    {
-      gseDot <- enrichplot::dotplot(gse, showCategory = 20) + ggtitle("Enrichment Dotplot")
-      ggsave(file.path(outpath, paste0("dotplot.pdf")), gseDot, ...)
-    },
-    error = function(e) {
-      message("Dotplot GSEA Plots Failed")
-    }
-  )
+  # Define plot functions with error handling
+  safe_ggplot <- function(plot_fn, filename, ...) {
+    tryCatch(
+      {
+        plot <- plot_fn()
+        ggsave(file.path(outpath, filename), plot, ..., verbose = FALSE)
+      },
+      error = function(e) message(paste("Failed to generate", filename))
+    )
+  }
 
-  tryCatch(
-    {
-      cnet <- cnetplot(gse, node_label = "category", cex_label_gene = 0.8)
-      ggsave(file.path(outpath, paste0("cnetplot.pdf")), cnet, ...)
+  # Generate plots
+  safe_ggplot(function() enrichplot::dotplot(gse, showCategory = 20) + ggtitle("Enrichment Dotplot"),"dotplot.pdf")
+  safe_ggplot(function() cnetplot(gse, node_label = "category", cex_label_gene = 0.8), "cnetplot.pdf")
+  safe_ggplot(function() plot_enrichment_terms(gse, terms2plot = c("inflam", "plat", "coag"), max_terms = min(10, nrow(gse@result))), "barplot_terms.pdf")
+  safe_ggplot(function() ridgeplot(gse, showCategory = min(10, nrow(gse@result))),"ridgeplot.pdf")
+  safe_ggplot(function() heatplot(gse, showCategory = 10), "heatplot.pdf")
+  
+  safe_ggplot(
+    function() {
+      gse_bar <- as.data.frame(gse) %>%
+        group_by(sign(NES)) %>%
+        arrange(qvalue) %>%
+        slice(1:10) %>%
+        mutate(
+          Description = gsub("^(REACTOME_|HALLMARK_|GO(CC|BP|MF)_|KEGG_)", "", Description),
+          Description = gsub("_", " ", Description),
+          Description = factor(stringr::str_wrap(Description, 40))
+        )
+      ggplot(gse_bar, aes(NES, fct_reorder(Description, NES), fill = qvalue)) +
+        geom_col(orientation = "y") +
+        scale_fill_continuous(low = "red", high = "blue", guide = guide_colorbar(reverse = TRUE)) +
+        labs(title = "Enrichment Barplot", y = NULL) +
+        theme_classic2()
     },
-    error = function(e) {
-      message("Cnetplot GSEA Plots Failed")
-    }
+    "barplot_all.pdf"
   )
-
-  tryCatch(
-    {
-      gsea_barplot <- function(gse) {
-        gse_bar <- as.data.frame(gse) %>%
-          group_by(sign(NES)) %>%
-          arrange(qvalue) %>%
-          slice(1:10) %>%
-          mutate(
-            # Remove prefixes from description and wrap text
-            Description = gsub("^(REACTOME_|HALLMARK_|GO(CC|BP|MF)_|KEGG_)", "", Description),
-            Description = gsub("_", " ", Description),
-            Description = factor(stringr::str_wrap(Description, 40))
-          )
-        plot <- ggplot(gse_bar, aes(NES, fct_reorder(Description, NES), fill = qvalue)) +
-          geom_col(orientation = "y") +
-          scale_fill_continuous(low = "red", high = "blue", guide = guide_colorbar(reverse = TRUE)) +
-          labs(title = "Enrichment Barplot", y = NULL) +
-          theme_classic2()
-        return(plot)
-      }
-      gseBar <- gsea_barplot(gse)
-      ggsave(file.path(outpath, paste0("barplot_all.pdf")), gseBar, ...)
+  
+  safe_ggplot(
+    function() {
+      bp_data <- filter(as.data.frame(gse), ONTOLOGY == "BP")
+      if (nrow(bp_data) == 0) stop("No BP data")
+      
+      bp_data %>%
+        group_by(sign(NES)) %>%
+        arrange(qvalue) %>%
+        slice(1:10) %>%
+        mutate(
+          Description = gsub("^(REACTOME_|HALLMARK_|GO(CC|BP|MF)_|KEGG_)", "", Description),
+          Description = gsub("_", " ", Description),
+          Description = factor(stringr::str_wrap(Description, 40))
+        ) %>%
+        ggplot(aes(NES, fct_reorder(Description, NES), fill = qvalue)) +
+        geom_col(orientation = "y") +
+        scale_fill_continuous(low = "red", high = "blue", guide = guide_colorbar(reverse = TRUE)) +
+        labs(title = "Enrichment Barplot (BP)", y = NULL) +
+        theme_classic2()
     },
-    error = function(e) {
-      message("GSEA Barplot Failed")
-    }
+    "barplot_BP.pdf"
   )
-
-  tryCatch(
-    {
-      gseBar_bp <- gsea_barplot(filter(as.data.frame(gse), ONTOLOGY == "BP"))
-      ggsave(file.path(outpath, paste0("barplot_BP.pdf")), gseBar_bp, ...)
-    },
-    error = function(e) {
-      message("GSEA Barplot BP Failed")
-    }
-  )
-
-  tryCatch(
-    {
-      cnet <- cnetplot(gse, node_label = "category", cex_label_gene = 0.8)
-      ggsave(file.path(outpath, paste0("cnetplot.pdf")), cnet, ...)
-    },
-    error = function(e) {
-      message("Cnetplot GSEA Plots Failed")
-    }
-  )
-
-  tryCatch(
-    {
-      p_terms <- plot_enrichment_terms(gse, terms2plot = c("inflam", "plat", "coag"), max_terms = min(10, nrow(gse@result)))
-      ggsave(file.path(outpath, paste0("barplot_terms.pdf")), p_terms, ...)
-    },
-    error = function(e) {
-      message("GSEA Term Specific Barplot Failed")
-    }
-  )
-
-  tryCatch(
-    {
-      p_ridge <- ridgeplot(gse, showCategory = min(10, nrow(gse@result)))
-      ggsave(file.path(outpath, paste0("ridgeplot.pdf")), p_ridge, ...)
-    },
-    error = function(e) {
-      message("RidgePlot GSEA Failed")
-    }
-  )
-
-  tryCatch(
-    {
-      p_heat <- heatplot(gse, showCategory = 10)
-      ggsave(file.path(outpath, paste0("heatplot.pdf")), p_heat, ...)
-    },
-    error = function(e) {
-      message("Heatplot GSEA Failed")
-    }
-  )
+  
 }
 
 #' Load custom gene sets
@@ -340,7 +305,7 @@ stratified_ora <- function(
     geom_col() +
     labs(title = "ORA Results", x = "Signed -log10(padj)", y = NULL) +
     theme_classic2()
-  ggplot2::ggsave(file.path(outpath, "ora_results.pdf"), p)
+  ggplot2::ggsave(file.path(outpath, "ora_results.pdf"), p, verbose = FALSE)
 
   return(out)
 }
@@ -399,7 +364,7 @@ stratified_enrichr <- function(
       geom_col() +
       labs(title = "ORA Results", x = "Signed -log10(padj)", y = NULL) +
       theme_classic2()
-    ggplot2::ggsave(file.path(outpath, .x, "enrichr_results.pdf"), p)
+    ggplot2::ggsave(file.path(outpath, .x, "enrichr_results.pdf"), p, verbose = FALSE)
     sign_enr
   })
   names(out_dbs) <- dbs
