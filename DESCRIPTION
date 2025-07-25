@@ -26,10 +26,10 @@ Imports:
     rstatix (>= 0.7.0),
     survival (>= 3.3.0),
     magrittr (>= 2.0.0),
-Suggests:
     BiocManager (>= 1.30.25),
     clusterProfiler (>= 4.0.0),
     DESeq2 (>= 1.30.0),
+    limma (>= 3.46.0),
     apeglm (>= 1.16.0),
     edgeR (>= 4.0.0),
     enrichplot (>= 1.10.0),
@@ -47,6 +47,8 @@ Suggests:
     singscore (>= 1.10.0),
     ggtree (>= 3.0.0),
     tableone (>= 0.13.0),
+    fastICA (>= 1.2-4)
+Suggests:
     biomaRt (>= 2.50.0),
     cluster (>= 2.1.0),
     knitr (>= 1.40),

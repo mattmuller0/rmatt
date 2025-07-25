@@ -131,11 +131,11 @@ run_wilcox <- function(
     geom_density(color = "red", linewidth = 1) +
     labs(title = "Histogram of P-values", x = "P-value", y = "Frequency") +
     theme_minimal()
-  ggsave(file.path(outpath, "wilcox_pvalue_histogram.pdf"), p_hist, verbose = FALSE)
+  suppressMessages(ggsave(file.path(outpath, "wilcox_pvalue_histogram.pdf"), p_hist))
 
   # create a volcano plot
   v <- plot_volcano(res, x = "estimate", y = "p.value", color = "padj", labels = "gene", pCutoff = volcano.pCutoff)
-  ggsave(file.path(outpath, "wilcox_volcano.pdf"), v, verbose = FALSE)
+  suppressMessages(ggsave(file.path(outpath, "wilcox_volcano.pdf"), v))
 
   # get the fc list
   fc_list <- get_fc_list(res, fc_col = "estimate", names = "gene")
@@ -225,7 +225,7 @@ run_limma <- function(
 
   # make a volcano plot
   volcanoP <- plot_volcano(results, x = "logFC", y = "P.Value", color = "adj.P.Val", pCutoff = pCutoff)
-  ggsave(file.path(outpath, "volcanoPlot.pdf"), volcanoP, verbose = FALSE)
+  suppressMessages(ggsave(file.path(outpath, "volcanoPlot.pdf"), volcanoP))
 
   # get the fc list
   fc <- get_fc_list(results, "logFC")
@@ -309,7 +309,7 @@ run_deseq <- function(
 
     # make volcano plot
     volcanoP <- plot_volcano(res, title = name, color = pvalue, pCutoff = pCutoff)
-    ggplot2::ggsave(file.path(outpath, "volcanoPlot.pdf"), volcanoP, verbose = FALSE)
+    suppressMessages(ggplot2::ggsave(file.path(outpath, "volcanoPlot.pdf"), volcanoP))
 
     # make a heatmap of the significant genes
     sign_genes <- rownames(res)[res$pvalue < pCutoff & abs(res$log2FoldChange) > fcCutoff]
@@ -343,7 +343,7 @@ run_deseq <- function(
 
   # make volcano plot
   volcanoP <- plot_volcano(res, title = name, color = pvalue, pCutoff = pCutoff)
-  ggplot2::ggsave(file.path(outpath, "volcanoPlot.pdf"), volcanoP, verbose = FALSE)
+  suppressMessages(ggplot2::ggsave(file.path(outpath, "volcanoPlot.pdf"), volcanoP))
 
   # make a heatmap
   sign_genes <- rownames(res)[res$pvalue < pCutoff & abs(res$log2FoldChange) > fcCutoff]
@@ -468,7 +468,7 @@ deseq_analysis <- function(dds, conditions, controls = NULL, outpath, ...) {
       {
         pcs <- prcomp(scale(t(normalize_counts(dds_, method = "vst"))))
         pca_plot <- ggbiplot::ggbiplot(pcs, groups = SummarizedExperiment::colData(dds_)[, condition], ellipse = TRUE, var.axes = FALSE)
-        ggplot2::ggsave(file.path(outpath, condition, "pca_plot.pdf"), pca_plot, verbose = FALSE)
+        suppressMessages(ggplot2::ggsave(file.path(outpath, condition, "pca_plot.pdf"), pca_plot))
       },
       error = function(e) {
         message("An error occurred while generating the PCA plot: ", conditionMessage(e))

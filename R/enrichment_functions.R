@@ -112,7 +112,7 @@ save_gse <- function(gse, outpath, ...) {
     tryCatch(
       {
         plot <- plot_fn()
-        ggsave(file.path(outpath, filename), plot, ..., verbose = FALSE)
+        suppressMessages(ggsave(file.path(outpath, filename), plot, ...))
       },
       error = function(e) message(paste("Failed to generate", filename))
     )
@@ -305,7 +305,7 @@ stratified_ora <- function(
     geom_col() +
     labs(title = "ORA Results", x = "Signed -log10(padj)", y = NULL) +
     theme_classic2()
-  ggplot2::ggsave(file.path(outpath, "ora_results.pdf"), p, verbose = FALSE)
+  suppressMessages(ggplot2::ggsave(file.path(outpath, "ora_results.pdf"), p))
 
   return(out)
 }
@@ -364,7 +364,7 @@ stratified_enrichr <- function(
       geom_col() +
       labs(title = "ORA Results", x = "Signed -log10(padj)", y = NULL) +
       theme_classic2()
-    ggplot2::ggsave(file.path(outpath, .x, "enrichr_results.pdf"), p, verbose = FALSE)
+    suppressMessages(ggplot2::ggsave(file.path(outpath, .x, "enrichr_results.pdf"), p))
     sign_enr
   })
   names(out_dbs) <- dbs
