@@ -160,3 +160,17 @@ correlation_matrix <- function(data, vars1, vars2, method = "pearson", use = "pa
   cor_mat_filtr[p_mat > 0.05] <- NA
   return(list(cor_matr = cor_mat, pvalue_matr = p_mat, cor_matr_filtr = cor_mat_filtr))
 }
+
+#' Van der Waerden Inverse Normal Transformation
+#' @description Applies the van der Waerden inverse normal transformation to a numeric vector.
+#' @param x numeric vector to transform
+#' @param c numeric constant to add to the denominator (default is 0.375, as commonly used)
+#' @return numeric vector with transformed values
+#' @export
+inverse_normal_transform <- function(x, c = 0) {
+  if (!is.numeric(x)) stop("Input x must be numeric.")
+  n <- sum(!is.na(x))
+  ranks <- rank(x, na.last = "keep", ties.method = "average")
+  transformed <- qnorm((ranks - c) / (n + 1 - 2 * c))
+  return(transformed)
+}
