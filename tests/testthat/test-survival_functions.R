@@ -259,3 +259,20 @@ test_that("hazard_ratios_table validates input columns", {
         )
     )
 })
+
+test_that("hazard_ratios_table handles subgroup analyses correctly", {
+    test_data <- create_mock_survival_data()
+    test_data$subgroup <- factor(sample(c("X", "Y"), nrow(test_data), replace = TRUE))
+    
+    result <- hazard_ratios_table(
+        df = test_data,
+        condition = "group",
+        censors = "censor_death",
+        subgroups = "subgroup",
+        time_prefix = "time_to_",
+        censor_prefix = "censor_"
+    )
+    
+    expect_true(is.data.frame(result))
+    expect_true(all(c("subgroup_var", "subgroup_val") %in% colnames(result)))
+})

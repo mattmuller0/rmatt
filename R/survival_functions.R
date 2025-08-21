@@ -190,7 +190,7 @@ hazard_ratios_table <- function(
   cols_to_check <- c(condition, censors, controls)
   na_count <- sum(!complete.cases(df[, cols_to_check]))
   if (na_count > 0) {
-    if (verbose) message(sprintf("Removing %d rows with NA values", na_count))
+    warning(sprintf("Removing %d rows with NA values", na_count))
     df <- df[complete.cases(df[, cols_to_check]), ]
   }
   
@@ -205,14 +205,14 @@ hazard_ratios_table <- function(
     
     if (verbose) message(sprintf("Performing subgroup analysis for: %s", paste(subgroups, collapse = ", ")))
     
-    return(purrr::map_dfr(subgroups, function(subgroup) {
-      vals <- na.omit(unique(df[[subgroup]]))
+    return(purrr::map_dfr(subgroups, function(subgroup_var) {
+      vals <- na.omit(unique(df[[subgroup_var]]))
       
       purrr::map_dfr(vals, function(val) {
-        subset_df <- subset(df, df[[subgroup]] == val)
+        subset_df <- subset(df, df[[subgroup_var]] == val)
         
         if (verbose) {
-          message(sprintf("  Analyzing %s = %s (N = %d)", subgroup, val, nrow(subset_df)))
+          message(sprintf("  Analyzing %s = %s (N = %d)", subgroup_var, val, nrow(subset_df)))
         }
         
         tryCatch({
@@ -228,11 +228,11 @@ hazard_ratios_table <- function(
             time_prefix = time_prefix,
             verbose = verbose
           )
-          result$subgroup_var <- subgroup
+          result$subgroup_var <- subgroup_var
           result$subgroup_val <- val
           return(result)
         }, error = function(e) {
-          if (verbose) message(sprintf("  ERROR for %s = %s: %s", subgroup, val, e$message))
+          if (verbose) message(sprintf("  ERROR for %s = %s: %s", subgroup_var, val, e$message))
           return(data.frame())
         })
       })
