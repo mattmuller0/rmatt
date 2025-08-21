@@ -157,142 +157,121 @@ hazards.internal <- function(cs, df, condition, controls) {
 #' @param controls character, controls to include in the model. Default is NULL.
 #' @param per_sd logical, whether to standardize the condition. Default is FALSE.
 #' @param ovr logical, whether to do one vs rest. Default is FALSE.
-#' @param censor_prefix character, prefix for censor columns. Default is 'C_'.
-#' @param time_prefix character, prefix for time columns. Default is 'T_'.
+#' @param subgroups character vector, variable names for subgroup analyses. Default is NULL.
+#' @param censor_prefix character, prefix for censor columns. Default is 'censor_'.
+#' @param time_prefix character, prefix for time columns. Default is 'time_to_'.
+#' @param verbose logical, whether to print verbose messages. Default is FALSE.
 #' @return data.frame, hazard ratios table.
-#' @importFrom purrr map
+#' @importFrom purrr map_dfr map flatten_dfr
 #' @export
 hazard_ratios_table <- function(
-    df,
-    condition,
-    censors,
-    controls = NULL,
-    per_sd = FALSE,
-    ovr = FALSE,
-    censor_prefix = "censor_",
-    time_prefix = "time_to_") {
+  df,
+  condition,
+  censors,
+  controls = NULL,
+  per_sd = FALSE,
+  ovr = FALSE,
+  subgroups = NULL,
+  censor_prefix = "censor_",
+  time_prefix = "time_to_",
+  verbose = FALSE) {
+  
+  # Validate inputs and prepare data
   censors_basenames <- gsub(censor_prefix, "", censors)
   time_vars <- paste0(time_prefix, censors_basenames)
-
-  # verify the censors and time_vars are in the data
-  stopifnot(all(censors %in% colnames(df)))
-  stopifnot(all(time_vars %in% colnames(df)))
-
-  # check if there are NA values in the condition
-  if (any(is.na(df[, condition]))) {
-    warning("NA values in condition, conrols, or censors -- removing")
-  }
-  df <- df[complete.cases(df[, c(condition, censors, controls)]), ]
-
-  # check if we are per_sd
-  if (per_sd) {
-    # make sure the condition is continuous
-    if (!is.numeric(df[[condition]])) {
-      stop("condition must be numeric if per_sd is TRUE")
-    }
-    df[, condition] <- scale(df[, condition])
-  }
-
-  # vectorize the operation
-  censors_list <- split(data.frame(censor = censors, time = time_vars), seq_along(censors))
-
-  if (!ovr) {
-    censors_list <- split(data.frame(censor = censors, time = time_vars), seq_along(censors))
-    HR_list <- lapply(censors_list, hazards.internal, df = df, condition = condition, controls = controls)
-  } else {
-    # one hot encode the condition
-    message("one hot encoding condition")
-    df_ <- one_hot_encode_ovr(df, condition, binary = FALSE)
-    vals <- unique(df_[[condition]])
-    columns_ovr <- colnames(df_)[colnames(df_) %in% paste0(condition, "_", vals)]
-
-    # map the function over the columns_ovr and censors
-    HR_list <- purrr::map(columns_ovr, ~ hazard_ratios_table(df_, condition = .x, censors = censors, controls = controls, censor_prefix = censor_prefix, time_prefix = time_prefix, ovr = FALSE))
-  }
-
-  HR_df <- do.call(rbind, HR_list)
-  return(HR_df)
-}
-
-#' @title Filtered Hazard Ratio Table
-#' @description Make filtered hazard ratio tables.
-#' @param data data.frame, data to make survival curves from.
-#' @param condition character, condition to make survival curves for.
-#' @param risks character, risks to filter by.
-#' @param censors character, censors to make survival curves for.
-#' @param censor_prefix character, prefix for censor columns. Default is 'C_'.
-#' @param time_prefix character, prefix for time columns. Default is 'T_'.
-#' @param per_sd logical, whether to standardize the condition. Default is TRUE.
-#' @param ovr logical, whether to do one vs rest. Default is FALSE.
-#' @param verbose logical, whether to print verbose messages. Default is FALSE.
-#' @param ... additional arguments passed to hazard_ratios_table.
-#' @return data.frame, filtered hazard ratios table.
-#' @importFrom purrr map
-#' @export
-filtered_hazard_ratio_table <- function(
-    data,
-    condition,
-    risks,
-    censors,
-    censor_prefix = "censor_",
-    time_prefix = "time_to_",
-    per_sd = FALSE,
-    ovr = FALSE,
-    verbose = FALSE,
-    ...) {
-  # make sure the risks are all characters
-  if (!all(sapply(risks, is.character))) {
-    stop("risks must be characters")
-  }
-
-  surv_risk_res <- map(
-    risks,
-    function(x) {
-      vals <- na.omit(unique(data[[x]]))
-
-      if (verbose) {
-        message(paste("Filtering for", x))
-      }
-
-      res <- map(
-        vals,
-        function(y) {
-          tmp <- subset(data, data[[x]] == y)
-
-          if (verbose) {
-            message(paste("    Subfiltering", y))
-            message(paste("    N =", nrow(tmp)))
-          }
-
-          tryCatch(
-            {
-              out <- hazard_ratios_table(
-                df = tmp,
-                condition = condition,
-                censors = censors,
-                censor_prefix = censor_prefix,
-                time_prefix = time_prefix,
-                per_sd = per_sd,
-                ovr = ovr,
-                ...
-              )
-              out$x <- x
-              out$y <- y
-              out$n_total <- nrow(tmp)
-              return(out)
-            },
-            error = function(e) {
-              if (verbose) {
-                message(paste("    ERROR:", e))
-              }
-              return(NULL)
-            }
-          )
-        }
-      )
-      res <- do.call(rbind, res)
-    }
+  
+  stopifnot(
+    "Censors not found in data" = all(censors %in% colnames(df)),
+    "Time variables not found in data" = all(time_vars %in% colnames(df)),
+    "Condition must be numeric for per_sd" = !per_sd || is.numeric(df[[condition]])
   )
-  surv_risk_res <- do.call(rbind, surv_risk_res)
-  return(surv_risk_res)
+  
+  # Clean data
+  cols_to_check <- c(condition, censors, controls)
+  na_count <- sum(!complete.cases(df[, cols_to_check]))
+  if (na_count > 0) {
+    if (verbose) message(sprintf("Removing %d rows with NA values", na_count))
+    df <- df[complete.cases(df[, cols_to_check]), ]
+  }
+  
+  # Standardize condition if requested
+  if (per_sd) {
+    df[, condition] <- scale(df[, condition])[, 1]
+  }
+  
+  # Handle subgroup analysis
+  if (!is.null(subgroups)) {
+    stopifnot("subgroups must be character vector" = is.character(subgroups))
+    
+    if (verbose) message(sprintf("Performing subgroup analysis for: %s", paste(subgroups, collapse = ", ")))
+    
+    return(purrr::map_dfr(subgroups, function(subgroup) {
+      vals <- na.omit(unique(df[[subgroup]]))
+      
+      purrr::map_dfr(vals, function(val) {
+        subset_df <- subset(df, df[[subgroup]] == val)
+        
+        if (verbose) {
+          message(sprintf("  Analyzing %s = %s (N = %d)", subgroup, val, nrow(subset_df)))
+        }
+        
+        tryCatch({
+          result <- hazard_ratios_table(
+            df = subset_df,
+            condition = condition,
+            censors = censors,
+            controls = controls,
+            per_sd = per_sd,
+            ovr = ovr,
+            subgroups = NULL,
+            censor_prefix = censor_prefix,
+            time_prefix = time_prefix,
+            verbose = verbose
+          )
+          result$subgroup_var <- subgroup
+          result$subgroup_val <- val
+          return(result)
+        }, error = function(e) {
+          if (verbose) message(sprintf("  ERROR for %s = %s: %s", subgroup, val, e$message))
+          return(data.frame())
+        })
+      })
+    }))
+  }
+  
+  # Prepare censors data
+  censors_df <- data.frame(
+    censor = censors,
+    time = time_vars,
+    stringsAsFactors = FALSE
+  )
+  
+  # Handle one-vs-rest encoding
+  if (ovr) {
+    if (verbose) message("Performing one-vs-rest encoding")
+    
+    df_encoded <- one_hot_encode_ovr(df, condition, binary = FALSE)
+    vals <- unique(df[[condition]])
+    ovr_columns <- paste0(condition, "_", vals)
+    ovr_columns <- ovr_columns[ovr_columns %in% colnames(df_encoded)]
+    
+    return(purrr::map_dfr(ovr_columns, function(ovr_col) {
+      hazard_ratios_table(
+        df = df_encoded,
+        condition = ovr_col,
+        censors = censors,
+        controls = controls,
+        censor_prefix = censor_prefix,
+        time_prefix = time_prefix,
+        ovr = FALSE,
+        verbose = verbose
+      )
+    }))
+  }
+  
+  # Calculate standard hazard ratios
+  purrr::map_dfr(seq_len(nrow(censors_df)), function(i) {
+    cs <- list(censor = censors_df$censor[i], time = censors_df$time[i])
+    hazards.internal(cs, df, condition, controls)
+  })
 }

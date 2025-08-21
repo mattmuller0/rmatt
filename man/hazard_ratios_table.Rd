@@ -11,8 +11,10 @@ hazard_ratios_table(
   controls = NULL,
   per_sd = FALSE,
   ovr = FALSE,
+  subgroups = NULL,
   censor_prefix = "censor_",
-  time_prefix = "time_to_"
+  time_prefix = "time_to_",
+  verbose = FALSE
 )
 }
 \arguments{
@@ -28,9 +30,13 @@ hazard_ratios_table(
 
 \item{ovr}{logical, whether to do one vs rest. Default is FALSE.}
 
-\item{censor_prefix}{character, prefix for censor columns. Default is 'C_'.}
+\item{subgroups}{character vector, variable names for subgroup analyses. Default is NULL.}
 
-\item{time_prefix}{character, prefix for time columns. Default is 'T_'.}
+\item{censor_prefix}{character, prefix for censor columns. Default is 'censor_'.}
+
+\item{time_prefix}{character, prefix for time columns. Default is 'time_to_'.}
+
+\item{verbose}{logical, whether to print verbose messages. Default is FALSE.}
 }
 \value{
 data.frame, hazard ratios table.

@@ -7,18 +7,23 @@
 stratified_ora(
   gene_dataframe,
   outpath,
-  method = "enrichGO",
+  method = "enrichR",
+  dbs = c("GO_Biological_Process_2023", "GO_Cellular_Component_2023",
+    "GO_Molecular_Function_2023", "WikiPathway_2023_Human", "GWAS_Catalog_2023",
+    "Reactome_2022", "MSigDB Hallmark 2020"),
   padj_cutoff = 0.05,
   max_pathways = 5,
   ...
 )
 }
 \arguments{
-\item{gene_dataframe}{Data frame with features and direction.}
+\item{gene_dataframe}{Data frame with features and direction columns.}
 
 \item{outpath}{Path to save results.}
 
-\item{method}{Enrichment method (default is "enrichGO").}
+\item{method}{Enrichment method: "enrichGO", "groupGO", or "enrichR" (default).}
+
+\item{dbs}{List of databases to use for enrichR (ignored for other methods).}
 
 \item{padj_cutoff}{Adjusted p-value cutoff (default is 0.05).}
 

@@ -6,11 +6,14 @@
 \usage{
 plot_forest(
   df,
-  x,
+  x = NULL,
   y,
-  error,
-  color = x,
+  estimate,
+  error_lower,
+  error_upper,
+  color = NULL,
   facet = NULL,
+  show_table = FALSE,
   title = "Forest Plot",
   xlab = "",
   ylab = "",
@@ -20,15 +23,21 @@ plot_forest(
 \arguments{
 \item{df}{Data frame to plot}
 
-\item{x}{Column name of x-axis}
+\item{x}{Column name for grouping variable (default: NULL)}
 
-\item{y}{Column name of y-axis}
+\item{y}{Column name for label variable}
 
-\item{error}{Column name of y-axis error}
+\item{estimate}{Column name for estimates (e.g., odds ratio, hazard ratio)}
 
-\item{color}{Column name for color grouping}
+\item{error_lower}{Column name for lower error bounds}
 
-\item{facet}{Column name for facet grouping}
+\item{error_upper}{Column name for upper error bounds}
+
+\item{color}{Column name for color grouping (default: x)}
+
+\item{facet}{Column name for facet grouping (default: NULL)}
+
+\item{show_table}{Logical, whether to show HR/p/n table (default: FALSE)}
 
 \item{title}{Title of the plot}
 
@@ -39,8 +48,8 @@ plot_forest(
 \item{...}{Additional arguments to pass to ggplot}
 }
 \value{
-ggplot object of forest plot
+ggplot object (or cowplot grid if show_table = TRUE)
 }
 \description{
-Function to create a forest plot from a data frame
+Create a forest plot from a data frame
 }

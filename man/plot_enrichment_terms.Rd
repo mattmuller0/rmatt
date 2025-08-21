@@ -11,7 +11,7 @@ plot_enrichment_terms(
   genes2plot = NULL,
   qvalueCutoff = 0.2,
   max_terms = 20,
-  ...
+  wrap_width = 40
 )
 }
 \arguments{
@@ -19,15 +19,15 @@ plot_enrichment_terms(
 
 \item{title}{Title of plot}
 
-\item{terms2plot}{List of terms to plot}
+\item{terms2plot}{List of terms to plot (optional)}
 
-\item{genes2plot}{List of genes to plot}
+\item{genes2plot}{List of genes to plot (optional)}
 
-\item{qvalueCutoff}{Q-value cutoff}
+\item{qvalueCutoff}{Q-value cutoff (default: 0.2)}
 
-\item{max_terms}{Maximum number of terms to plot}
+\item{max_terms}{Maximum number of terms to plot (default: 20)}
 
-\item{...}{Additional arguments to pass to ggplot}
+\item{wrap_width}{Width for wrapping term descriptions (default: 40)}
 }
 \value{
 ggplot object of enrichment terms
