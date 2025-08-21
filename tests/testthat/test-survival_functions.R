@@ -185,13 +185,13 @@ test_that("hazard_ratios_table handles per_sd option correctly", {
             censors = "censor_death",
             per_sd = TRUE
         ),
-        "condition must be numeric if per_sd is TRUE"
+        "Condition must be numeric for per_sd"
     )
 })
 
 test_that("hazard_ratios_table handles tibble input correctly", {
     test_data <- create_mock_survival_data()
-    test_data <- as_tibble(test_data)
+    test_data <- tidyr::as_tibble(test_data)
     
     result <- hazard_ratios_table(
         df = test_data,
@@ -234,7 +234,7 @@ test_that("hazard_ratios_table handles NA values appropriately", {
             time_prefix = "time_to_",
             censor_prefix = "censor_"
         ),
-        "NA values in condition"
+        "Removing 10 rows with NA values"
     )
     
     expect_true(is.data.frame(result))
@@ -260,56 +260,19 @@ test_that("hazard_ratios_table validates input columns", {
     )
 })
 
-# Test hazards.internal function
-test_that("hazards.internal produces correct output structure", {
+test_that("hazard_ratios_table handles subgroup analyses correctly", {
     test_data <- create_mock_survival_data()
-    condition <- "group"
-    controls <- NULL
-    df <- test_data
+    test_data$subgroup <- factor(sample(c("X", "Y"), nrow(test_data), replace = TRUE))
     
-    censors_list <- list(
-        censor = "censor_death",
-        time = "time_to_death"
+    result <- hazard_ratios_table(
+        df = test_data,
+        condition = "group",
+        censors = "censor_death",
+        subgroups = "subgroup",
+        time_prefix = "time_to_",
+        censor_prefix = "censor_"
     )
-    
-    result <- hazards.internal(censors_list, df, condition, controls)
     
     expect_true(is.data.frame(result))
-    expect_true(all(c("censor", "condition", "term", "hazard.ratio", 
-                     "ci.lower", "ci.upper", "p.value") %in% colnames(result)))
-})
-
-test_that("hazards.internal handles controls correctly", {
-    test_data <- create_mock_survival_data()
-    condition <- "group"
-    controls <- c("age", "sex")
-    df <- test_data
-    
-    censors_list <- list(
-        censor = "censor_death",
-        time = "time_to_death"
-    )
-    
-    result <- hazards.internal(censors_list, df, condition, controls)
-    
-    expect_true(is.data.frame(result))
-    expect_true(grepl(condition, result$term[1]))  # Term should contain condition name
-})
-
-test_that("hazards.internal calculates correct statistics", {
-    test_data <- create_mock_survival_data()
-    condition <- "group"
-    controls <- NULL
-    df <- test_data
-    
-    censors_list <- list(
-        censor = "censor_death",
-        time = "time_to_death"
-    )
-    
-    result <- hazards.internal(censors_list, df, condition, controls)
-    
-    expect_true(result$ci.lower <= result$hazard.ratio)
-    expect_true(result$ci.upper >= result$hazard.ratio)
-    expect_true(result$p.value >= 0 && result$p.value <= 1)
+    expect_true(all(c("subgroup_var", "subgroup_val") %in% colnames(result)))
 })

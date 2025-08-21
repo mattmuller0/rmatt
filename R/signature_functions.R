@@ -102,6 +102,7 @@ compare_one_to_many <- function(df, col, cols, outdir, plot = TRUE, method.conti
 
         data_type <- class(df[[x]])
 
+        plot_results <- NULL
         if (plot) {
             base_plot <- ggplot2::ggplot(tidyr::drop_na(df, dplyr::any_of(c(col, x))), ggplot2::aes(!!rlang::sym(x), !!rlang::sym(col))) +
                 ggplot2::labs(title = glue::glue("{col} vs {x}"), x = x, y = col)
@@ -110,7 +111,7 @@ compare_one_to_many <- function(df, col, cols, outdir, plot = TRUE, method.conti
         if (data_type %in% c("integer", "numeric")) {
             # numeric data
             stats_results <- do.call(rstatix::cor_test, c(list(data = df, vars = c(col, x), method = method.continuous), cor_args)) %>%
-                dplyr::select(variable = var2, method = method.continuous, estimate = cor, p = p)
+                dplyr::select(variable = var2, method, estimate = cor, p = p)
             if (plot) {
                 plot_results <- base_plot + ggplot2::geom_point() + ggplot2::geom_smooth(method = "lm") + ggpubr::stat_cor(method = method.continuous)
             }
@@ -139,8 +140,8 @@ compare_one_to_many <- function(df, col, cols, outdir, plot = TRUE, method.conti
                 if (method.multi_group == "anova") {
                     stats_results <- do.call(rstatix::anova_test, c(list(data = df, formula = as.formula(glue::glue("{col} ~ {x}"))), anova_args)) %>%
                         dplyr::as_tibble() %>%
-                        dplyr::mutate(method = "anova") %>%
-                        dplyr::select(variable = Effect, method, estimate = F, p = p)
+                        dplyr::mutate(variable = x, method = "anova") %>%
+                        dplyr::select(variable, method, estimate = F, p = p)
                 } else if (method.multi_group == "kruskal.test") {
                     stats_results <- do.call(rstatix::kruskal_test, c(list(data = df, formula = as.formula(glue::glue("{col} ~ {x}"))), kruskal_args)) %>%
                         dplyr::mutate(variable = x, method = "kruskal.test") %>%
@@ -156,7 +157,7 @@ compare_one_to_many <- function(df, col, cols, outdir, plot = TRUE, method.conti
             stop(glue::glue("Data type {data_type} not supported."))
         }
         # save results
-        if (plot) {
+        if (plot && !is.null(plot_results)) {
             ggplot2::ggsave(glue::glue("{outdir}/{col}_vs_{x}.pdf"), plot_results)
         }
         stats_list[[x]] <- stats_results

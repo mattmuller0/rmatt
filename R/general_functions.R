@@ -201,7 +201,6 @@ remove_na_variables <- function(se, columns) {
 #' @param subset character, column name of the grouping variable
 #' @return dataframe with the number of samples in each group
 #' @importFrom dplyr select mutate summarise_all starts_with
-#' @export
 get_events_breakdown <- function(metadata, id = "PATNUM", events_term = "C_", subset = NULL) {
   metadata_patnums <- metadata[, id]
   if (!is.null(subset)) {

@@ -157,14 +157,16 @@ test_that("plot_forest creates valid ggplot object", {
     df <- data.frame(
         group = letters[1:5],
         estimate = rnorm(5),
-        error = runif(5),
+        ci_lower = rnorm(5, mean = -0.5),
+        ci_higher = rnorm(5, mean = 0.5),
         category = rep(c("A", "B"), length.out = 5)
     )
 
     p <- plot_forest(df,
-        x = "group",
-        y = "estimate",
-        error = "error",
+        y = "group",
+        estimate = "estimate",
+        error_lower = "ci_lower",
+        error_upper = "ci_higher",
         color = "category"
     )
 
@@ -175,15 +177,17 @@ test_that("plot_forest handles faceting", {
     df <- data.frame(
         group = letters[1:10],
         estimate = rnorm(10),
-        error = runif(10),
+        ci_lower = rnorm(10, mean = -0.5),
+        ci_higher = rnorm(10, mean = 0.5),
         category = rep(c("A", "B"), 5),
         facet = rep(c("X", "Y"), each = 5)
     )
 
     p <- plot_forest(df,
-        x = "group",
-        y = "estimate",
-        error = "error",
+        y = "group",
+        estimate = "estimate",
+        error_lower = "ci_lower",
+        error_upper = "ci_higher",
         color = "category",
         facet = "facet"
     )

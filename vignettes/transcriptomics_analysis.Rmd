@@ -63,13 +63,11 @@ Let's start by loading the necessary libraries:
 ```{r libraries}
 library(rmatt)
 library(DESeq2)
-library(SummarizedExperiment)
-library(ggplot2)
-library(dplyr)
-library(ComplexHeatmap)
+library(tidyverse)
 
 # Set random seed for reproducibility
 set.seed(123)
+
 ```
 
 # Data Import and Preprocessing
@@ -98,57 +96,41 @@ For demonstration purposes, let's create a simulated dataset:
 ```{r simulate_data}
 # Create simulated count data for demonstration
 set.seed(123)
-n_genes <- 2000
-n_samples <- 24
-
-# Gene names
-gene_names <- paste0("GENE_", sprintf("%04d", 1:n_genes))
-
-# Sample metadata
-sample_metadata <- data.frame(
-  sample_id = paste0("Sample_", 1:n_samples),
-  condition = rep(c("Control", "Treatment"), each = n_samples/2),
-  batch = rep(c("Batch1", "Batch2"), times = n_samples/2),
-  age = round(rnorm(n_samples, 45, 10)),
-  sex = sample(c("M", "F"), n_samples, replace = TRUE),
-  stringsAsFactors = FALSE
-)
-
-# Simulate count data with some differential expression
-base_counts <- matrix(
-  rnbinom(n_genes * n_samples, mu = 100, size = 10),
-  nrow = n_genes,
-  ncol = n_samples,
-  dimnames = list(gene_names, sample_metadata$sample_id)
-)
-
-# Add differential expression for some genes
-de_genes <- sample(1:n_genes, 200)
-treatment_samples <- which(sample_metadata$condition == "Treatment")
-
-for (i in de_genes) {
-  fold_change <- sample(c(0.3, 0.5, 2, 3, 4), 1)
-  base_counts[i, treatment_samples] <- round(base_counts[i, treatment_samples] * fold_change)
+# Mock data creation for testing
+create_mock_counts <- function(n_genes = 100, n_samples = 6) {
+  set.seed(42)
+  counts <- matrix(rpois(n_genes * n_samples, lambda = 10),
+    nrow = n_genes, ncol = n_samples
+  )
+  library(org.Hs.eg.db)
+  gene_ids <- keys(org.Hs.eg.db, keytype = "ENTREZID")
+  selected_genes <- sample(gene_ids, n_genes)
+  gene_symbols <- mapIds(org.Hs.eg.db, keys = selected_genes, column = "SYMBOL", keytype = "ENTREZID", multiVals = "first")
+  rownames(counts) <- gene_symbols
+  colnames(counts) <- paste0("sample", 1:n_samples)
+  return(counts)
 }
 
-# Create SummarizedExperiment object
-rownames(sample_metadata) <- sample_metadata$sample_id
-se <- SummarizedExperiment(
-  assays = list(counts = base_counts),
-  colData = sample_metadata
-)
+create_mock_dds <- function(n_genes = 100, n_samples = 6) {
+  counts <- create_mock_counts(n_genes, n_samples)
+  coldata <- data.frame(
+    condition = factor(rep(c("A", "B"), each = n_samples/2)),
+    batch = factor(rep(c("1", "2", "3"), each = 2)),
+    row.names = colnames(counts)
+  )
+  return(DESeqDataSetFromMatrix(counts, coldata, design = ~ condition))
+}
 
-print(se)
+# Simulate a DESeq2 object
+dds <- create_mock_dds(n_genes = 100, n_samples = 6)
+print(dds)
 ```
 
 ## Quality Control and Filtering
 
-Before proceeding with analysis, it's important to perform quality control and filter low-quality samples and genes:
+We start with quality control and filtering of the count data which are packed into the `rna_preprocessing` function.
 
 ```{r qc_filtering}
-# Create DESeq2 object for easier manipulation
-dds <- make_dds(se, design = ~ condition + batch)
-
 # Run the preprocessing steps
 dds_filtered <- rna_preprocessing(dds)
 ```
@@ -161,7 +143,14 @@ The primary method for differential expression analysis in `rmatt` uses DESeq2:
 
 ```{r deseq_analysis}
 
-# Run DESeq2 analysis
+# Run DESeq2 analysis pipeline
+condition <- "condition"
+controls <- "batch"
+deseq_out <- deseq_analysis(
+  dds = dds_filtered,
+  condition = condition,
+  controls = controls
+)
 
 ```
 

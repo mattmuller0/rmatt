@@ -50,5 +50,3 @@ get_eGFR <- function(
     142 * pmin(creatinine, 1, na.rm = TRUE)**(-0.241) * pmax(creatinine, 1, na.rm = TRUE)**(-1.200) * 0.9938 ** age * 1.012
   )
 }
-
-# ======================== Pooled Cohort Functions ========================

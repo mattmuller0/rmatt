@@ -147,3 +147,4 @@ normalize_counts <- function(dds, method = "mor", log2 = FALSE) {
   }
   return(counts)
 }
+

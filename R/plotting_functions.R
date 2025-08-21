@@ -106,58 +106,77 @@ plot_heatmap <- function(
   heatmap <- do.call(Heatmap, heatmap_args)
   return(heatmap)
 }
-
 #' @title Plot Enrichment Terms
 #' @description Function to plot enrichment from gse object
 #' @param gse gse object
 #' @param title Title of plot
-#' @param terms2plot List of terms to plot
-#' @param genes2plot List of genes to plot
-#' @param qvalueCutoff Q-value cutoff
-#' @param max_terms Maximum number of terms to plot
-#' @param ... Additional arguments to pass to ggplot
+#' @param terms2plot List of terms to plot (optional)
+#' @param genes2plot List of genes to plot (optional)
+#' @param qvalueCutoff Q-value cutoff (default: 0.2)
+#' @param max_terms Maximum number of terms to plot (default: 20)
+#' @param wrap_width Width for wrapping term descriptions (default: 40)
 #' @return ggplot object of enrichment terms
-#' @importFrom dplyr arrange mutate filter
+#' @importFrom dplyr arrange mutate filter slice_head
 #' @importFrom forcats fct_reorder
 #' @importFrom stringr str_wrap
-#' @importFrom ggpubr theme_classic2
 #' @export
 plot_enrichment_terms <- function(
-    gse,
-    title = "Enrichment Plot",
-    terms2plot = NULL, genes2plot = NULL,
-    qvalueCutoff = 0.2,
-    max_terms = 20,
-    ...) {
-  enrichment_terms <- gse@result %>%
-    as.data.frame() %>%
-    dplyr::arrange(qvalue) %>%
-    mutate(
-      Description = gsub("^(REACTOME_|GO_|HALLMARK_)", "", Description),
-      Description = gsub("_", " ", Description),
-      Description = factor(stringr::str_wrap(Description, 40))
-    )
+  gse,
+  title = "Enrichment Plot",
+  terms2plot = NULL, 
+  genes2plot = NULL,
+  qvalueCutoff = 0.2,
+  max_terms = 20,
+  wrap_width = 40
+) {
+  enrichment_terms <- as.data.frame(gse@result) %>%
+  dplyr::arrange(qvalue) %>%
+  dplyr::filter(qvalue < qvalueCutoff)
 
+  # Filter by terms if provided
   if (!is.null(terms2plot)) {
-    enrichment_terms <- enrichment_terms %>%
-      filter(grepl(paste0(tolower(terms2plot), collapse = "|"), tolower(Description)), qvalue < qvalueCutoff)
+  pattern <- paste0(terms2plot, collapse = "|")
+  enrichment_terms <- enrichment_terms %>%
+    dplyr::filter(grepl(pattern, Description, ignore.case = TRUE))
   }
+
+  # Filter by genes if provided
   if (!is.null(genes2plot)) {
-    enrichment_terms <- enrichment_terms %>%
-      filter(grepl(paste0(tolower(genes2plot), collapse = "|"), tolower(core_enrichment)), qvalue < qvalueCutoff) %>%
-      filter(grepl(paste0(tolower(genes2plot), collapse = "|"), tolower(gene_id)), qvalue < qvalueCutoff)
+  pattern <- paste0(genes2plot, collapse = "|")
+  enrichment_terms <- enrichment_terms %>%
+    dplyr::filter(
+    grepl(pattern, core_enrichment, ignore.case = TRUE) |
+    grepl(pattern, gene_id, ignore.case = TRUE)
+    )
   }
 
-  if (dim(enrichment_terms)[1] > max_terms) {
-    enrichment_terms <- head(enrichment_terms, max_terms)
-  }
+  # Clean and wrap descriptions
+  enrichment_terms <- enrichment_terms %>%
+  dplyr::mutate(
+    Description = gsub("^(REACTOME_|GO(BP|MF|CC)_|HALLMARK_)", "", Description),
+    Description = gsub("_", " ", Description),
+    Description = stringr::str_wrap(Description, wrap_width),
+    Description = forcats::fct_reorder(Description, NES)
+  )
 
-  p <- ggplot(enrichment_terms, aes(NES, fct_reorder(Description, NES), fill = qvalue)) +
-    geom_col(orientation = "y") +
-    scale_fill_continuous(low = "red", high = "blue", guide = guide_colorbar(reverse = TRUE)) +
-    labs(title = "Enrichment Barplot") +
-    theme_classic2() +
-    ylab(NULL)
+  # Limit to max_terms
+  enrichment_terms <- dplyr::slice_head(enrichment_terms, n = max_terms)
+
+  # Plot
+  p <- ggplot(enrichment_terms, aes(x = NES, y = Description, fill = qvalue)) +
+  geom_col(orientation = "y", width = 0.7) +
+  scale_fill_gradient(low = "red", high = "blue", guide = guide_colorbar(reverse = TRUE)) +
+  labs(
+    title = title,
+    x = "Normalized Enrichment Score (NES)",
+    y = NULL,
+    fill = "q-value"
+  ) +
+  theme_classic() +
+  theme(
+    axis.text.y = element_text(size = 12),
+    plot.title = element_text(face = "bold", size = 14)
+  )
   return(p)
 }
 
@@ -226,32 +245,8 @@ color_mapping <- function(df, custom_colors = NULL, alpha = 1) {
   return(color_maps)
 }
 
-#' @title Plot ggplot Table
-#' @description Function to take a dataframe and make it into a ggplot table with each column being its own ggplot object
-#' @param df Data frame to plot
-#' @param columns Columns to plot
-#' @param axis Axis to plot
-#' @param size Size of text
-#' @param ... Additional arguments to pass to ggplot
-#' @return ggplot object of table
-plot_ggplot_table <- function(df, columns, axis, size = 5, ...) {
-  require(ggplot2)
-
-  plots <- lapply(columns, function(col) {
-    ggplot(df, aes(x = 1, y = !!sym(axis))) +
-      geom_text(aes(label = !!sym(col)), size = size, ...) +
-      theme_void() +
-      theme(plot.title = element_text(hjust = 0.5)) +
-      theme(legend.position = "none") +
-      labs(title = col, x = "")
-  })
-
-  p <- Reduce(`+`, plots)
-  return(p)
-}
-
-#' @title Plot Clinical Factors Heatmap
-#' @description Function to plot a clinical factors heatmap
+#' @title Plot Factors Heatmap
+#' @description Function to plot a factors heatmap
 #' @param cohort_tab Data frame to plot
 #' @param name Name of the heatmap
 #' @param na_col Color for NA values
@@ -275,7 +270,7 @@ plot_ggplot_table <- function(df, columns, axis, size = 5, ...) {
 #' @importFrom circlize colorRamp2
 #' @importFrom grid grid.text gpar unit
 #' @export
-plot_clinical_factors_heatmap <- function(
+plot_factors_heatmap <- function(
     cohort_tab,
     name = "Statistic",
     na_col = "#e2dede",
@@ -467,103 +462,88 @@ plot_correlation_matrix <- function(cor_mat, title = "", xlab = "", ylab = "", x
 }
 
 #' @title Plot Forest Plot
-#' @description Function to create a forest plot from a data frame
+#' @description Create a forest plot from a data frame
 #' @param df Data frame to plot
-#' @param x Column name of x-axis
-#' @param y Column name of y-axis
-#' @param error Column name of y-axis error
-#' @param color Column name for color grouping
-#' @param facet Column name for facet grouping
+#' @param x Column name for grouping variable (default: NULL)
+#' @param y Column name for label variable
+#' @param estimate Column name for estimates (e.g., odds ratio, hazard ratio)
+#' @param error_lower Column name for lower error bounds
+#' @param error_upper Column name for upper error bounds
+#' @param color Column name for color grouping (default: x)
+#' @param facet Column name for facet grouping (default: NULL)
+#' @param show_table Logical, whether to show HR/p/n table (default: FALSE)
 #' @param title Title of the plot
 #' @param xlab Label for x-axis
 #' @param ylab Label for y-axis
 #' @param ... Additional arguments to pass to ggplot
-#' @return ggplot object of forest plot
+#' @return ggplot object (or cowplot grid if show_table = TRUE)
+#' @importFrom dplyr mutate
+#' @importFrom cowplot plot_grid
 #' @export
 plot_forest <- function(
     df,
-    x, y,
-    error,
-    color = x,
+    x = NULL,
+    y,
+    estimate,
+    error_lower,
+    error_upper,
+    color = NULL,
     facet = NULL,
+    show_table = FALSE,
     title = "Forest Plot",
-    xlab = "", ylab = "",
+    xlab = "",
+    ylab = "",
     ...) {
-  plot <- ggplot(df, aes(x = !!sym(x), y = !!sym(y), color = !!sym(color))) +
-    geom_point() +
-    geom_linerange(aes(ymin = !!sym(y) - !!sym(error), ymax = !!sym(y) + !!sym(error))) +
+  # Set color grouping
+  color <- if (is.null(color)) if (!is.null(x)) x else y
+
+  # Cap extreme values for better visualization
+  df[[estimate]] <- pmin(df[[estimate]], 20)
+  df[[error_lower]] <- pmin(df[[error_lower]], 20)
+  df[[error_upper]] <- pmin(df[[error_upper]], 20)
+
+  # Main forest plot
+  if (is.null(color)) {
+    p <- ggplot(df, aes(x = !!sym(y), y = !!sym(estimate))) +
+      geom_point() +
+      geom_errorbar(aes(ymin = !!sym(error_lower), ymax = !!sym(error_upper)), width = 0.2)
+  } else {
+    p <- ggplot(df, aes(x = !!sym(y), y = !!sym(estimate), color = !!sym(color))) +
+      geom_point() +
+      geom_errorbar(aes(ymin = !!sym(error_lower), ymax = !!sym(error_upper)), width = 0.2)
+  }
+  p <- p +
     geom_hline(yintercept = 1, linetype = "dashed") +
-    theme_bw() +
-    theme(legend.position = "bottom") +
     coord_flip() +
-    labs(title = title, x = xlab, y = ylab)
+    theme_matt() +
+    theme(legend.position = "bottom") +
+    labs(title = title, x = ylab, y = xlab, color = color)
 
+  # Faceting if requested
   if (!is.null(facet)) {
-    plot <- plot + facet_grid(facet)
-  }
-  return(plot)
-}
-
-#' @title Plot Stratified Forest Plot
-#' @description Function to create a stratified forest plot from a data frame
-#' @param df Data frame to plot
-#' @param x Column name for x-axis
-#' @param y Column name for y-axis
-#' @param estimate Column name for estimates
-#' @param error_lower Column name for lower error bounds
-#' @param error_upper Column name for upper error bounds
-#' @param color Column name for color grouping
-#' @param facet Column name for facet grouping
-#' @return ggplot object of stratified forest plot
-#' @importFrom dplyr mutate
-#' @importFrom glue glue
-#' @importFrom cowplot plot_grid
-#' @export
-plot_stratified_forest <- function(
-    df,
-    x = "x", y = "y",
-    estimate = "hazard.ratio",
-    error_lower = "ci.lower",
-    error_upper = "ci.upper",
-    color,
-    facet) {
-  if (any(df[, estimate] > 20)) {
-    message("Some estimates are over 20. Setting them to 20.")
-    df[, estimate] <- ifelse(df[, estimate] > 20, 20, df[, estimate])
-    df[, error_lower] <- ifelse(df[, error_lower] > 20, 20, df[, error_lower])
-    df[, error_upper] <- ifelse(df[, error_upper] > 20, 20, df[, error_upper])
+    p <- p + facet_grid(rows = vars(!!sym(facet)), scales = "free_y", switch = "y", space = "free_y")
   }
 
-  p <- df %>%
-    mutate(xy = glue("{x} ({y})")) %>%
-    ggplot(aes(x = !!sym(estimate), y = !!sym(y), color = !!sym(x))) +
-    geom_point() +
-    geom_linerange(aes(xmin = !!sym(error_lower), xmax = !!sym(error_upper))) +
-    geom_vline(xintercept = 1, linetype = "dashed") +
-    labs(title = NULL, x = "Hazard Ratio", y = NULL, color = NULL) +
-    facet_grid(x ~ ., scales = "free", switch = "y", space = "free_y") +
-    theme_bw() +
-    theme(legend.position = "none", strip.placement = "outside", strip.background = element_blank(), strip.text.y.left = element_text(angle = 0))
-
-  if (!all(c(estimate, error_lower, error_upper, "p.value", "n") %in% colnames(df))) {
-    stop("The columns estimate, error_lower, error_upper, p.value, and n must be present in the data frame")
+  # Optionally add HR/p/n table
+  if (show_table) {
+    required_cols <- c(estimate, error_lower, error_upper, "p.value", "n")
+    if (!all(required_cols %in% colnames(df))) {
+      stop("Columns estimate, error_lower, error_upper, p.value, and n must be present for show_table = TRUE")
+    }
+    df$HR <- sprintf("%.2f (%.2f-%.2f)", df[[estimate]], df[[error_lower]], df[[error_upper]])
+    p_right <- ggplot(df, aes(y = !!sym(y))) +
+      geom_text(aes(x = 0, label = HR)) +
+      geom_text(aes(x = 1, label = signif(p.value, 2))) +
+      geom_text(aes(x = 2, label = n)) +
+      coord_cartesian(xlim = c(-0.5, 2.5)) +
+      scale_x_continuous(breaks = c(0, 1, 2), labels = c("HR [95% CI]", "p-value", "n"), position = "top") +
+      theme_void()
+    if (!is.null(facet)) {
+      p_right <- p_right + facet_grid(rows = vars(!!sym(facet)), scales = "free_y", switch = "y", space = "free_y")
+    }
+    p <- cowplot::plot_grid(p, p_right, ncol = 2, rel_widths = c(1, 0.75), align = "h")
   }
 
-  df$HR <- paste0(round(df[, estimate], 2), " (", round(df[, error_lower], 2), "-", round(df[, error_upper], 2), ")")
-  df$xy <- paste0(df$x, " (", df$y, ")")
-
-  p_right <- ggplot(df, aes(y = y)) +
-    geom_text(aes(x = 0, label = HR)) +
-    geom_text(aes(x = 1, label = signif(p.value, 2))) +
-    geom_text(aes(x = 2, label = n)) +
-    coord_cartesian(xlim = c(-0.5, 2.5)) +
-    labs(title = NULL, x = NULL, y = NULL) +
-    facet_grid(x ~ ., scales = "free", switch = "y", space = "free_y") +
-    scale_x_continuous(breaks = c(0, 1, 2), labels = c("HR [95% CI]", "p-value", "n"), expand = c(0, 0.1), position = "top") +
-    theme_void() +
-    theme(strip.text.y = element_blank(), axis.text.x = element_text())
-
-  p <- plot_grid(p, p_right, ncol = 2, rel_widths = c(1, 0.75), align = "h", axis = "bt")
   return(p)
 }
 

@@ -90,7 +90,7 @@ test_that("calculate_correlations returns expected format", {
   )) # suppress warnings for test clarity
   
   expect_true(is.data.frame(result))
-  expect_equal(colnames(result), c("correlation", "pvalue"))
+  expect_equal(colnames(result), c("correlation", "pvalue", "padj"))
   expect_equal(nrow(result), nrow(dds))
 })
 

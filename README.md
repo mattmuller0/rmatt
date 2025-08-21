@@ -28,3 +28,28 @@ devtools::install_github("mattmuller0/rmatt")
 - stats_functions.R: Functions for statistics and survival analysis
 - clustering_functions.R: Functions for clustering analysis
 - survival_functions.R: Functions for survival analysis
+
+## Installing Dependencies
+
+This package depends on several CRAN and Bioconductor packages. To install all required dependencies, run the following in R:
+
+```r
+# Install BiocManager if not already installed
+if (!requireNamespace("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+
+# List of required packages
+cran_packages <- c(
+  "cowplot", "dplyr", "ggplot2", "ggpubr", "glue", "purrr", "stringr", "tibble", "tidyr", "tidyverse", "broom", "forcats", "ggbiplot", "ggrepel", "ggsurvfit", "glmnet", "rlang", "rstatix", "survival", "magrittr", "RColorBrewer", "enrichR", "tableone"
+)
+
+bioc_packages <- c(
+  "AnnotationDbi", "BiocManager", "ComplexHeatmap", "DESeq2", "NMF", "OlinkAnalyze", "S4Vectors", "SummarizedExperiment", "circlize", "clusterProfiler", "edgeR", "enrichplot", "ggtree", "limma", "msigdbr", "org.Hs.eg.db", "singscore"
+)
+
+# Install CRAN packages
+install.packages(setdiff(cran_packages, rownames(installed.packages())))
+
+# Install Bioconductor packages
+BiocManager::install(setdiff(bioc_packages, rownames(installed.packages())))
+```
