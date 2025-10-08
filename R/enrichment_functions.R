@@ -101,7 +101,7 @@ save_gse <- function(gse, outpath, ...) {
     message("GSE object is NULL")
     return(NULL)
   }
-  
+
   # Save results as CSV and RDS
   write.csv(gse@result, file.path(outpath, "enrichment_results.csv"), quote = TRUE, row.names = FALSE)
   write.csv(filter(gse@result, qvalue < 0.1), file.path(outpath, "enrichment_results_sig.csv"), quote = TRUE, row.names = FALSE)
@@ -119,12 +119,12 @@ save_gse <- function(gse, outpath, ...) {
   }
 
   # Generate plots
-  safe_ggplot(function() enrichplot::dotplot(gse, showCategory = 20) + ggtitle("Enrichment Dotplot"),"dotplot.pdf")
+  safe_ggplot(function() enrichplot::dotplot(gse, showCategory = 20) + ggtitle("Enrichment Dotplot"), "dotplot.pdf")
   safe_ggplot(function() cnetplot(gse, node_label = "category", cex_label_gene = 0.8), "cnetplot.pdf")
   safe_ggplot(function() plot_enrichment_terms(gse, terms2plot = c("inflam", "plat", "coag"), max_terms = min(10, nrow(gse@result))), "barplot_terms.pdf")
-  safe_ggplot(function() ridgeplot(gse, showCategory = min(10, nrow(gse@result))),"ridgeplot.pdf")
+  safe_ggplot(function() ridgeplot(gse, showCategory = min(10, nrow(gse@result))), "ridgeplot.pdf")
   safe_ggplot(function() heatplot(gse, showCategory = 10), "heatplot.pdf")
-  
+
   safe_ggplot(
     function() {
       gse_bar <- as.data.frame(gse) %>%
@@ -142,14 +142,14 @@ save_gse <- function(gse, outpath, ...) {
         labs(title = "Enrichment Barplot", y = NULL) +
         theme_classic2()
     },
-    "barplot_all.pdf"
+    "barplot.pdf"
   )
-  
+
   safe_ggplot(
     function() {
-      bp_data <- filter(as.data.frame(gse), ONTOLOGY == "BP")
+      bp_data <- filter(as.data.frame(gse), grepl("^GOBP_", ID))
       if (nrow(bp_data) == 0) stop("No BP data")
-      
+
       bp_data %>%
         group_by(sign(NES)) %>%
         arrange(qvalue) %>%
@@ -165,9 +165,8 @@ save_gse <- function(gse, outpath, ...) {
         labs(title = "Enrichment Barplot (BP)", y = NULL) +
         theme_classic2()
     },
-    "barplot_BP.pdf"
+    "barplot_bp.pdf"
   )
-  
 }
 
 #' Load custom gene sets
@@ -194,13 +193,13 @@ gsea_analysis <- function(
   if (is.null(keyType)) {
     keyType <- detect_gene_id_type(names(geneList), strip = TRUE)
   }
-  
+
   # ensure keytype is in our dict
   gene_keys <- list(SYMBOL = "gene_symbol", ENSEMBL = "ensembl_gene")
   if (!(keyType %in% names(gene_keys))) {
     stop("Invalid keyType. Please use one of: ", paste(names(gene_keys), collapse = ", "))
   }
-  
+
   # match the keytype to the ID held in msigdbr
   gene_key <- gene_keys[[keyType]]
 
@@ -264,136 +263,149 @@ gsea_analysis <- function(
 #' @importFrom ggpubr theme_classic2
 #' @export
 stratified_ora <- function(
-  gene_dataframe,
-  outpath,
-  method = "enrichR",
-  dbs = c("GO_Biological_Process_2023", "GO_Cellular_Component_2023", 
-      "GO_Molecular_Function_2023", "WikiPathway_2023_Human", 
-      "GWAS_Catalog_2023", "Reactome_2022", "MSigDB Hallmark 2020"),
-  padj_cutoff = 0.05,
-  max_pathways = 5,
-  ...) {
-  
+    gene_dataframe,
+    outpath,
+    method = "enrichR",
+    dbs = c(
+      "GO_Biological_Process_2023", "GO_Cellular_Component_2023",
+      "GO_Molecular_Function_2023", "WikiPathway_2023_Human",
+      "GWAS_Catalog_2023", "Reactome_2022", "MSigDB Hallmark 2020"
+    ),
+    padj_cutoff = 0.05,
+    max_pathways = 5,
+    ...) {
   # Input validation
   if (!method %in% c("enrichGO", "groupGO", "enrichR")) {
-  stop("Method not supported. Please use one of: enrichGO, groupGO, enrichR")
+    stop("Method not supported. Please use one of: enrichGO, groupGO, enrichR")
   }
-  
+
   dir.create(outpath, showWarnings = FALSE, recursive = TRUE)
-  
+
   # Extract gene lists
-  up_genes <- gene_dataframe %>% filter(direction == "up") %>% pull(features)
-  down_genes <- gene_dataframe %>% filter(direction == "down") %>% pull(features)
-  
+  up_genes <- gene_dataframe %>%
+    filter(direction == "up") %>%
+    pull(features)
+  down_genes <- gene_dataframe %>%
+    filter(direction == "down") %>%
+    pull(features)
+
   # Helper function to create signed log10 values and plot
   create_plot <- function(data, title_suffix = "") {
-  if (nrow(data) == 0) return(NULL)
-  
-  data$signed <- ifelse(data$direction == "up", 
-             -log10(data[[get_padj_col(method)]]), 
-             log10(data[[get_padj_col(method)]]))
-  
-  ggplot(data, aes(x = signed, y = fct_reorder(str_wrap(get_term_col(data, method), 40), signed), 
-           fill = direction)) +
-    geom_col() +
-    labs(title = paste("ORA Results", title_suffix), x = "Signed -log10(padj)", y = NULL) +
-    theme_classic2()
+    if (nrow(data) == 0) {
+      return(NULL)
+    }
+
+    data$signed <- ifelse(data$direction == "up",
+      -log10(data[[get_padj_col(method)]]),
+      log10(data[[get_padj_col(method)]])
+    )
+
+    ggplot(data, aes(
+      x = signed, y = fct_reorder(str_wrap(get_term_col(data, method), 40), signed),
+      fill = direction
+    )) +
+      geom_col() +
+      labs(title = paste("ORA Results", title_suffix), x = "Signed -log10(padj)", y = NULL) +
+      theme_classic2()
   }
-  
+
   # Helper functions for column names
   get_padj_col <- function(method) {
-  switch(method, "enrichR" = "Adjusted.P.value", "p.adjust")
+    switch(method,
+      "enrichR" = "Adjusted.P.value",
+      "p.adjust"
+    )
   }
-  
+
   get_term_col <- function(data, method) {
-  if (method == "enrichR") "Term" else "Description"
+    if (method == "enrichR") "Term" else "Description"
   }
-  
+
   if (method == "enrichR") {
-  return(run_enrichr_analysis(up_genes, down_genes, dbs, outpath, padj_cutoff, max_pathways, create_plot))
+    return(run_enrichr_analysis(up_genes, down_genes, dbs, outpath, padj_cutoff, max_pathways, create_plot))
   } else {
-  return(run_clusterprofiler_analysis(up_genes, down_genes, method, outpath, padj_cutoff, max_pathways, create_plot, ...))
+    return(run_clusterprofiler_analysis(up_genes, down_genes, method, outpath, padj_cutoff, max_pathways, create_plot, ...))
   }
 }
 
 # Helper function for enrichR analysis
 run_enrichr_analysis <- function(up_genes, down_genes, dbs, outpath, padj_cutoff, max_pathways, create_plot) {
   purrr::map(dbs, function(db) {
-  db_path <- file.path(outpath, db)
-  dir.create(db_path, showWarnings = FALSE, recursive = TRUE)
-  
-  # Run enrichment
-  enr_up <- enrichr(up_genes, db)[[db]] %>% mutate(direction = "up")
-  enr_down <- enrichr(down_genes, db)[[db]] %>% mutate(direction = "down")
-  enr_all <- bind_rows(enr_up, enr_down)
-  
-  if (nrow(enr_all) == 0) {
-    message("No results found for ", db)
-    return(NULL)
-  }
-  
-  # Save all results
-  write.csv(enr_all, file.path(db_path, "enrichr_results.csv"), quote = TRUE, row.names = FALSE)
-  
-  # Filter and process significant results
-  enr_sig <- enr_all %>%
-    group_by(direction) %>%
-    filter(Adjusted.P.value < padj_cutoff) %>%
-    arrange(Adjusted.P.value) %>%
-    slice_head(n = max_pathways)
-  
-  if (nrow(enr_sig) > 0) {
-    write.csv(enr_sig, file.path(db_path, "enrichr_results_sig.csv"), quote = TRUE, row.names = FALSE)
-    
-    # Create and save plot
-    p <- create_plot(enr_sig, paste("(", db, ")"))
-    if (!is.null(p)) {
-    suppressMessages(ggsave(file.path(db_path, "enrichr_results.pdf"), p))
+    db_path <- file.path(outpath, db)
+    dir.create(db_path, showWarnings = FALSE, recursive = TRUE)
+
+    # Run enrichment
+    enr_up <- enrichr(up_genes, db)[[db]] %>% mutate(direction = "up")
+    enr_down <- enrichr(down_genes, db)[[db]] %>% mutate(direction = "down")
+    enr_all <- bind_rows(enr_up, enr_down)
+
+    if (nrow(enr_all) == 0) {
+      message("No results found for ", db)
+      return(NULL)
     }
-  }
-  
-  return(enr_sig)
+
+    # Save all results
+    write.csv(enr_all, file.path(db_path, "enrichr_results.csv"), quote = TRUE, row.names = FALSE)
+
+    # Filter and process significant results
+    enr_sig <- enr_all %>%
+      group_by(direction) %>%
+      filter(Adjusted.P.value < padj_cutoff) %>%
+      arrange(Adjusted.P.value) %>%
+      slice_head(n = max_pathways)
+
+    if (nrow(enr_sig) > 0) {
+      write.csv(enr_sig, file.path(db_path, "enrichr_results_sig.csv"), quote = TRUE, row.names = FALSE)
+
+      # Create and save plot
+      p <- create_plot(enr_sig, paste("(", db, ")"))
+      if (!is.null(p)) {
+        suppressMessages(ggsave(file.path(db_path, "enrichr_results.pdf"), p))
+      }
+    }
+
+    return(enr_sig)
   }) %>%
-  setNames(dbs)
+    setNames(dbs)
 }
 
 # Helper function for clusterProfiler analysis
 run_clusterprofiler_analysis <- function(up_genes, down_genes, method, outpath, padj_cutoff, max_pathways, create_plot, ...) {
   enr_fn <- switch(method,
-  "enrichGO" = function(x) enrichGO(x, org.Hs.eg.db, pvalueCutoff = Inf, ...),
-  "groupGO" = function(x) groupGO(x, org.Hs.eg.db, pvalueCutoff = Inf, ...)
+    "enrichGO" = function(x) enrichGO(x, org.Hs.eg.db, pvalueCutoff = Inf, ...),
+    "groupGO" = function(x) groupGO(x, org.Hs.eg.db, pvalueCutoff = Inf, ...)
   )
-  
+
   results <- purrr::map_dfr(c("up", "down"), function(direction) {
-  genes <- if (direction == "up") up_genes else down_genes
-  enr <- enr_fn(genes)
-  
-  if (is.null(enr) || nrow(enr@result) == 0) {
-    message("No results found for ", direction, " genes")
-    return(NULL)
-  }
-  
-  # Save individual results
-  save_gse(enr, file.path(outpath, direction))
-  
-  # Process results
-  enr@result %>%
-    filter(p.adjust < padj_cutoff) %>%
-    arrange(p.adjust) %>%
-    slice_head(n = max_pathways) %>%
-    mutate(direction = direction)
+    genes <- if (direction == "up") up_genes else down_genes
+    enr <- enr_fn(genes)
+
+    if (is.null(enr) || nrow(enr@result) == 0) {
+      message("No results found for ", direction, " genes")
+      return(NULL)
+    }
+
+    # Save individual results
+    save_gse(enr, file.path(outpath, direction))
+
+    # Process results
+    enr@result %>%
+      filter(p.adjust < padj_cutoff) %>%
+      arrange(p.adjust) %>%
+      slice_head(n = max_pathways) %>%
+      mutate(direction = direction)
   })
-  
+
   if (nrow(results) > 0) {
-  # Save combined results
-  write.csv(results, file.path(outpath, "ora_results.csv"), quote = TRUE, row.names = FALSE)
-  
-  # Create and save plot
-  p <- create_plot(results)
-  if (!is.null(p)) {
-    suppressMessages(ggsave(file.path(outpath, "ora_results.pdf"), p))
+    # Save combined results
+    write.csv(results, file.path(outpath, "ora_results.csv"), quote = TRUE, row.names = FALSE)
+
+    # Create and save plot
+    p <- create_plot(results)
+    if (!is.null(p)) {
+      suppressMessages(ggsave(file.path(outpath, "ora_results.pdf"), p))
+    }
   }
-  }
-  
+
   return(results)
 }
