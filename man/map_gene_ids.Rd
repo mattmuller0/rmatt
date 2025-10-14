@@ -8,7 +8,7 @@ map_gene_ids(
   geneList,
   from = NULL,
   to,
-  orgDb = org.Hs.eg.db,
+  orgDb = NULL,
   remove_missing = FALSE,
   ...
 )

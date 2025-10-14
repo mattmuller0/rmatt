@@ -15,17 +15,17 @@ log_rank_test(
 \arguments{
 \item{data}{data.frame, data to perform log rank test on.}
 
-\item{comparisons}{character, comparisons to perform log rank test on.}
+\item{comparisons}{character, comparisons to perform log rank test on. Can be a single condition or vector of conditions.}
 
 \item{censors}{character, censors to perform log rank test on.}
 
-\item{censor_prefix}{character, prefix for censor columns. Default is 'C_'.}
+\item{censor_prefix}{character, prefix for censor columns. Default is 'censor_'.}
 
-\item{time_prefix}{character, prefix for time columns. Default is 'T_'.}
+\item{time_prefix}{character, prefix for time columns. Default is 'time_to_'.}
 }
 \value{
 data.frame, p-values from log rank test.
 }
 \description{
-Perform a log rank test on a dataframe.
+Perform a log rank test on a dataframe with support for multiple conditions as separate univariate tests.
 }

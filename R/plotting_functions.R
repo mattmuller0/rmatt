@@ -7,7 +7,19 @@
 #' @return ggplot object of library depth
 #' @importFrom SummarizedExperiment assay
 #' @importFrom ggpubr theme_classic2
+#' @export
 plot_library_depth <- function(dds, title, bins = 30) {
+  # Input validation
+  if (missing(dds) || is.null(dds)) {
+    stop("Argument 'dds' is required and cannot be NULL")
+  }
+  if (missing(title) || is.null(title) || !is.character(title)) {
+    stop("Argument 'title' must be a character string")
+  }
+  if (!is.numeric(bins) || bins <= 0) {
+    stop("Argument 'bins' must be a positive number")
+  }
+  
   p <- ggplot(data.frame(log2(rowMeans(assay(dds)) + 0.001)), aes(x = log2(rowMeans(assay(dds)) + 0.001))) +
     geom_histogram(bins = bins, fill = "blue", alpha = 0.65) +
     labs(x = "Log Library Depth", y = "Count", title = title) +
@@ -57,7 +69,6 @@ plot_percent_genes_detected <- function(dds, title, min_value = 0) {
 #' @param ... Additional arguments to pass to ComplexHeatmap
 #' @return ComplexHeatmap object of gene heatmap
 #' @importFrom SummarizedExperiment colData
-#' @importFrom ComplexHeatmap Heatmap HeatmapAnnotation
 #' @importFrom dplyr select any_of
 #' @export
 plot_heatmap <- function(
@@ -65,6 +76,9 @@ plot_heatmap <- function(
     width = unit(max(4, min(12, 4 + 0.2 * ncol(dds))), "cm"),
     height = unit(max(4, min(12, 4 + 0.1 * length(intersect(genes, rownames(dds))))), "cm"),
     ...) {
+  # Check for ComplexHeatmap package
+  check_bioc_package("ComplexHeatmap")
+  
   # Normalize counts
   norm_counts <- normalize_counts(dds, method = normalize)
   norm_counts <- t(scale(t(norm_counts)))
@@ -94,7 +108,7 @@ plot_heatmap <- function(
   if (!is.null(annotations)) {
     cd_df <- as.data.frame(colData(dds))
     selected_df <- dplyr::select(cd_df, any_of(annotations))
-    annotations_top <- HeatmapAnnotation(
+    annotations_top <- ComplexHeatmap::HeatmapAnnotation(
       df = selected_df,
       col = color_mapping(selected_df),
       annotation_name_side = "left",
@@ -103,7 +117,7 @@ plot_heatmap <- function(
     heatmap_args$top_annotation <- annotations_top
   }
 
-  heatmap <- do.call(Heatmap, heatmap_args)
+  heatmap <- do.call(ComplexHeatmap::Heatmap, heatmap_args)
   return(heatmap)
 }
 #' @title Plot Enrichment Terms
@@ -266,7 +280,6 @@ color_mapping <- function(df, custom_colors = NULL, alpha = 1) {
 #' @param height Height of the heatmap
 #' @param ... Additional arguments to pass to ComplexHeatmap
 #' @return ComplexHeatmap object
-#' @importFrom ComplexHeatmap Heatmap
 #' @importFrom circlize colorRamp2
 #' @importFrom grid grid.text gpar unit
 #' @export
@@ -287,7 +300,10 @@ plot_factors_heatmap <- function(
     width = unit(0.6 * nrow(cohort_tab), "cm"),
     height = unit(1.4 * nrow(cohort_tab), "cm"),
     ...) {
-  hm <- Heatmap(
+  # Check for ComplexHeatmap package
+  check_bioc_package("ComplexHeatmap")
+  
+  hm <- ComplexHeatmap::Heatmap(
     cohort_tab,
     name = name, na_col = na_col,
     cluster_rows = cluster_rows, cluster_columns = cluster_columns,

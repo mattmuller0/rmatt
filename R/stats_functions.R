@@ -164,7 +164,7 @@ correlation_matrix <- function(data, vars1, vars2, method = "pearson", use = "pa
 #' Van der Waerden Inverse Normal Transformation
 #' @description Applies the van der Waerden inverse normal transformation to a numeric vector.
 #' @param x numeric vector to transform
-#' @param c numeric constant to add to the denominator (default is 0.375, as commonly used)
+#' @param c numeric constant to add to the denominator (default is 0.375)
 #' @return numeric vector with transformed values
 #' @export
 inverse_normal_transform <- function(x, c = 0) {

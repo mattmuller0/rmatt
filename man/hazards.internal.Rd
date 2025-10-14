@@ -11,13 +11,13 @@ hazards.internal(cs, df, condition, controls)
 
 \item{df}{data.frame, data to make survival curves from.}
 
-\item{condition}{character, condition to make survival curves for.}
+\item{condition}{character, condition(s) to make survival curves for. Can be single or multiple conditions.}
 
 \item{controls}{character, controls to include in the model. Default is NULL.}
 }
 \value{
-data.frame, hazard ratios for the condition.
+data.frame, hazard ratios for the condition(s).
 }
 \description{
-Internal function to calculate hazard ratios.
+Internal function to calculate hazard ratios for multiple conditions using univariate analyses.
 }

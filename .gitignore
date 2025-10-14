@@ -16,3 +16,11 @@ vignettes/*.pdf
 
 # ignore emacs backup files
 *~
+
+# Ignore package build files
+*.tar.gz
+
+# Ignore github specific files
+.github/
+.gitattributes
+.gitignore

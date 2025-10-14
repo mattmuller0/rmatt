@@ -63,6 +63,21 @@ rna_enrichment <- function(
     image_type = "pdf", ontology = "ALL",
     terms2plot = c("inflam", "immune", "plat"),
     ...) {
+  
+  # Input validation
+  if (missing(geneList) || is.null(geneList)) {
+    stop("Argument 'geneList' is required and cannot be NULL")
+  }
+  if (!is.numeric(geneList) || is.null(names(geneList))) {
+    stop("Argument 'geneList' must be a named numeric vector")
+  }
+  if (missing(outpath) || is.null(outpath) || !is.character(outpath)) {
+    stop("Argument 'outpath' must be a character string specifying output directory")
+  }
+  if (length(geneList) == 0) {
+    stop("Argument 'geneList' cannot be empty")
+  }
+  
   if (is.null(keyType)) {
     keyType <- detect_gene_id_type(names(geneList), strip = TRUE)
   }
@@ -182,7 +197,6 @@ get_custom_genesets <- function() {
 #' @param keyType Key type for gene list.
 #' @param ontology Ontology to use (default is ALL).
 #' @return Enrichment results for each level of column of interest.
-#' @importFrom msigdbr msigdbr
 #' @importFrom clusterProfiler GSEA
 #' @export
 gsea_analysis <- function(
@@ -190,6 +204,9 @@ gsea_analysis <- function(
     keyType = NULL,
     ontology = "ALL",
     species = "Homo sapiens") {
+  # Check for msigdbr package
+  check_suggested_package("msigdbr", "The msigdbr package is required for this function. Install with: BiocManager::install('msigdbr')")
+  
   if (is.null(keyType)) {
     keyType <- detect_gene_id_type(names(geneList), strip = TRUE)
   }
@@ -205,7 +222,7 @@ gsea_analysis <- function(
 
   dir.create(outpath, showWarnings = FALSE, recursive = TRUE)
   # Get the species
-  msigdb <- msigdbr(species = species)
+  msigdb <- msigdbr::msigdbr(species = species)
 
   GO_t2g <- subset(msigdb, gs_collection == "C5" & gs_subcollection != "HPO", select = c("gs_name", gene_key))
   gse_go <- GSEA(geneList, TERM2GENE = GO_t2g, pvalueCutoff = Inf)

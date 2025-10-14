@@ -52,13 +52,19 @@ CountTableFromFeatureCounts <- function(directory = ".", pattern = "featureCount
 #' @description Function to perform Wilcoxon test on a dds object
 #' @param dds DESeq2 object
 #' @param group Column in colData to group by
-#' @param outdir Output directory for results
+#' @param outpath Output directory for results
 #' @param normalize.method Normalization method to use (default is "mor")
 #' @param wilcox.exact Logical indicating whether to use exact Wilcoxon test (default is FALSE)
 #' @param wilcox.paired Logical indicating whether to use paired Wilcoxon test (default is FALSE)
 #' @param wilcox.alternative Alternative hypothesis for Wilcoxon test (default is "two.sided")
 #' @param volcano.pCutoff p-value cutoff for volcano plot (default is 0.05)
 #' @return Data frame of results with Wilcoxon test statistics
+#' @importFrom SummarizedExperiment colData
+#' @importFrom dplyr %>%
+#' @importFrom purrr map
+#' @importFrom broom tidy
+#' @importFrom ggplot2 ggsave
+#' @export
 run_wilcox <- function(
     dds,
     group,
@@ -68,17 +74,25 @@ run_wilcox <- function(
     wilcox.paired = FALSE,
     wilcox.alternative = "two.sided",
     volcano.pCutoff = 0.05) {
-  require(DESeq2)
-  require(dplyr)
-  require(broom)
-  require(purrr)
+  
+  # Input validation
+  if (missing(dds) || is.null(dds)) {
+    stop("Argument 'dds' is required and cannot be NULL")
+  }
+  if (missing(group) || is.null(group) || !is.character(group)) {
+    stop("Argument 'group' must be a character string specifying column name")
+  }
+  if (missing(outpath) || is.null(outpath) || !is.character(outpath)) {
+    stop("Argument 'outpath' must be a character string specifying output directory")
+  }
 
   # make the directory if it doesn't exist
   dir.create(outpath, showWarnings = FALSE, recursive = TRUE)
 
   # Ensure the group is in colData
-  if (!group %in% colnames(colData(dds))) {
-    stop("Group not found in colData")
+  if (!group %in% colnames(SummarizedExperiment::colData(dds))) {
+    stop(sprintf("Group '%s' not found in colData. Available columns: %s", 
+                 group, paste(colnames(SummarizedExperiment::colData(dds)), collapse = ", ")))
   }
 
   # Get the counts matrix and colData

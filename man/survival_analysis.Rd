@@ -8,7 +8,7 @@ survival_analysis(
   df,
   condition,
   censors,
-  outdir,
+  outpath,
   censor_prefix = "censor_",
   time_prefix = "time_to_"
 )
@@ -16,15 +16,15 @@ survival_analysis(
 \arguments{
 \item{df}{data.frame, data to make survival curves from.}
 
-\item{condition}{character, condition to make survival curves for.}
+\item{condition}{character, condition(s) to make survival curves for. Can be a single condition or vector of conditions.}
 
 \item{censors}{character, censors to make survival curves for.}
 
-\item{outdir}{character, output directory to save plots to.}
+\item{outpath}{character, output directory to save plots to.}
 
-\item{censor_prefix}{character, prefix for censor columns. Default is 'C_'.}
+\item{censor_prefix}{character, prefix for censor columns. Default is 'censor_'.}
 
-\item{time_prefix}{character, prefix for time columns. Default is 'T_'.}
+\item{time_prefix}{character, prefix for time columns. Default is 'time_to_'.}
 
 \item{image_type}{character, type of image to save. Default is 'pdf'.}
 }
@@ -32,5 +32,5 @@ survival_analysis(
 list, list of survival plots and HR plots.
 }
 \description{
-Make survival curves and HR plots for a condition and censors.
+Make survival curves and HR plots for one or more conditions and censors using univariate analyses.
 }
