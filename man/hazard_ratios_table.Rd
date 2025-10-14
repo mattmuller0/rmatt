@@ -20,7 +20,7 @@ hazard_ratios_table(
 \arguments{
 \item{df}{data.frame, data to make survival curves from.}
 
-\item{condition}{character, condition to make survival curves for.}
+\item{condition}{character, condition(s) to make survival curves for. Can be a single condition or vector of conditions.}
 
 \item{censors}{character, censors to make survival curves for.}
 
@@ -42,5 +42,5 @@ hazard_ratios_table(
 data.frame, hazard ratios table.
 }
 \description{
-Make HR tables for a condition and censors.
+Make HR tables for one or more conditions and censors using univariate analyses.
 }

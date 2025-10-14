@@ -8,10 +8,16 @@
 #' @param remove_missing logical, keep unmatched gene IDs.
 #' @param ... additional arguments to pass to `AnnotationDbi::mapIds`.
 #' @return list, converted gene IDs.
-#' @importFrom org.Hs.eg.db org.Hs.eg.db 
 #' @importFrom AnnotationDbi mapIds
 #' @importFrom stringr str_split
-map_gene_ids <- function(geneList, from = NULL, to, orgDb = org.Hs.eg.db, remove_missing = FALSE, ...) {
+#' @export
+map_gene_ids <- function(geneList, from = NULL, to, orgDb = NULL, remove_missing = FALSE, ...) {
+  # Check for org.Hs.eg.db if no orgDb provided
+  if (is.null(orgDb)) {
+    check_bioc_package("org.Hs.eg.db")
+    orgDb <- org.Hs.eg.db::org.Hs.eg.db
+  }
+  
   if (is.null(from)) {
     from <- detect_gene_id_type(geneList)
   }

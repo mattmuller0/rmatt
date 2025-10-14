@@ -22,12 +22,24 @@ prep_nmf_data <- function(counts_matr) {
 #' @param runs Number of runs to test. Default is 30.
 #' @param options Options for NMF. Default is 'v'.
 #' @return A list of NMF and random NMF results.
-#' @importFrom NMF nmf randomize
 #' @export
 nmf_estimator <- function(counts_matr, outfile, ranks = 2:8, runs = 30, options = "v") {
-  require(NMF)
-  nmf_ranks_out <- nmf(counts_matr, ranks, nrun = runs, .opt = options)
-  rng_ranks_out <- nmf(randomize(counts_matr), ranks, nrun = runs, .opt = options)
+  # Check for NMF package
+  check_suggested_package("NMF", "The NMF package is required for this function. Install with: BiocManager::install('NMF')")
+  
+  # Input validation
+  if (missing(counts_matr) || is.null(counts_matr)) {
+    stop("Argument 'counts_matr' is required and cannot be NULL")
+  }
+  if (missing(outfile) || is.null(outfile) || !is.character(outfile)) {
+    stop("Argument 'outfile' must be a character string specifying output file path")
+  }
+  if (!is.matrix(counts_matr) && !is.data.frame(counts_matr)) {
+    stop("Argument 'counts_matr' must be a matrix or data frame")
+  }
+  
+  nmf_ranks_out <- NMF::nmf(counts_matr, ranks, nrun = runs, .opt = options)
+  rng_ranks_out <- NMF::nmf(NMF::randomize(counts_matr), ranks, nrun = runs, .opt = options)
   output <- list("nmf_ranks_out" = nmf_ranks_out, "rng_ranks_out" = rng_ranks_out)
   saveRDS(output, file = outfile)
   return(output)
@@ -39,7 +51,17 @@ nmf_estimator <- function(counts_matr, outfile, ranks = 2:8, runs = 30, options 
 #' @importFrom ggplot2 ggplot aes geom_point labs theme_bw
 #' @export
 nmf_plotter <- function(nmf_out) {
-  require(NMF)
+  # Check for NMF package
+  check_suggested_package("NMF", "The NMF package is required for this function. Install with: BiocManager::install('NMF')")
+  
+  # Input validation
+  if (missing(nmf_out) || is.null(nmf_out)) {
+    stop("Argument 'nmf_out' is required and cannot be NULL")
+  }
+  if (!is.list(nmf_out) || !all(c("nmf_ranks_out", "rng_ranks_out") %in% names(nmf_out))) {
+    stop("Argument 'nmf_out' must be a list with 'nmf_ranks_out' and 'rng_ranks_out' elements")
+  }
+  
   cophenetic_correlation <- nmf_out$nmf_ranks_out$cophenetic
   dispersion <- nmf_out$nmf_ranks_out$dispersion
   cophenetic_dispersion <- cophenetic_correlation * dispersion
@@ -76,9 +98,23 @@ nmf_plotter <- function(nmf_out) {
 #' @return A list of k-means results.
 #' @export
 kmeans_estimator <- function(counts_matr, ks = 2:8, outfile, ...) {
+  # Input validation
+  if (missing(counts_matr) || is.null(counts_matr)) {
+    stop("Argument 'counts_matr' is required and cannot be NULL")
+  }
+  if (missing(outfile) || is.null(outfile) || !is.character(outfile)) {
+    stop("Argument 'outfile' must be a character string specifying output file path")
+  }
+  if (!is.matrix(counts_matr) && !is.data.frame(counts_matr)) {
+    stop("Argument 'counts_matr' must be a matrix or data frame")
+  }
+  if (!is.numeric(ks) || any(ks < 1)) {
+    stop("Argument 'ks' must be a numeric vector with values >= 1")
+  }
+  
   km_list <- list()
   for (k in ks) {
-    km_list[[k]] <- kmeans(counts_matr, k, ...)
+    km_list[[k]] <- stats::kmeans(counts_matr, k, ...)
   }
   output <- list("km_list" = km_list)
   saveRDS(output, file = outfile)
@@ -93,9 +129,23 @@ kmeans_estimator <- function(counts_matr, ks = 2:8, outfile, ...) {
 #' @return A list of hierarchical clustering results.
 #' @export
 hclust_estimator <- function(counts_matr, clusters = 2:8, outfile, ...) {
+  # Input validation
+  if (missing(counts_matr) || is.null(counts_matr)) {
+    stop("Argument 'counts_matr' is required and cannot be NULL")
+  }
+  if (missing(outfile) || is.null(outfile) || !is.character(outfile)) {
+    stop("Argument 'outfile' must be a character string specifying output file path")
+  }
+  if (!is.matrix(counts_matr) && !is.data.frame(counts_matr)) {
+    stop("Argument 'counts_matr' must be a matrix or data frame")
+  }
+  if (!is.numeric(clusters) || any(clusters < 1)) {
+    stop("Argument 'clusters' must be a numeric vector with values >= 1")
+  }
+  
   hclust_list <- list()
   for (k in clusters) {
-    hclust_list[[k]] <- hclust(dist(counts_matr), ...)
+    hclust_list[[k]] <- stats::hclust(stats::dist(counts_matr), ...)
   }
   output <- list("hclust_list" = hclust_list)
   saveRDS(output, file = outfile)

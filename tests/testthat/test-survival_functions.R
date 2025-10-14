@@ -66,7 +66,7 @@ test_that("survival_analysis produces expected output for binary group input", {
         df = test_data,
         condition = "group",
         censors = c("censor_death", "censor_progression"),
-        outdir = temp_dir,
+        outpath = temp_dir,
         time_prefix = "time_to_",
         censor_prefix = "censor_"
     )
@@ -85,7 +85,7 @@ test_that("survival_analysis produces expected output for binary group input", {
         df = test_data,
         condition = "nonexistent",
         censors = c("censor_death"),
-        outdir = temp_dir
+        outpath = temp_dir
     ))
 })
 
@@ -101,7 +101,7 @@ test_that("survival_analysis produces expected output for multigroup input", {
         df = test_data,
         condition = "multigroup",
         censors = c("censor_death", "censor_progression"),
-        outdir = temp_dir,
+        outpath = temp_dir,
         time_prefix = "time_to_",
         censor_prefix = "censor_"
     )
@@ -120,7 +120,7 @@ test_that("survival_analysis produces expected output for multigroup input", {
         df = test_data,
         condition = "nonexistent",
         censors = c("censor_death"),
-        outdir = temp_dir
+        outpath = temp_dir
     ))
 })
 
@@ -275,4 +275,86 @@ test_that("hazard_ratios_table handles subgroup analyses correctly", {
     
     expect_true(is.data.frame(result))
     expect_true(all(c("subgroup_var", "subgroup_val") %in% colnames(result)))
+})
+
+# Tests for multiple conditions functionality
+test_that("log_rank_test works with multiple conditions", {
+    test_data <- create_mock_survival_data()
+    
+    # Test multiple conditions (always univariate)
+    result <- log_rank_test(
+        data = test_data,
+        comparisons = c("group", "sex"),
+        censors = c("censor_death", "censor_progression")
+    )
+    
+    expect_true(is.data.frame(result))
+    expect_equal(nrow(result), 2)  # 2 censors
+    expect_equal(ncol(result), 2)  # 2 conditions
+    expect_true(all(colnames(result) %in% c("group", "sex")))
+})
+
+test_that("survival_analysis works with multiple conditions", {
+    test_data <- create_mock_survival_data()
+    temp_dir <- tempdir()
+    
+    # Test multiple conditions (always univariate)
+    result <- survival_analysis(
+        df = test_data,
+        condition = c("group", "sex"),
+        censors = c("censor_death", "censor_progression"),
+        outpath = temp_dir
+    )
+    
+    expect_type(result, "list")
+    expect_true(all(c("survival_plots", "hazard_ratios") %in% names(result)))
+    expect_true(is.data.frame(result$hazard_ratios))
+    expect_true("condition_var" %in% colnames(result$hazard_ratios))
+    
+    # Check that separate plots were created for each condition
+    expected_plots <- c("group_censor_death", "group_censor_progression", 
+                       "sex_censor_death", "sex_censor_progression")
+    expect_true(all(expected_plots %in% names(result$survival_plots)))
+})
+
+test_that("hazard_ratios_table works with multiple conditions", {
+    test_data <- create_mock_survival_data()
+    
+    # Test multiple conditions (always univariate)
+    result <- hazard_ratios_table(
+        df = test_data,
+        condition = c("group", "sex"),
+        censors = c("censor_death", "censor_progression")
+    )
+    
+    expect_true(is.data.frame(result))
+    expect_true("condition" %in% colnames(result))
+    unique_conditions <- unique(result$condition)
+    expect_true(all(c("group", "sex") %in% unique_conditions))
+})
+
+test_that("multiple conditions functionality maintains backward compatibility", {
+    test_data <- create_mock_survival_data()
+    temp_dir <- tempdir()
+    
+    # Test that single condition (as vector) works the same as before
+    result_single_vec <- survival_analysis(
+        df = test_data,
+        condition = c("group"),  # Single condition as vector
+        censors = c("censor_death"),
+        outpath = temp_dir
+    )
+    
+    result_single_char <- survival_analysis(
+        df = test_data,
+        condition = "group",  # Single condition as character
+        censors = c("censor_death"),
+        outpath = temp_dir
+    )
+    
+    # Both should produce similar structure (allowing for some differences in naming)
+    expect_type(result_single_vec, "list")
+    expect_type(result_single_char, "list")
+    expect_true(all(c("survival_plots", "hazard_ratios") %in% names(result_single_vec)))
+    expect_true(all(c("survival_plots", "hazard_ratios") %in% names(result_single_char)))
 })

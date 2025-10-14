@@ -9,7 +9,7 @@ inverse_normal_transform(x, c = 0)
 \arguments{
 \item{x}{numeric vector to transform}
 
-\item{c}{numeric constant to add to the denominator (default is 0.375, as commonly used)}
+\item{c}{numeric constant to add to the denominator (default is 0.375)}
 }
 \value{
 numeric vector with transformed values
