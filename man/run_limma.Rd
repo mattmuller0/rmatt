@@ -44,3 +44,6 @@ Data frame of results from limma analysis
 \description{
 Function to run limma on a summarized experiment object with TMM normalization
 }
+\note{
+Requires limma and edgeR packages. Install with: BiocManager::install(c("limma", "edgeR"))
+}

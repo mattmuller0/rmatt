@@ -27,7 +27,7 @@ olink_info <- function(data) {
 #' @param byPanel Boolean to plot by panel
 #' @param ... Additional arguments to pass to olink_pca_plot
 #' @return List containing PCA results and outliers
-#' @importFrom OlinkAnalyze olink_pca_plot
+#' 
 #' @importFrom ggplot2 ggsave
 #' @importFrom glue glue
 #' @importFrom dplyr bind_rows filter select
@@ -60,7 +60,7 @@ olink_pca_outliers <- function(data, outdir, outlierDefX = 2.5, outlierDefY = 4,
 #' @param byPanel Boolean to plot by panel
 #' @param ... Additional arguments to pass to olink_umap_plot
 #' @return List containing UMAP results and outliers
-#' @importFrom OlinkAnalyze olink_umap_plot
+#' 
 #' @importFrom ggplot2 ggsave
 #' @importFrom glue glue
 #' @importFrom dplyr bind_rows filter select
@@ -204,7 +204,7 @@ olink_filtering <- function(data, outdir, pca_args = list(), umap_args = list(),
 #' @param volcano_args Arguments to pass to volcano plot function
 #' @param gsea_args Arguments to pass to pathway analysis function
 #' @return List of differential expression and pathway analysis results
-#' @importFrom OlinkAnalyze olink_wilcox olink_volcano_plot olink_pathway_enrichment olink_pathway_visualization olink_pathway_heatmap
+#' 
 #' @importFrom glue glue
 #' @importFrom ggplot2 ggsave
 #' @export

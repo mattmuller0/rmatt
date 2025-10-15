@@ -60,7 +60,7 @@ CountTableFromFeatureCounts <- function(directory = ".", pattern = "featureCount
 #' @param volcano.pCutoff p-value cutoff for volcano plot (default is 0.05)
 #' @return Data frame of results with Wilcoxon test statistics
 #' @importFrom SummarizedExperiment colData
-#' @importFrom dplyr %>%
+#' @importFrom magrittr %>%
 #' @importFrom purrr map
 #' @importFrom broom tidy
 #' @importFrom ggplot2 ggsave
@@ -170,12 +170,10 @@ run_wilcox <- function(
 #' @param topTable.n Number of top results to return
 #' @param topTable.adjust.method Method for adjusting p-values in topTable
 #' @param voom.plot Logical indicating whether to plot the voom results
-#' @importFrom edgeR DGEList calcNormFactors cpm
-#' @importFrom limma voom lmFit eBayes topTable
+#' @note Requires limma and edgeR packages. Install with: BiocManager::install(c("limma", "edgeR"))
 #' @importFrom SummarizedExperiment assay colData
 #' @importFrom ggplot2 ggsave
 #' @importFrom glue glue
-#' @importFrom rmatt plot_volcano get_fc_list gsea_analysis
 #' @return Data frame of results from limma analysis
 #' @export
 run_limma <- function(
@@ -189,6 +187,10 @@ run_limma <- function(
     topTable.n = Inf,
     topTable.adjust.method = "BH",
     voom.plot = TRUE) {
+  # Check for required packages
+  check_suggested_package("limma")
+  check_suggested_package("edgeR")
+
   # make the directory if it doesn"t exist
   dir.create(outpath, showWarnings = FALSE, recursive = TRUE)
 
@@ -201,12 +203,9 @@ run_limma <- function(
   metadata <- metadata[keep, , drop = FALSE]
 
   # Normalize the counts matrix using TMM normalization
-  if (!requireNamespace("edgeR", quietly = TRUE)) {
-    stop("edgeR package is required for TMM normalization. Please install it.")
-  }
 
-  dge <- DGEList(counts = assay(se))
-  norm_counts <- calcNormFactors(dge, method = "TMM")
+  dge <- edgeR::DGEList(counts = assay(se))
+  norm_counts <- edgeR::calcNormFactors(dge, method = "TMM")
   # norm_counts <- cpm(norm_counts)
 
   # Create the design matrix
@@ -227,14 +226,14 @@ run_limma <- function(
   }
 
   # Perform voom transformation
-  v <- voom(norm_counts, design, plot = voom.plot)
-  fit <- lmFit(v, design = design)
-  fit <- eBayes(fit)
+  v <- limma::voom(norm_counts, design, plot = voom.plot)
+  fit <- limma::lmFit(v, design = design)
+  fit <- limma::eBayes(fit)
 
   # Print the name of the coefficient being tested
   message(glue::glue("Testing coefficient: {colnames(design)[topTable.coef]}"))
 
-  results <- topTable(fit, coef = topTable.coef, number = topTable.n, adjust.method = topTable.adjust.method)
+  results <- limma::topTable(fit, coef = topTable.coef, number = topTable.n, adjust.method = topTable.adjust.method)
   write.csv(results, file.path(outpath, "limma_results.csv"))
 
   # make a volcano plot
@@ -296,7 +295,7 @@ calculate_correlations <- function(dds, condition, normalize = "mor", method = "
 #' @param fcCutoff Fold change cutoff for volcano plot
 #' @param ... Additional arguments to pass to DESeq2
 #' @return Results of differential expression analysis
-#' @importFrom DESeq2 DESeq results lfcShrink plotMA resultsNames
+#' @note Requires DESeq2 package. Install with: BiocManager::install("DESeq2")
 #' @importFrom ggplot2 ggsave
 #' @export
 run_deseq <- function(
@@ -304,6 +303,9 @@ run_deseq <- function(
     contrast = NA,
     pvalue = "padj", pCutoff = 0.05, fcCutoff = 0,
     ...) {
+  # Check for required packages
+  check_suggested_package("DESeq2")
+
   # This function will run differential expression on a premade dds object.
   # Gives most metrics you"ll need, and also returns the results
   dir.create(outpath, showWarnings = FALSE, recursive = TRUE)
@@ -436,7 +438,7 @@ ovr_deseq_results <- function(dds, column, outpath, controls = NULL) {
 #' @param ... Additional arguments to pass to DESeq2 for volcano plots
 #' @return List of results of differential expression analysis
 #' @importFrom SummarizedExperiment colData
-#' @importFrom DESeq2 DESeqDataSet
+#' 
 #' @importFrom ggplot2 ggsave
 #' @export
 deseq_analysis <- function(dds, conditions, controls = NULL, outpath, ...) {

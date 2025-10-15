@@ -37,3 +37,6 @@ Overrepresentation analysis results.
 \description{
 Perform up and down overrepresentation analysis
 }
+\note{
+Requires clusterProfiler, enrichR, or org.Hs.eg.db depending on method. Install with: BiocManager::install(c("clusterProfiler", "enrichR", "org.Hs.eg.db"))
+}

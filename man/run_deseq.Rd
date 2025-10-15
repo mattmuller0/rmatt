@@ -35,3 +35,6 @@ Results of differential expression analysis
 \description{
 Function to run a simple DESeq analysis on a summarized experiment object
 }
+\note{
+Requires DESeq2 package. Install with: BiocManager::install("DESeq2")
+}

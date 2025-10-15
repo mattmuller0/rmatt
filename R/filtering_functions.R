@@ -19,12 +19,12 @@ percentGenesDetected <- function(dds, min_value = 0) {
 #' @param group Column of interest
 #' @return DESeq2 object after preprocessing
 #' @importFrom SummarizedExperiment assay colData
-#' @importFrom DESeq2 vst
+#' 
 #' @importFrom ggplot2 ggplot aes geom_point theme element_blank element_text labs ggsave
 #' @importFrom ggpubr theme_classic2
 #' @importFrom ggrepel geom_text_repel
-#' @importFrom ggtree ggtree geom_tiplab theme_tree2
-#' @importFrom ggbiplot ggbiplot
+#' 
+#' 
 #' @importFrom cowplot plot_grid
 #' @export
 rna_preprocessing <- function(
@@ -121,14 +121,14 @@ rna_preprocessing <- function(
 #' @param min.prop Minimum proportion of samples to keep
 #' @param ... Additional arguments to pass to FilterByExpr
 #' @return DESeq2 object after filtering
-#' @importFrom edgeR filterByExpr
+#' 
 #' @importFrom SummarizedExperiment assay colData
-#' @importFrom DESeq2 vst
+#' 
 #' @importFrom ggplot2 ggplot aes geom_point theme element_blank element_text labs ggsave
 #' @importFrom ggpubr theme_classic2
 #' @importFrom ggrepel geom_text_repel
-#' @importFrom ggtree ggtree geom_tiplab theme_tree2
-#' @importFrom ggbiplot ggbiplot
+#' 
+#' 
 #' @importFrom cowplot plot_grid
 #' @export
 filter_edgeR <- function(

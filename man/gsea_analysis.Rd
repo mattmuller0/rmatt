@@ -27,3 +27,6 @@ Enrichment results for each level of column of interest.
 \description{
 Run a GSEA analysis
 }
+\note{
+Requires clusterProfiler and msigdbr packages. Install with: BiocManager::install(c("clusterProfiler", "msigdbr"))
+}

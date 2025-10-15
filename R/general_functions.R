@@ -146,7 +146,7 @@ make_se <- function(countsMatr, colData) {
 #' @param colData data.frame of sample metadata, rows = samples
 #' @param design formula for the design matrix
 #' @return DESeqDataSet object
-#' @importFrom DESeq2 DESeqDataSetFromMatrix
+#' 
 #' @export
 make_dds <- function(countsMatr, colData, design = ~ 1) {
   sample_ids <- intersect(colnames(countsMatr), row.names(colData))

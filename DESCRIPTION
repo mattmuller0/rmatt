@@ -19,22 +19,22 @@ Imports:
     forcats (>= 0.5.0),
     ggrepel (>= 0.9.0),
     ggsurvfit (>= 1.0.0),
-    glmnet (>= 4.1-0),
     rlang (>= 1.0.0),
     rstatix (>= 0.7.0),
     survival (>= 3.3.0),
     magrittr (>= 2.0.0),
+    S4Vectors (>= 0.30.0),
+    SummarizedExperiment (>= 1.20.0),
+    RColorBrewer (>= 1.1-2),
+    circlize (>= 0.4.12)
+Suggests:
     clusterProfiler (>= 4.0.0),
     DESeq2 (>= 1.30.0),
     limma (>= 3.46.0),
     edgeR (>= 4.0.0),
     enrichplot (>= 1.10.0),
-    S4Vectors (>= 0.30.0),
-    SummarizedExperiment (>= 1.20.0),
     AnnotationDbi (>= 1.50.0),
-    RColorBrewer (>= 1.1-2),
-    circlize (>= 0.4.12)
-Suggests:
+    glmnet (>= 4.1-0),
     ggbiplot (>= 0.5.0),
     OlinkAnalyze (>= 3.0.0),
     NMF (>= 0.25),

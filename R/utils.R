@@ -1,10 +1,48 @@
+#' Check if a suggested package is available
+#' @description Internal function to check if a suggested package is installed
+#' @param pkg Character string naming the package to check
+#' @param bioc Logical indicating if this is a Bioconductor package (default: TRUE)
+#' @return Invisibly returns TRUE if package is available, otherwise stops with error
+#' @keywords internal
+check_suggested_package <- function(pkg, bioc = TRUE) {
+  if (!requireNamespace(pkg, quietly = TRUE)) {
+    if (bioc) {
+      stop(
+        sprintf(
+          "Package '%s' is required but not installed.\nInstall with: BiocManager::install('%s')",
+          pkg, pkg
+        ),
+        call. = FALSE
+      )
+    } else {
+      stop(
+        sprintf(
+          "Package '%s' is required but not installed.\nInstall with: install.packages('%s')",
+          pkg, pkg
+        ),
+        call. = FALSE
+      )
+    }
+  }
+  invisible(TRUE)
+}
+
+#' Check if a Bioconductor package is available (legacy name)
+#' @description Check if a Bioconductor package is installed
+#' @param pkg Character string naming the package to check
+#' @return Invisibly returns TRUE if package is available, otherwise stops with error
+#' @keywords internal
+check_bioc_package <- function(pkg) {
+  check_suggested_package(pkg, bioc = TRUE)
+}
+
 #' Install all required packages from a script
 #' @description Install all required packages from a script
 #' @param script character, path to script
 #' @return none
-#' @importFrom BiocManager install
 #' @export
 install_packages_from_script <- function(script) {
+  check_suggested_package("BiocManager", bioc = FALSE)
   script <- utils::readLines(script)
 
   packages <- script[grepl("library", script)]
@@ -43,14 +81,16 @@ install_packages_from_script <- function(script) {
           print(e)
         }
       )
-      tryCatch(
-        {
-          BiocManager::install(pkg, dependencies = TRUE, update = TRUE, ask = FALSE)
-        },
-        error = function(e) {
-          print(e)
-        }
-      )
+      if (requireNamespace("BiocManager", quietly = TRUE)) {
+        tryCatch(
+          {
+            BiocManager::install(pkg, dependencies = TRUE, update = TRUE, ask = FALSE)
+          },
+          error = function(e) {
+            print(e)
+          }
+        )
+      }
     }
   })
   return(output)

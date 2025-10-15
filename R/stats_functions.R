@@ -14,7 +14,7 @@
 #' @param print.missing logical, whether to show missing data information
 #' @param print.nonnormal character vector, variables to be summarized with median/IQR
 #' @return matrix containing descriptive statistics table
-#' @importFrom tableone CreateTableOne
+#' 
 #' @export
 stats_table <- function(
   data,
