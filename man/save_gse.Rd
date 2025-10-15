@@ -19,3 +19,6 @@ None.
 \description{
 Save and plot gse object
 }
+\note{
+Requires enrichplot package for plotting. Install with: BiocManager::install("enrichplot")
+}

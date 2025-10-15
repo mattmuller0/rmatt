@@ -8,7 +8,7 @@
 #' @param remove_missing logical, keep unmatched gene IDs.
 #' @param ... additional arguments to pass to `AnnotationDbi::mapIds`.
 #' @return list, converted gene IDs.
-#' @importFrom AnnotationDbi mapIds
+#' 
 #' @importFrom stringr str_split
 #' @export
 map_gene_ids <- function(geneList, from = NULL, to, orgDb = NULL, remove_missing = FALSE, ...) {
@@ -103,10 +103,10 @@ detect_gene_id_type <- function(geneList, strip = TRUE) {
 #' @param log2 logical, whether to log2 transform the counts
 #' @return normalized counts
 #' @export
-#' @importFrom DESeq2 sizeFactors estimateSizeFactors counts varianceStabilizingTransformation rlog
+#' 
 #' @importFrom SummarizedExperiment assay
-#' @importFrom edgeR cpm rpkm calcNormFactors
-#' @importFrom singscore rankGenes
+#' 
+#' 
 normalize_counts <- function(dds, method = "mor", log2 = FALSE) {
   options <- c("mor", "vst", "vsd", "log2", "rld", "cpm", "rlog", "rpkm", "none", "tmm", "log2-mor", "rank")
   if (method %in% options) {

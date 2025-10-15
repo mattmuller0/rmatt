@@ -38,3 +38,6 @@ Enrichment results.
 \description{
 Run simple enrichment with enrichGO or gseGO
 }
+\note{
+Requires clusterProfiler and org.Hs.eg.db packages. Install with: BiocManager::install(c("clusterProfiler", "org.Hs.eg.db"))
+}

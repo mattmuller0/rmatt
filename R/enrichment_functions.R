@@ -55,7 +55,7 @@ get_fc_list <- function(res, fc_col = "log2FoldChange", names = NULL) {
 #' @param terms2plot Terms to plot.
 #' @param ... Additional arguments to pass to enricher.
 #' @return Enrichment results.
-#' @importFrom clusterProfiler gseGO
+#' @note Requires clusterProfiler and org.Hs.eg.db packages. Install with: BiocManager::install(c("clusterProfiler", "org.Hs.eg.db"))
 #' @export
 rna_enrichment <- function(
     geneList, outpath,
@@ -63,7 +63,10 @@ rna_enrichment <- function(
     image_type = "pdf", ontology = "ALL",
     terms2plot = c("inflam", "immune", "plat"),
     ...) {
-  
+  # Check for required packages
+  check_suggested_package("clusterProfiler")
+  check_suggested_package("org.Hs.eg.db")
+
   # Input validation
   if (missing(geneList) || is.null(geneList)) {
     stop("Argument 'geneList' is required and cannot be NULL")
@@ -77,7 +80,7 @@ rna_enrichment <- function(
   if (length(geneList) == 0) {
     stop("Argument 'geneList' cannot be empty")
   }
-  
+
   if (is.null(keyType)) {
     keyType <- detect_gene_id_type(names(geneList), strip = TRUE)
   }
@@ -89,11 +92,40 @@ rna_enrichment <- function(
     enricher_function <- clusterProfiler::gseGO
   }
 
-  gse <- do.call(enricher_function, list(geneList, org.Hs.eg.db, keyType = keyType, ont = ontology, pvalueCutoff = Inf, ...))
+  gse <- do.call(enricher_function, list(geneList, org.Hs.eg.db::org.Hs.eg.db, keyType = keyType, ont = ontology, pvalueCutoff = Inf, ...))
   write.csv(gse@result, file.path(outpath, "enrichment_results.csv"), quote = TRUE, row.names = FALSE)
   saveRDS(gse, file.path(outpath, "enrichment_results.rds"))
   save_gse(gse, outpath)
   return(gse)
+}
+
+# Define plot functions with error handling
+safe_ggplot <- function(plot_fn, filename, ...) {
+  tryCatch(
+    {
+      plot <- plot_fn()
+      suppressMessages(ggsave(file.path(outpath, filename), plot, ...))
+    },
+    error = function(e) message(paste("Failed to generate", filename))
+  )
+}
+
+# Helper function to plot enrichment terms
+gse_barplot <- function(gse) {
+  gse_bar <- as.data.frame(gse) %>%
+    group_by(sign(NES)) %>%
+    arrange(qvalue) %>%
+    slice(1:10) %>%
+    mutate(
+      Description = gsub("^(REACTOME_|HALLMARK_|GO(CC|BP|MF)_|KEGG_)", "", Description),
+      Description = gsub("_", " ", Description),
+      Description = factor(stringr::str_wrap(Description, 40))
+    )
+  ggplot(gse_bar, aes(NES, fct_reorder(Description, NES), fill = qvalue)) +
+    geom_col(orientation = "y") +
+    scale_fill_continuous(low = "red", high = "blue", guide = guide_colorbar(reverse = TRUE)) +
+    labs(title = "Enrichment Barplot", y = NULL) +
+    theme_classic2()
 }
 
 #' Save and plot gse object
@@ -101,11 +133,11 @@ rna_enrichment <- function(
 #' @param outpath Path to save to.
 #' @param ... Additional arguments to pass to ggsave.
 #' @return None.
+#' @note Requires enrichplot package for plotting. Install with: BiocManager::install("enrichplot")
 #' @importFrom dplyr filter mutate group_by arrange slice
 #' @importFrom ggplot2 ggplot aes geom_col scale_fill_continuous labs ggsave guide_colorbar ggtitle
 #' @importFrom forcats fct_reorder
 #' @importFrom stringr str_wrap
-#' @importFrom enrichplot dotplot cnetplot ridgeplot heatplot
 #' @importFrom ggpubr theme_classic2
 #' @export
 save_gse <- function(gse, outpath, ...) {
@@ -117,68 +149,29 @@ save_gse <- function(gse, outpath, ...) {
     return(NULL)
   }
 
+  # Check for enrichplot package
+  check_suggested_package("enrichplot")
+
   # Save results as CSV and RDS
   write.csv(gse@result, file.path(outpath, "enrichment_results.csv"), quote = TRUE, row.names = FALSE)
   write.csv(filter(gse@result, qvalue < 0.1), file.path(outpath, "enrichment_results_sig.csv"), quote = TRUE, row.names = FALSE)
   saveRDS(gse, file.path(outpath, "enrichment_results.rds"))
 
-  # Define plot functions with error handling
-  safe_ggplot <- function(plot_fn, filename, ...) {
-    tryCatch(
-      {
-        plot <- plot_fn()
-        suppressMessages(ggsave(file.path(outpath, filename), plot, ...))
-      },
-      error = function(e) message(paste("Failed to generate", filename))
-    )
-  }
-
   # Generate plots
   safe_ggplot(function() enrichplot::dotplot(gse, showCategory = 20) + ggtitle("Enrichment Dotplot"), "dotplot.pdf")
-  safe_ggplot(function() cnetplot(gse, node_label = "category", cex_label_gene = 0.8), "cnetplot.pdf")
+  safe_ggplot(function() enrichplot::cnetplot(gse, node_label = "category", cex_label_gene = 0.8), "cnetplot.pdf")
   safe_ggplot(function() plot_enrichment_terms(gse, terms2plot = c("inflam", "plat", "coag"), max_terms = min(10, nrow(gse@result))), "barplot_terms.pdf")
-  safe_ggplot(function() ridgeplot(gse, showCategory = min(10, nrow(gse@result))), "ridgeplot.pdf")
-  safe_ggplot(function() heatplot(gse, showCategory = 10), "heatplot.pdf")
-
-  safe_ggplot(
-    function() {
-      gse_bar <- as.data.frame(gse) %>%
-        group_by(sign(NES)) %>%
-        arrange(qvalue) %>%
-        slice(1:10) %>%
-        mutate(
-          Description = gsub("^(REACTOME_|HALLMARK_|GO(CC|BP|MF)_|KEGG_)", "", Description),
-          Description = gsub("_", " ", Description),
-          Description = factor(stringr::str_wrap(Description, 40))
-        )
-      ggplot(gse_bar, aes(NES, fct_reorder(Description, NES), fill = qvalue)) +
-        geom_col(orientation = "y") +
-        scale_fill_continuous(low = "red", high = "blue", guide = guide_colorbar(reverse = TRUE)) +
-        labs(title = "Enrichment Barplot", y = NULL) +
-        theme_classic2()
-    },
-    "barplot.pdf"
-  )
+  safe_ggplot(function() enrichplot::ridgeplot(gse, showCategory = min(10, nrow(gse@result))), "ridgeplot.pdf")
+  safe_ggplot(function() enrichplot::heatplot(gse, showCategory = 10), "heatplot.pdf")
+  safe_ggplot(function() {
+    gse_barplot(gse_bar)
+  }, "barplot.pdf")
 
   safe_ggplot(
     function() {
       bp_data <- filter(as.data.frame(gse), grepl("^GOBP_", ID))
       if (nrow(bp_data) == 0) stop("No BP data")
-
-      bp_data %>%
-        group_by(sign(NES)) %>%
-        arrange(qvalue) %>%
-        slice(1:10) %>%
-        mutate(
-          Description = gsub("^(REACTOME_|HALLMARK_|GO(CC|BP|MF)_|KEGG_)", "", Description),
-          Description = gsub("_", " ", Description),
-          Description = factor(stringr::str_wrap(Description, 40))
-        ) %>%
-        ggplot(aes(NES, fct_reorder(Description, NES), fill = qvalue)) +
-        geom_col(orientation = "y") +
-        scale_fill_continuous(low = "red", high = "blue", guide = guide_colorbar(reverse = TRUE)) +
-        labs(title = "Enrichment Barplot (BP)", y = NULL) +
-        theme_classic2()
+      gse_barplot(bp_data)
     },
     "barplot_bp.pdf"
   )
@@ -197,16 +190,17 @@ get_custom_genesets <- function() {
 #' @param keyType Key type for gene list.
 #' @param ontology Ontology to use (default is ALL).
 #' @return Enrichment results for each level of column of interest.
-#' @importFrom clusterProfiler GSEA
+#' @note Requires clusterProfiler and msigdbr packages. Install with: BiocManager::install(c("clusterProfiler", "msigdbr"))
 #' @export
 gsea_analysis <- function(
     geneList, outpath,
     keyType = NULL,
     ontology = "ALL",
     species = "Homo sapiens") {
-  # Check for msigdbr package
-  check_suggested_package("msigdbr", "The msigdbr package is required for this function. Install with: BiocManager::install('msigdbr')")
-  
+  # Check for required packages
+  check_suggested_package("clusterProfiler")
+  check_suggested_package("msigdbr")
+
   if (is.null(keyType)) {
     keyType <- detect_gene_id_type(names(geneList), strip = TRUE)
   }
@@ -225,22 +219,22 @@ gsea_analysis <- function(
   msigdb <- msigdbr::msigdbr(species = species)
 
   GO_t2g <- subset(msigdb, gs_collection == "C5" & gs_subcollection != "HPO", select = c("gs_name", gene_key))
-  gse_go <- GSEA(geneList, TERM2GENE = GO_t2g, pvalueCutoff = Inf)
+  gse_go <- clusterProfiler::GSEA(geneList, TERM2GENE = GO_t2g, pvalueCutoff = Inf)
 
   H_t2g <- subset(msigdb, gs_collection == "H", select = c("gs_name", gene_key))
-  gse_h <- GSEA(geneList, TERM2GENE = H_t2g, pvalueCutoff = Inf)
+  gse_h <- clusterProfiler::GSEA(geneList, TERM2GENE = H_t2g, pvalueCutoff = Inf)
 
   reactome_t2g <- subset(msigdb, gs_collection == "C2" & gs_subcollection == "CP:REACTOME", select = c("gs_name", gene_key))
-  gse_reactome <- GSEA(geneList, TERM2GENE = reactome_t2g, pvalueCutoff = Inf)
+  gse_reactome <- clusterProfiler::GSEA(geneList, TERM2GENE = reactome_t2g, pvalueCutoff = Inf)
 
   kegg_t2g <- subset(msigdb, gs_collection == "C2" & gs_subcollection == "CP:KEGG_MEDICUS", select = c("gs_name", gene_key))
-  gse_kegg <- GSEA(geneList, TERM2GENE = kegg_t2g, pvalueCutoff = Inf)
+  gse_kegg <- clusterProfiler::GSEA(geneList, TERM2GENE = kegg_t2g, pvalueCutoff = Inf)
 
   # Custom t2g terms
   # Only run custom gene sets if keyType is SYMBOL
   if (keyType == "SYMBOL") {
     cust_t2g <- get_custom_genesets()
-    gse_cust <- GSEA(geneList, TERM2GENE = cust_t2g, pvalueCutoff = Inf)
+    gse_cust <- clusterProfiler::GSEA(geneList, TERM2GENE = cust_t2g, pvalueCutoff = Inf)
   } else {
     gse_cust <- NULL
   }
@@ -270,10 +264,9 @@ gsea_analysis <- function(
 #' @param max_pathways Maximum number of pathways to display (default is 5).
 #' @param ... Additional arguments to pass to the enrichment function.
 #' @return Overrepresentation analysis results.
+#' @note Requires clusterProfiler, enrichR, or org.Hs.eg.db depending on method. Install with: BiocManager::install(c("clusterProfiler", "enrichR", "org.Hs.eg.db"))
 #' @importFrom purrr map map_dfr
 #' @importFrom dplyr filter arrange slice mutate bind_rows group_by pull
-#' @importFrom clusterProfiler enrichGO groupGO
-#' @importFrom enrichR enrichr
 #' @importFrom ggplot2 ggplot aes geom_col labs ggsave
 #' @importFrom forcats fct_reorder
 #' @importFrom stringr str_wrap
@@ -294,6 +287,14 @@ stratified_ora <- function(
   # Input validation
   if (!method %in% c("enrichGO", "groupGO", "enrichR")) {
     stop("Method not supported. Please use one of: enrichGO, groupGO, enrichR")
+  }
+
+  # Check for required packages based on method
+  if (method %in% c("enrichGO", "groupGO")) {
+    check_suggested_package("clusterProfiler")
+    check_suggested_package("org.Hs.eg.db")
+  } else if (method == "enrichR") {
+    check_suggested_package("enrichR")
   }
 
   dir.create(outpath, showWarnings = FALSE, recursive = TRUE)
@@ -352,8 +353,8 @@ run_enrichr_analysis <- function(up_genes, down_genes, dbs, outpath, padj_cutoff
     dir.create(db_path, showWarnings = FALSE, recursive = TRUE)
 
     # Run enrichment
-    enr_up <- enrichr(up_genes, db)[[db]] %>% mutate(direction = "up")
-    enr_down <- enrichr(down_genes, db)[[db]] %>% mutate(direction = "down")
+    enr_up <- enrichR::enrichr(up_genes, db)[[db]] %>% mutate(direction = "up")
+    enr_down <- enrichR::enrichr(down_genes, db)[[db]] %>% mutate(direction = "down")
     enr_all <- bind_rows(enr_up, enr_down)
 
     if (nrow(enr_all) == 0) {
@@ -389,8 +390,8 @@ run_enrichr_analysis <- function(up_genes, down_genes, dbs, outpath, padj_cutoff
 # Helper function for clusterProfiler analysis
 run_clusterprofiler_analysis <- function(up_genes, down_genes, method, outpath, padj_cutoff, max_pathways, create_plot, ...) {
   enr_fn <- switch(method,
-    "enrichGO" = function(x) enrichGO(x, org.Hs.eg.db, pvalueCutoff = Inf, ...),
-    "groupGO" = function(x) groupGO(x, org.Hs.eg.db, pvalueCutoff = Inf, ...)
+    "enrichGO" = function(x) clusterProfiler::enrichGO(x, org.Hs.eg.db::org.Hs.eg.db, pvalueCutoff = Inf, ...),
+    "groupGO" = function(x) clusterProfiler::groupGO(x, org.Hs.eg.db::org.Hs.eg.db, pvalueCutoff = Inf, ...)
   )
 
   results <- purrr::map_dfr(c("up", "down"), function(direction) {
