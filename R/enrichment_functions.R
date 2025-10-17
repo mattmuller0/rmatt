@@ -1,15 +1,8 @@
 #' @title Create a sorted fold change vector from results
-#'
-#' @description
-#' Takes a results data frame and creates a named vector of fold changes sorted in
-#' descending order. Useful for preparing data for enrichment analysis.
-#'
 #' @param res Data frame containing differential expression or similar results
 #' @param fc_col Character string specifying the column containing fold change values
 #' @param names Character string specifying the column to use for names. If NULL, uses rownames
-#'
 #' @return Named numeric vector of sorted fold changes
-#'
 #' @importFrom dplyr select
 #' @importFrom rlang sym !!
 #' @export
@@ -31,11 +24,9 @@ get_fc_list <- function(res, fc_col = "log2FoldChange", names = NULL) {
   }
 
   # Create sorted fold change vector
-  fc <- as.data.frame(res) %>%
-    dplyr::select(!!sym(fc_col)) %>%
-    unlist() %>%
-    stats::setNames(res[[names]]) %>%
-    sort(decreasing = TRUE)
+  fc <- res[[fc_col]]
+  names(fc) <- res[[names]]
+  fc <- sort(fc, decreasing = TRUE)
 
   # Validate output
   if (any(is.na(fc))) {
@@ -43,6 +34,91 @@ get_fc_list <- function(res, fc_col = "log2FoldChange", names = NULL) {
   }
 
   return(fc)
+}
+
+# Define plot functions with error handling
+safe_ggplot <- function(plot_fn, filename) {
+  tryCatch(
+    {
+      plot <- plot_fn()
+      suppressMessages(ggsave(file.path(outpath, filename), plot))
+    },
+    error = function(e) message(paste("Failed to generate", filename))
+  )
+}
+
+# Helper function to plot enrichment terms
+gse_barplot <- function(gse) {
+  gse_bar <- as.data.frame(gse) %>%
+    group_by(sign(NES)) %>%
+    arrange(qvalue) %>%
+    slice(1:10) %>%
+    mutate(
+      Description = gsub("^(REACTOME_|HALLMARK_|GO(CC|BP|MF)_|KEGG_)", "", Description),
+      Description = gsub("_", " ", Description),
+      Description = factor(stringr::str_wrap(Description, 40))
+    )
+  ggplot(gse_bar, aes(NES, fct_reorder(Description, NES), fill = qvalue)) +
+    geom_col(orientation = "y") +
+    scale_fill_continuous(low = "red", high = "blue", guide = guide_colorbar(reverse = TRUE)) +
+    labs(title = "Enrichment Barplot", y = NULL) +
+    theme_classic2()
+}
+
+#' Load custom gene sets
+#' @return List of custom gene sets.
+get_custom_genesets <- function() {
+  t2g <- rbind(mpa_geneset, press_geneset)
+  return(t2g)
+}
+
+#' Save and plot gse object
+#' @param gse GSE object.
+#' @param outpath Path to save to.
+#' @param terms2plot Terms to plot.
+#' @return None.
+#' @note Requires enrichplot package for plotting. Install with: BiocManager::install("enrichplot")
+#' @importFrom dplyr filter mutate group_by arrange slice
+#' @importFrom ggplot2 ggplot aes geom_col scale_fill_continuous labs ggsave guide_colorbar ggtitle
+#' @importFrom forcats fct_reorder
+#' @importFrom stringr str_wrap
+#' @importFrom ggpubr theme_classic2
+#' @export
+save_gse <- function(gse, outpath, terms2plot = c("inflam", "plat", "coag")) {
+  dir.create(outpath, showWarnings = FALSE, recursive = TRUE)
+
+  # Check if gse object is valid
+  if (is.null(gse)) {
+    message("GSE object is NULL")
+    return(NULL)
+  }
+
+  # Check for enrichplot package
+  check_suggested_package("enrichplot")
+
+  # Save results as CSV and RDS
+  write.csv(gse@result, file.path(outpath, "enrichment_results.csv"), quote = TRUE, row.names = FALSE)
+  write.csv(filter(gse@result, qvalue < 0.1), file.path(outpath, "enrichment_results_sig.csv"), quote = TRUE, row.names = FALSE)
+  saveRDS(gse, file.path(outpath, "enrichment_results.rds"))
+
+  # Generate plots
+  safe_ggplot(function() enrichplot::dotplot(gse, showCategory = 20), "dotplot.pdf")
+  safe_ggplot(function() ggtangle::cnetplot(gse, node_label = "category"), "cnetplot.pdf")
+  safe_ggplot(function() plot_enrichment_terms(gse, terms2plot = terms2plot), "barplot_terms.pdf")
+  safe_ggplot(function() enrichplot::ridgeplot(gse, showCategory = 10), "ridgeplot.pdf")
+  safe_ggplot(function() enrichplot::heatplot(gse, showCategory = 10), "heatplot.pdf")
+  safe_ggplot(function() gse_barplot(gse_bar), "barplot.pdf")
+
+  safe_ggplot(
+    function() {
+      bp_data <- filter(as.data.frame(gse), grepl("^GOBP_", ID))
+      if (nrow(bp_data) == 0) {
+        return(NULL)
+      }
+      gse_barplot(bp_data)
+    },
+    "barplot_bp.pdf"
+  )
 }
 
 #' Run simple enrichment with enrichGO or gseGO
@@ -97,91 +173,6 @@ rna_enrichment <- function(
   saveRDS(gse, file.path(outpath, "enrichment_results.rds"))
   save_gse(gse, outpath)
   return(gse)
-}
-
-# Define plot functions with error handling
-safe_ggplot <- function(plot_fn, filename, ...) {
-  tryCatch(
-    {
-      plot <- plot_fn()
-      suppressMessages(ggsave(file.path(outpath, filename), plot, ...))
-    },
-    error = function(e) message(paste("Failed to generate", filename))
-  )
-}
-
-# Helper function to plot enrichment terms
-gse_barplot <- function(gse) {
-  gse_bar <- as.data.frame(gse) %>%
-    group_by(sign(NES)) %>%
-    arrange(qvalue) %>%
-    slice(1:10) %>%
-    mutate(
-      Description = gsub("^(REACTOME_|HALLMARK_|GO(CC|BP|MF)_|KEGG_)", "", Description),
-      Description = gsub("_", " ", Description),
-      Description = factor(stringr::str_wrap(Description, 40))
-    )
-  ggplot(gse_bar, aes(NES, fct_reorder(Description, NES), fill = qvalue)) +
-    geom_col(orientation = "y") +
-    scale_fill_continuous(low = "red", high = "blue", guide = guide_colorbar(reverse = TRUE)) +
-    labs(title = "Enrichment Barplot", y = NULL) +
-    theme_classic2()
-}
-
-#' Save and plot gse object
-#' @param gse GSE object.
-#' @param outpath Path to save to.
-#' @param ... Additional arguments to pass to ggsave.
-#' @return None.
-#' @note Requires enrichplot package for plotting. Install with: BiocManager::install("enrichplot")
-#' @importFrom dplyr filter mutate group_by arrange slice
-#' @importFrom ggplot2 ggplot aes geom_col scale_fill_continuous labs ggsave guide_colorbar ggtitle
-#' @importFrom forcats fct_reorder
-#' @importFrom stringr str_wrap
-#' @importFrom ggpubr theme_classic2
-#' @export
-save_gse <- function(gse, outpath, ...) {
-  dir.create(outpath, showWarnings = FALSE, recursive = TRUE)
-
-  # Check if gse object is valid
-  if (is.null(gse)) {
-    message("GSE object is NULL")
-    return(NULL)
-  }
-
-  # Check for enrichplot package
-  check_suggested_package("enrichplot")
-
-  # Save results as CSV and RDS
-  write.csv(gse@result, file.path(outpath, "enrichment_results.csv"), quote = TRUE, row.names = FALSE)
-  write.csv(filter(gse@result, qvalue < 0.1), file.path(outpath, "enrichment_results_sig.csv"), quote = TRUE, row.names = FALSE)
-  saveRDS(gse, file.path(outpath, "enrichment_results.rds"))
-
-  # Generate plots
-  safe_ggplot(function() enrichplot::dotplot(gse, showCategory = 20) + ggtitle("Enrichment Dotplot"), "dotplot.pdf")
-  safe_ggplot(function() enrichplot::cnetplot(gse, node_label = "category", cex_label_gene = 0.8), "cnetplot.pdf")
-  safe_ggplot(function() plot_enrichment_terms(gse, terms2plot = c("inflam", "plat", "coag"), max_terms = min(10, nrow(gse@result))), "barplot_terms.pdf")
-  safe_ggplot(function() enrichplot::ridgeplot(gse, showCategory = min(10, nrow(gse@result))), "ridgeplot.pdf")
-  safe_ggplot(function() enrichplot::heatplot(gse, showCategory = 10), "heatplot.pdf")
-  safe_ggplot(function() {
-    gse_barplot(gse_bar)
-  }, "barplot.pdf")
-
-  safe_ggplot(
-    function() {
-      bp_data <- filter(as.data.frame(gse), grepl("^GOBP_", ID))
-      if (nrow(bp_data) == 0) stop("No BP data")
-      gse_barplot(bp_data)
-    },
-    "barplot_bp.pdf"
-  )
-}
-
-#' Load custom gene sets
-#' @return List of custom gene sets.
-get_custom_genesets <- function() {
-  t2g <- rbind(mpa_geneset, press_geneset)
-  return(t2g)
 }
 
 #' Run a GSEA analysis
