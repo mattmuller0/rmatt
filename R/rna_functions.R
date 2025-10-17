@@ -63,7 +63,7 @@ CountTableFromFeatureCounts <- function(directory = ".", pattern = "featureCount
 #' @importFrom magrittr %>%
 #' @importFrom purrr map
 #' @importFrom broom tidy
-#' @importFrom ggplot2 ggsave
+#' @importFrom ggplot2 ggsave ggplot aes geom_histogram geom_density labs theme_minimal
 #' @export
 run_wilcox <- function(
     dds,
@@ -74,7 +74,6 @@ run_wilcox <- function(
     wilcox.paired = FALSE,
     wilcox.alternative = "two.sided",
     volcano.pCutoff = 0.05) {
-  
   # Input validation
   if (missing(dds) || is.null(dds)) {
     stop("Argument 'dds' is required and cannot be NULL")
@@ -91,8 +90,10 @@ run_wilcox <- function(
 
   # Ensure the group is in colData
   if (!group %in% colnames(SummarizedExperiment::colData(dds))) {
-    stop(sprintf("Group '%s' not found in colData. Available columns: %s", 
-                 group, paste(colnames(SummarizedExperiment::colData(dds)), collapse = ", ")))
+    stop(sprintf(
+      "Group '%s' not found in colData. Available columns: %s",
+      group, paste(colnames(SummarizedExperiment::colData(dds)), collapse = ", ")
+    ))
   }
 
   # Get the counts matrix and colData
@@ -277,12 +278,60 @@ calculate_correlations <- function(dds, condition, normalize = "mor", method = "
     correlation = sapply(gene_expression_correlations, function(x) x$correlation),
     pvalue = sapply(gene_expression_correlations, function(x) x$pvalue)
   )
-  
+
   # Add adjusted p-values
   gene_expression_correlations_df$padj <- p.adjust(gene_expression_correlations_df$pvalue, method = "BH")
 
   # Return the data frame of gene expression correlations
   return(gene_expression_correlations_df)
+}
+
+
+#' Handle DESeq Output
+#' @description Function to handle DESeq output and generate plots and results
+#' @param dds DESeq2 object
+#' @param res Results of differential expression analysis
+#' @param resLFC Results with log fold change shrinkage
+#' @param outpath Output path for results
+#' @param name Name of the analysis
+#' @param pvalue p-value column name
+#' @param pCutoff p-value cutoff for volcano plot
+#' @param fcCutoff Fold change cutoff for volcano plot
+#' @param contrast Contrast used in the analysis
+#' @return None
+#' @importFrom ggplot2 ggsave
+#' @importFrom DESeq2 plotMA lfcShrink resultsNames
+handle_deseq_output <- function(dds, res, resLFC, outpath, name, pvalue, pCutoff, fcCutoff, contrast) {
+  # MA plot
+  pdf(file.path(outpath, "MAplot.pdf"))
+  DESeq2::plotMA(resLFC)
+  dev.off()
+
+  # Volcano plot
+  volcanoP <- plot_volcano(res, title = name, color = pvalue, pCutoff = pCutoff)
+  suppressMessages(ggplot2::ggsave(file.path(outpath, "volcanoPlot.pdf"), volcanoP))
+
+  # Heatmap of significant genes
+  sign_genes <- rownames(res)[res[[pvalue]] < pCutoff & abs(res$log2FoldChange) > fcCutoff]
+  if (length(sign_genes) == 0) {
+    message("No significant genes found")
+  } else {
+    heatmapP <- plot_heatmap(dds, genes = sign_genes, annotations = contrast[1], normalize = "vst")
+    pdf(file.path(outpath, "dge_heatmap.pdf"))
+    print(heatmapP)
+    dev.off()
+  }
+
+  # Gene list and GSEA
+  geneList <- get_fc_list(res)
+  gse_list <- gsea_analysis(geneList, outpath)
+
+  message("Results Summary:")
+  summary(res)
+
+  message("Writing results to outpath")
+  utils::write.csv(res, file.path(outpath, "deseq_results.csv"))
+  saveRDS(dds, file = file.path(outpath, "dds.rds"))
 }
 
 #' Run Simple Deseq analysis
@@ -293,16 +342,29 @@ calculate_correlations <- function(dds, condition, normalize = "mor", method = "
 #' @param pvalue p-value column name
 #' @param pCutoff p-value cutoff for volcano plot
 #' @param fcCutoff Fold change cutoff for volcano plot
-#' @param ... Additional arguments to pass to DESeq2
+#' @param deseq_args List of additional arguments to pass to DESeq2::DESeq
 #' @return Results of differential expression analysis
 #' @note Requires DESeq2 package. Install with: BiocManager::install("DESeq2")
 #' @importFrom ggplot2 ggsave
 #' @export
 run_deseq <- function(
-    dds, outpath,
+    dds,
+    outpath,
     contrast = NA,
-    pvalue = "padj", pCutoff = 0.05, fcCutoff = 0,
-    ...) {
+    pvalue = "padj",
+    pCutoff = 0.05,
+    fcCutoff = 0,
+    deseq_args = list(
+      test = "Wald",
+      fitType = "parametric",
+      sfType = "ratio",
+      quiet = TRUE,
+      minReplicatesForReplace = 7,
+      useT = FALSE,
+      minmu = 0.5,
+      parallel = FALSE,
+      BPPARAM = BiocParallel::bpparam()
+    )) {
   # Check for required packages
   check_suggested_package("DESeq2")
 
@@ -310,78 +372,25 @@ run_deseq <- function(
   # Gives most metrics you"ll need, and also returns the results
   dir.create(outpath, showWarnings = FALSE, recursive = TRUE)
   message("Running DESeq2")
-  dds <- DESeq2::DESeq(dds, ...)
+  deseq_args$object <- dds
+  dds <- do.call(DESeq2::DESeq, deseq_args)
 
-  # Get results names
+  # Get results
   res <- DESeq2::results(dds)
 
-  if (is.vector(contrast)) {
-    name <- paste0(contrast[1], "__", contrast[2], "_vs_", contrast[3])
+  # Use contrast if provided, otherwise default to coef = 2
+  if (!is.na(contrast)[1]) {
     res <- DESeq2::results(dds, contrast = contrast)
-    resLFC <- DESeq2::lfcShrink(dds, coef = length(DESeq2::resultsNames(dds)), type = "apeglm")
-    pdf(file.path(outpath, "MAplot.pdf"))
-    DESeq2::plotMA(resLFC)
-    dev.off()
-
-    # make volcano plot
-    volcanoP <- plot_volcano(res, title = name, color = pvalue, pCutoff = pCutoff)
-    suppressMessages(ggplot2::ggsave(file.path(outpath, "volcanoPlot.pdf"), volcanoP))
-
-    # make a heatmap of the significant genes
-    sign_genes <- rownames(res)[res$pvalue < pCutoff & abs(res$log2FoldChange) > fcCutoff]
-    if (!is.null(sign_genes)) {
-      # sign_genes[is.na(sign_genes)] <- FALSE # some error handing for outliers as NA
-      heatmapP <- plot_heatmap(dds, genes = sign_genes, annotations = contrast[1], normalize = "log2-mor", show_row_names = FALSE, show_column_names = FALSE)
-      pdf(file.path(outpath, "dge_heatmap.pdf"))
-      print(heatmapP)
-      dev.off()
-    }
-
-    # make gene list
-    geneList <- get_fc_list(res)
-    gse_list <- gsea_analysis(geneList, outpath)
-
-    message("Results Summary:")
-    summary(res)
-
-    message("Writing results to outpath")
-    utils::write.csv(res, file.path(outpath, "deseq_results.csv"))
-    saveRDS(dds, file = file.path(outpath, "dds.rds"))
-    return(res)
-  }
-
-  name <- DESeq2::resultsNames(dds)[length(DESeq2::resultsNames(dds))]
-  res <- DESeq2::results(dds, contrast = contrast)
-  resLFC <- DESeq2::lfcShrink(dds, coef = name, type = "apeglm")
-  pdf(file.path(outpath, "MAplot.pdf"))
-  DESeq2::plotMA(resLFC)
-  dev.off()
-
-  # make volcano plot
-  volcanoP <- plot_volcano(res, title = name, color = pvalue, pCutoff = pCutoff)
-  suppressMessages(ggplot2::ggsave(file.path(outpath, "volcanoPlot.pdf"), volcanoP))
-
-  # make a heatmap
-  sign_genes <- rownames(res)[res$pvalue < pCutoff & abs(res$log2FoldChange) > fcCutoff]
-  if (length(sign_genes) == 0) {
-    message("No significant genes found")
+    resLFC <- DESeq2::lfcShrink(dds, coef = 2)
+    name <- paste0(contrast[1], "__", contrast[2], "_vs_", contrast[3])
   } else {
-    heatmapP <- plot_heatmap(dds, genes = sign_genes, annotations = contrast[1], normalize = "vst")
-    pdf(file.path(outpath, "dge_heatmap.pdf"))
-    print(heatmapP)
-    dev.off()
+    name <- DESeq2::resultsNames(dds)[2]
+    res <- DESeq2::results(dds, name = name)
+    resLFC <- DESeq2::lfcShrink(dds, coef = 2)
   }
 
-  # make gene list
-  geneList <- get_fc_list(res)
-  gse_list <- gsea_analysis(geneList, outpath)
-
-  message("Results Summary:")
-  summary(res)
-
-  message("Writing results to outpath")
-  utils::write.csv(res, file.path(outpath, "deseq_results.csv"))
-  saveRDS(dds, file = file.path(outpath, "dds.rds"))
+  # Handle output
+  handle_deseq_output(dds, res, resLFC, outpath, name, pvalue, pCutoff, fcCutoff, contrast)
   return(res)
 }
 
@@ -391,7 +400,6 @@ run_deseq <- function(
 #' @param column Column of interest for OVR analysis
 #' @param outpath Output path for results
 #' @param controls Control groups
-#' @param ... Additional arguments to pass to DESeq2
 #' @return OVR results for each level of column of interest
 #' @importFrom SummarizedExperiment assay colData
 #' @importFrom purrr map
@@ -435,18 +443,15 @@ ovr_deseq_results <- function(dds, column, outpath, controls = NULL) {
 #' @param conditions List of conditions to run DESeq2 on
 #' @param controls List of controls to run DESeq2 on
 #' @param outpath Path to save results
-#' @param ... Additional arguments to pass to DESeq2 for volcano plots
 #' @return List of results of differential expression analysis
 #' @importFrom SummarizedExperiment colData
-#' 
 #' @importFrom ggplot2 ggsave
 #' @export
-deseq_analysis <- function(dds, conditions, controls = NULL, outpath, ...) {
+deseq_analysis <- function(dds, conditions, controls = NULL, outpath) {
   # Create output directory
   dir.create(outpath, showWarnings = FALSE, recursive = TRUE)
 
   # Initialize list to store results
-  # analysis_list <- list()
   summary_df <- data.frame()
 
   # Use lapply to iterate through conditions
@@ -467,12 +472,12 @@ deseq_analysis <- function(dds, conditions, controls = NULL, outpath, ...) {
     # Convert condition to factor if not already
     if (!is.factor(SummarizedExperiment::colData(dds_)[, condition])) {
       SummarizedExperiment::colData(dds_)[, condition] <- as.factor(SummarizedExperiment::colData(dds_)[, condition])
-      message(paste0("Converting ", condition, " to factor"))
+      message(paste0("Converting ", condition, " to factor with reference level: ", levels(SummarizedExperiment::colData(dds_)[, condition])[1]))
       message(paste0("Levels: ", paste0(levels(SummarizedExperiment::colData(dds_)[, condition]), collapse = ", ")))
     }
 
     # Create design matrix
-    input_ <- ifelse(is.null(controls), condition, paste0(append(controls, condition), collapse = " + "))
+    input_ <- ifelse(is.null(controls), condition, paste0(append(condition, controls), collapse = " + "))
     design_matr <- as.formula(paste0("~ ", input_))
     dds_ <- DESeq2::DESeqDataSet(dds_, design = design_matr)
     levels <- levels(SummarizedExperiment::colData(dds_)[, condition])
@@ -494,7 +499,7 @@ deseq_analysis <- function(dds, conditions, controls = NULL, outpath, ...) {
     # Return results based on number of levels
     if (length(levels) > 2) {
       # One-vs-Rest analysis
-      res <- ovr_deseq_results(dds_, condition, file.path(outpath, condition), ...)
+      res <- ovr_deseq_results(dds_, condition, file.path(outpath, condition))
       summary <- lapply(res, summarize_experiment)
       for (i in seq_along(summary)) {
         summary[[i]]$condition <- names(res)[i]
@@ -506,7 +511,7 @@ deseq_analysis <- function(dds, conditions, controls = NULL, outpath, ...) {
     } else if (length(levels) == 2) {
       # Two-group comparison
       contrast <- c(condition, levels[2], levels[1])
-      res <- run_deseq(dds_, file.path(outpath, condition), contrast = contrast, ...)
+      res <- run_deseq(dds_, file.path(outpath, condition), contrast = contrast)
       summary <- summarize_experiment(res)
       summary$condition <- condition
       summary <- summary[, c(ncol(summary), 1:(ncol(summary) - 1))]
