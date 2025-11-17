@@ -243,7 +243,6 @@ one_hot_encode_ovr <- function(df, column, binary = TRUE) {
   unique_vals <- unique(df[[column]])
   for (val in unique_vals) {
   new_col_name <- paste0(column, "_", val)
-  message(glue("Creating column: {new_col_name}"))
   if (binary) {
     df[[new_col_name]] <- ifelse(df[[column]] == val, 1, 0)
   } else {
