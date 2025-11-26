@@ -246,51 +246,52 @@ gsea_analysis <- function(
   return(gse_list)
 }
 
-#' Perform up and down overrepresentation analysis
-#' @param gene_dataframe Data frame with features and direction columns.
+
+#' Perform up and down overrepresentation analysis using enrichGO
+#' @param gene_dataframe Data frame with 'features' (gene symbols) and 'direction' (up/down) columns.
 #' @param outpath Path to save results.
-#' @param method Enrichment method: "enrichGO", "groupGO", or "enrichR" (default).
-#' @param dbs List of databases to use for enrichR (ignored for other methods).
-#' @param padj_cutoff Adjusted p-value cutoff (default is 0.05).
-#' @param max_pathways Maximum number of pathways to display (default is 5).
-#' @param ... Additional arguments to pass to the enrichment function.
-#' @return Overrepresentation analysis results.
-#' @note Requires clusterProfiler, enrichR, or org.Hs.eg.db depending on method. Install with: BiocManager::install(c("clusterProfiler", "enrichR", "org.Hs.eg.db"))
+#' @param padj_cutoff Adjusted p-value cutoff for filtering results (default is 0.05).
+#' @param max_pathways Maximum number of pathways to display per direction (default is 10).
+#' @param ont GO ontology: "BP" (Biological Process), "MF" (Molecular Function), "CC" (Cellular Component), or "ALL" (default is "BP").
+#' @param keyType Key type for gene IDs (default is "SYMBOL").
+#' @param pvalueCutoff P-value cutoff for enrichGO (default is 0.05).
+#' @param qvalueCutoff Q-value cutoff for enrichGO (default is 0.1).
+#' @param minGSSize Minimum gene set size (default is 10).
+#' @param maxGSSize Maximum gene set size (default is 500).
+#' @return List containing enrichment results for up and down genes, combined results, and plot.
+#' @importFrom clusterProfiler enrichGO
+#' @importFrom org.Hs.eg.db org.Hs.eg.db
 #' @importFrom purrr map map_dfr
-#' @importFrom dplyr filter arrange slice mutate bind_rows group_by pull
-#' @importFrom ggplot2 ggplot aes geom_col labs ggsave
+#' @importFrom dplyr filter arrange slice_head mutate bind_rows pull
+#' @importFrom ggplot2 ggplot aes geom_col labs ggsave scale_fill_manual coord_flip theme element_text
 #' @importFrom forcats fct_reorder
 #' @importFrom stringr str_wrap
-#' @importFrom ggpubr theme_classic2
 #' @export
-stratified_ora <- function(
+stratified_overrepresentation <- function(
     gene_dataframe,
     outpath,
-    method = "enrichR",
-    dbs = c(
-      "GO_Biological_Process_2023", "GO_Cellular_Component_2023",
-      "GO_Molecular_Function_2023", "WikiPathway_2023_Human",
-      "GWAS_Catalog_2023", "Reactome_2022", "MSigDB Hallmark 2020"
-    ),
     padj_cutoff = 0.05,
-    max_pathways = 5,
-    ...) {
-  # Input validation
-  if (!method %in% c("enrichGO", "groupGO", "enrichR")) {
-    stop("Method not supported. Please use one of: enrichGO, groupGO, enrichR")
-  }
+    max_pathways = 10,
+    ont = "BP",
+    OrgDb = org.Hs.eg.db::org.Hs.eg.db,
+    keyType = "SYMBOL",
+    pvalueCutoff = 0.05,
+    qvalueCutoff = 0.1,
+    minGSSize = 10,
+    maxGSSize = 500
+) {
+  # Load required packages
+  check_suggested_package("clusterProfiler")
+  check_suggested_package("org.Hs.eg.db")
+  check_suggested_package("ggplot2")
+  check_suggested_package("dplyr")
+  check_suggested_package("forcats")
+  check_suggested_package("stringr")
 
-  # Check for required packages based on method
-  if (method %in% c("enrichGO", "groupGO")) {
-    check_suggested_package("clusterProfiler")
-    check_suggested_package("org.Hs.eg.db")
-  } else if (method == "enrichR") {
-    check_suggested_package("enrichR")
-  }
-
+  # Create output directory
   dir.create(outpath, showWarnings = FALSE, recursive = TRUE)
 
-  # Extract gene lists
+  # Extract gene lists by direction
   up_genes <- gene_dataframe %>%
     filter(direction == "up") %>%
     pull(features)
@@ -298,123 +299,133 @@ stratified_ora <- function(
     filter(direction == "down") %>%
     pull(features)
 
-  # Helper function to create signed log10 values and plot
-  create_plot <- function(data, title_suffix = "") {
-    if (nrow(data) == 0) {
+  message(sprintf("Performing GO enrichment: %d up genes, %d down genes", length(up_genes), length(down_genes)))
+
+  # Helper function to run enrichGO for a gene list
+  run_enrichGO <- function(genes, direction) {
+    if (length(genes) == 0) {
+      message(sprintf("No %s genes provided, skipping enrichment", direction))
       return(NULL)
     }
 
-    data$signed <- ifelse(data$direction == "up",
-      -log10(data[[get_padj_col(method)]]),
-      log10(data[[get_padj_col(method)]])
+    tryCatch({
+      enr <- enrichGO(
+        gene = genes,
+        OrgDb = org,
+        keyType = keyType,
+        ont = ont,
+        pvalueCutoff = pvalueCutoff,
+        qvalueCutoff = qvalueCutoff,
+        minGSSize = minGSSize,
+        maxGSSize = maxGSSize,
+        readable = TRUE
+      )
+
+      if (is.null(enr) || nrow(enr@result) == 0) {
+        message(sprintf("No enrichment results found for %s genes", direction))
+        return(NULL)
+      }
+
+      # Save individual results
+      dir.create(file.path(outpath, direction), showWarnings = FALSE, recursive = TRUE)
+      write.csv(enr@result, file.path(outpath, direction, "enrichGO_results.csv"), row.names = FALSE)
+      saveRDS(enr, file.path(outpath, direction, "enrichGO_object.rds"))
+
+      # Return results with direction
+      enr@result %>%
+        mutate(direction = direction)
+
+    }, error = function(e) {
+      message(sprintf("Error in enrichGO for %s genes: %s", direction, e$message))
+      return(NULL)
+    })
+  }
+
+  # Run enrichment for up and down genes
+  up_results <- run_enrichGO(up_genes, "up")
+  down_results <- run_enrichGO(down_genes, "down")
+
+  # Combine results
+  combined_results <- bind_rows(up_results, down_results)
+
+  if (is.null(combined_results) || nrow(combined_results) == 0) {
+    message("No enrichment results found for either direction")
+    return(list(
+      up = NULL,
+      down = NULL,
+      combined = NULL,
+      plot = NULL
+    ))
+  }
+
+  # Save combined results
+  write.csv(combined_results, file.path(outpath, "enrichGO_combined_results.csv"), row.names = FALSE)
+
+  # Filter and prepare data for plotting
+  plot_data <- combined_results %>%
+    filter(p.adjust < padj_cutoff) %>%
+    group_by(direction) %>%
+    arrange(p.adjust) %>%
+    slice_head(n = max_pathways) %>%
+    ungroup() %>%
+    mutate(
+      # Create signed -log10(padj): positive for up, negative for down
+      signed_log10_padj = ifelse(
+        direction == "up",
+        -log10(p.adjust),
+        log10(p.adjust)
+      ),
+      # Wrap long descriptions
+      Description_wrapped = str_wrap(Description, width = 50)
     )
 
-    ggplot(data, aes(
-      x = signed, y = fct_reorder(str_wrap(get_term_col(data, method), 40), signed),
+  # Create plot
+  if (nrow(plot_data) > 0) {
+    p <- ggplot(plot_data, aes(
+      x = signed_log10_padj,
+      y = fct_reorder(Description_wrapped, signed_log10_padj),
       fill = direction
     )) +
-      geom_col() +
-      labs(title = paste("ORA Results", title_suffix), x = "Signed -log10(padj)", y = NULL) +
-      theme_classic2()
-  }
+      geom_col(alpha = 0.8) +
+      geom_vline(xintercept = 0, linetype = "dashed", color = "grey40") +
+      scale_fill_manual(
+        values = c("up" = "#E41A1C", "down" = "#377EB8"),
+        labels = c("up" = "Upregulated", "down" = "Downregulated")
+      ) +
+      labs(
+        title = sprintf("GO Enrichment Analysis (%s)", ont),
+        subtitle = sprintf("Up: %d genes, Down: %d genes | padj < %s", 
+                          length(up_genes), length(down_genes), padj_cutoff),
+        x = expression("Signed -log"[10]*"(adjusted p-value)"),
+        y = NULL,
+        fill = "Direction"
+      ) +
+      theme_minimal() +
+      theme(
+        axis.text.y = element_text(size = 9),
+        legend.position = "bottom",
+        plot.title = element_text(hjust = 0.5, face = "bold"),
+        plot.subtitle = element_text(hjust = 0.5, size = 9)
+      )
 
-  # Helper functions for column names
-  get_padj_col <- function(method) {
-    switch(method,
-      "enrichR" = "Adjusted.P.value",
-      "p.adjust"
+    # Save plot
+    ggsave(
+      file.path(outpath, "enrichGO_combined_plot.pdf"),
+      plot = p,
+      width = 10,
+      height = max(6, nrow(plot_data) * 0.3),
+      limitsize = FALSE
     )
-  }
-
-  get_term_col <- function(data, method) {
-    if (method == "enrichR") "Term" else "Description"
-  }
-
-  if (method == "enrichR") {
-    return(run_enrichr_analysis(up_genes, down_genes, dbs, outpath, padj_cutoff, max_pathways, create_plot))
   } else {
-    return(run_clusterprofiler_analysis(up_genes, down_genes, method, outpath, padj_cutoff, max_pathways, create_plot, ...))
-  }
-}
-
-# Helper function for enrichR analysis
-run_enrichr_analysis <- function(up_genes, down_genes, dbs, outpath, padj_cutoff, max_pathways, create_plot) {
-  purrr::map(dbs, function(db) {
-    db_path <- file.path(outpath, db)
-    dir.create(db_path, showWarnings = FALSE, recursive = TRUE)
-
-    # Run enrichment
-    enr_up <- enrichR::enrichr(up_genes, db)[[db]] %>% mutate(direction = "up")
-    enr_down <- enrichR::enrichr(down_genes, db)[[db]] %>% mutate(direction = "down")
-    enr_all <- bind_rows(enr_up, enr_down)
-
-    if (nrow(enr_all) == 0) {
-      message("No results found for ", db)
-      return(NULL)
-    }
-
-    # Save all results
-    write.csv(enr_all, file.path(db_path, "enrichr_results.csv"), quote = TRUE, row.names = FALSE)
-
-    # Filter and process significant results
-    enr_sig <- enr_all %>%
-      group_by(direction) %>%
-      filter(Adjusted.P.value < padj_cutoff) %>%
-      arrange(Adjusted.P.value) %>%
-      slice_head(n = max_pathways)
-
-    if (nrow(enr_sig) > 0) {
-      write.csv(enr_sig, file.path(db_path, "enrichr_results_sig.csv"), quote = TRUE, row.names = FALSE)
-
-      # Create and save plot
-      p <- create_plot(enr_sig, paste("(", db, ")"))
-      if (!is.null(p)) {
-        suppressMessages(ggsave(file.path(db_path, "enrichr_results.pdf"), p))
-      }
-    }
-
-    return(enr_sig)
-  }) %>%
-    setNames(dbs)
-}
-
-# Helper function for clusterProfiler analysis
-run_clusterprofiler_analysis <- function(up_genes, down_genes, method, outpath, padj_cutoff, max_pathways, create_plot, ...) {
-  enr_fn <- switch(method,
-    "enrichGO" = function(x) clusterProfiler::enrichGO(x, org.Hs.eg.db::org.Hs.eg.db, pvalueCutoff = Inf, ...),
-    "groupGO" = function(x) clusterProfiler::groupGO(x, org.Hs.eg.db::org.Hs.eg.db, pvalueCutoff = Inf, ...)
-  )
-
-  results <- purrr::map_dfr(c("up", "down"), function(direction) {
-    genes <- if (direction == "up") up_genes else down_genes
-    enr <- enr_fn(genes)
-
-    if (is.null(enr) || nrow(enr@result) == 0) {
-      message("No results found for ", direction, " genes")
-      return(NULL)
-    }
-
-    # Save individual results
-    save_gse(enr, file.path(outpath, direction))
-
-    # Process results
-    enr@result %>%
-      filter(p.adjust < padj_cutoff) %>%
-      arrange(p.adjust) %>%
-      slice_head(n = max_pathways) %>%
-      mutate(direction = direction)
-  })
-
-  if (nrow(results) > 0) {
-    # Save combined results
-    write.csv(results, file.path(outpath, "ora_results.csv"), quote = TRUE, row.names = FALSE)
-
-    # Create and save plot
-    p <- create_plot(results)
-    if (!is.null(p)) {
-      suppressMessages(ggsave(file.path(outpath, "ora_results.pdf"), p))
-    }
+    message("No significant results to plot after filtering")
+    p <- NULL
   }
 
-  return(results)
+  # Return results
+  return(list(
+    up = up_results,
+    down = down_results,
+    combined = combined_results,
+    plot = p
+  ))
 }
