@@ -97,8 +97,8 @@ align_signature <- function(sig, data, by = "mean") {
 #' @export
 compare_one_to_many <- function(
     data, 
-    one, 
-    many, 
+    col, 
+    cols, 
     outdir, 
     plot = TRUE, 
     method.continuous = "spearman",
