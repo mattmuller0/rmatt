@@ -5,7 +5,7 @@
 \title{Hazard Ratios Table}
 \usage{
 hazard_ratios_table(
-  df,
+  data,
   condition,
   censors,
   controls = NULL,
@@ -18,7 +18,7 @@ hazard_ratios_table(
 )
 }
 \arguments{
-\item{df}{data.frame, data to make survival curves from.}
+\item{data}{data.frame, data to make survival curves from.}
 
 \item{condition}{character, condition(s) to make survival curves for. Can be a single condition or vector of conditions.}
 

@@ -11,11 +11,12 @@ plot_percent_genes_detected(dds, title, min_value = 0)
 
 \item{title}{Title of plot}
 
-\item{min_value}{Minimum value for detection}
+\item{min_value}{Minimum value for detection (default: 0)}
 }
 \value{
-ggplot object of percent of genes detected
+ggplot object of percent of genes detected histogram
 }
 \description{
 Function to plot percent of genes detected in each sample
 }
+\keyword{internal}

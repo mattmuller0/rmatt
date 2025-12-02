@@ -7,13 +7,14 @@
 percentGenesDetected(dds, min_value = 0)
 }
 \arguments{
-\item{dds}{DESeq2 object}
+\item{dds}{DESeq2 or SummarizedExperiment object}
 
-\item{min_value}{Minimum value to consider a gene detected}
+\item{min_value}{Minimum value to consider a gene detected (default: 0)}
 }
 \value{
-Data frame of percent of genes detected
+Numeric vector of percent of genes detected per gene
 }
 \description{
-Get percent of genes detected
+Calculate the proportion of samples in which each gene is detected
 }
+\keyword{internal}

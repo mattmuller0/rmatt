@@ -11,17 +11,17 @@ filter_edgeR(dds, outpath, group = NULL, min.count = 10, min.prop = 0.5, ...)
 
 \item{outpath}{Path to output directory}
 
-\item{group}{Column of interest}
+\item{group}{Column of interest for filtering and PCA grouping (optional)}
 
-\item{min.count}{Minimum mean expression to keep}
+\item{min.count}{Minimum mean expression to keep (default: 10)}
 
-\item{min.prop}{Minimum proportion of samples to keep}
+\item{min.prop}{Minimum proportion of samples to keep (default: 0.5)}
 
-\item{...}{Additional arguments to pass to FilterByExpr}
+\item{...}{Additional arguments to pass to edgeR::filterByExpr}
 }
 \value{
 DESeq2 object after filtering
 }
 \description{
-Filter a DESeq2 object by expression and make plots of the filtering
+Filter genes using edgeR's filterByExpr and generate diagnostic plots
 }

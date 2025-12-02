@@ -3,12 +3,13 @@
 #' @description Function to read a feature counts output file.
 #' @param f File path to the feature counts output.
 #' @param idx Columns to extract for (1) gene name and (2) counts.
-#' @param sep Field separator character.
-#' @param skip Number of lines to skip at the beginning of the file.
-#' @param comment.char Character indicating comment lines to ignore.
-#' @param stringsAsFactors Logical indicating whether strings should be converted to factors.
-#' @return Data frame of counts.
+#' @param sep Field separator character (default: "\\t").
+#' @param skip Number of lines to skip at the beginning of the file (default: 1).
+#' @param comment.char Character indicating comment lines to ignore (default: "#").
+#' @param stringsAsFactors Logical indicating whether strings should be converted to factors (default: FALSE).
+#' @return Data frame of counts with gene names and count columns.
 #' @importFrom dplyr select
+#' @keywords internal
 ReadFeatureCounts <- function(f, idx, sep = "\t", skip = 1, comment.char = "#", stringsAsFactors = FALSE) {
   if (missing(f)) {
     stop("f is missing")
@@ -24,14 +25,14 @@ ReadFeatureCounts <- function(f, idx, sep = "\t", skip = 1, comment.char = "#", 
 
 #' @title Create Count Table from Feature Counts
 #' @description Function to create a count table from feature counts output directory.
-#' @param directory Directory containing feature counts output.
-#' @param pattern Pattern to match for feature counts output.
-#' @param idx Columns to extract for (1) gene name and (2) counts.
-#' @param sep Field separator character.
-#' @param skip Number of lines to skip at the beginning of the file.
-#' @param comment.char Character indicating comment lines to ignore.
-#' @param stringsAsFactors Logical indicating whether strings should be converted to factors.
-#' @return Data frame of counts.
+#' @param directory Directory containing feature counts output (default: ".").
+#' @param pattern Pattern to match for feature counts output (default: "featureCounts.txt$").
+#' @param idx Columns to extract for (1) gene name and (2) counts (default: 7).
+#' @param sep Field separator character (default: "\\t").
+#' @param skip Number of lines to skip at the beginning of the file (default: 1).
+#' @param comment.char Character indicating comment lines to ignore (default: "#").
+#' @param stringsAsFactors Logical indicating whether strings should be converted to factors (default: FALSE).
+#' @return Data frame of counts with genes as rows and samples as columns.
 #' @importFrom purrr map reduce
 #' @importFrom dplyr inner_join
 #' @export
@@ -45,6 +46,93 @@ CountTableFromFeatureCounts <- function(directory = ".", pattern = "featureCount
   l <- purrr::map(fl, ReadFeatureCounts, idx = idx, sep = sep, skip = skip, comment.char = comment.char, stringsAsFactors = stringsAsFactors)
   tbl <- purrr::reduce(l, dplyr::inner_join)
   return(tbl)
+}
+
+# ======================== Summary Functions ========================
+#' Summarize differential expression results
+#' @description Generate summary statistics of differential expression results at various cutoffs
+#' @param results Data frame of results from differential expression analysis (e.g., DESeq2 results)
+#' @param logFC_column Column name for log fold change values (default: "log2FoldChange")
+#' @param pvalue_column Column name for raw p-values (default: "pvalue")
+#' @param padj_column Column name for adjusted p-values (default: "padj")
+#' @param pvalue_cutoffs Numeric vector of p-value cutoffs to evaluate (default: c(0.01, 0.05, 0.1))
+#' @param padj_cutoffs Numeric vector of adjusted p-value cutoffs to evaluate (default: c(0.05, 0.1, 0.2))
+#' @param logFC_cutoff Log fold change cutoff for up/down classification (default: 0)
+#' @return Data frame with counts of significant, up-regulated, and down-regulated genes at each cutoff
+#' @export
+summarize_experiment <- function(
+    results,
+    logFC_column = "log2FoldChange",
+    pvalue_column = "pvalue",
+    padj_column = "padj",
+    pvalue_cutoffs = c(0.01, 0.05, 0.1),
+    padj_cutoffs = c(0.05, 0.1, 0.2),
+    logFC_cutoff = 0) {
+  
+  # Input validation
+  required_cols <- c(logFC_column, pvalue_column, padj_column)
+  if (!all(required_cols %in% colnames(results))) {
+    stop("Missing required columns: ", 
+         paste(setdiff(required_cols, colnames(results)), collapse = ", "))
+  }
+  
+  # Initialize results dataframe
+  summary <- data.frame(
+    variable = character(),
+    p_cutoff = numeric(),
+    fc_cutoff = numeric(),
+    n_sig = integer(),
+    n_up = integer(),
+    n_down = integer(),
+    stringsAsFactors = FALSE
+  )
+  
+  # Function to count genes based on criteria
+  count_genes <- function(data, p_col, p_cutoff, fc_col, fc_cutoff) {
+    # Get valid data (non-NA)
+    valid_idx <- !is.na(data[[p_col]]) & !is.na(data[[fc_col]])
+    valid_data <- data[valid_idx, ]
+    
+    # Get significant genes
+    sig_idx <- valid_data[[p_col]] < p_cutoff
+    fc_data <- valid_data[[fc_col]][sig_idx]
+    
+    o <- list(
+      n_sig = sum(sig_idx),
+      n_up = sum(fc_data > fc_cutoff),
+      n_down = sum(fc_data < -fc_cutoff)
+    )
+    return(o)
+  }
+  
+  # Process p-value cutoffs
+  for (cutoff in pvalue_cutoffs) {
+    counts <- count_genes(results, pvalue_column, cutoff, logFC_column, logFC_cutoff)
+    summary <- rbind(summary, data.frame(
+      variable = "pvalue",
+      p_cutoff = cutoff,
+      fc_cutoff = logFC_cutoff,
+      n_sig = counts$n_sig,
+      n_up = counts$n_up,
+      n_down = counts$n_down
+    ))
+  }
+  
+  # Process adjusted p-value cutoffs
+  for (cutoff in padj_cutoffs) {
+    counts <- count_genes(results, padj_column, cutoff, logFC_column, logFC_cutoff)
+    summary <- rbind(summary, data.frame(
+      variable = "padj",
+      p_cutoff = cutoff,
+      fc_cutoff = logFC_cutoff,
+      n_sig = counts$n_sig,
+      n_up = counts$n_up,
+      n_down = counts$n_down
+    ))
+  }
+  
+  rownames(summary) <- NULL
+  return(summary)
 }
 
 # ======================== Testing Functions ========================
@@ -300,7 +388,6 @@ calculate_correlations <- function(dds, condition, normalize = "mor", method = "
 #' @param contrast Contrast used in the analysis
 #' @return None
 #' @importFrom ggplot2 ggsave
-#' @importFrom DESeq2 plotMA lfcShrink resultsNames
 handle_deseq_output <- function(dds, res, resLFC, outpath, name, pvalue, pCutoff, fcCutoff, contrast) {
   # MA plot
   pdf(file.path(outpath, "MAplot.pdf"))

@@ -4,10 +4,24 @@
 \alias{olink_info}
 \title{Get Olink sample info}
 \usage{
-olink_info(data)
+olink_info(
+  data,
+  sample_col = "SampleID",
+  plate_col = "PlateID",
+  assay_col = "Assay",
+  panel_col = "Panel"
+)
 }
 \arguments{
 \item{data}{Data frame of Olink data}
+
+\item{sample_col}{Column name for sample IDs (default: "SampleID")}
+
+\item{plate_col}{Column name for plate IDs (default: "PlateID")}
+
+\item{assay_col}{Column name for assays/proteins (default: "Assay")}
+
+\item{panel_col}{Column name for panels (default: "Panel")}
 }
 \value{
 List containing sample IDs, plates, proteins, and panels

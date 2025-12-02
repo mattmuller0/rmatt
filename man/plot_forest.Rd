@@ -5,51 +5,50 @@
 \title{Plot Forest Plot}
 \usage{
 plot_forest(
-  df,
-  x = NULL,
-  y,
-  estimate,
-  error_lower,
-  error_upper,
+  data,
+  label = "term",
+  estimate = "hazard.ratio",
+  error_lower = "ci.lower",
+  error_upper = "ci.upper",
   color = NULL,
   facet = NULL,
-  show_table = FALSE,
   title = "Forest Plot",
-  xlab = "",
-  ylab = "",
-  ...
+  xlab = estimate,
+  ylab = NULL,
+  vline = 1,
+  log_scale = ifelse(vline == 1, TRUE, FALSE),
+  show_table = FALSE,
+  p.value = "p.value"
 )
 }
 \arguments{
-\item{df}{Data frame to plot}
+\item{data}{Data frame containing estimates and confidence intervals.}
 
-\item{x}{Column name for grouping variable (default: NULL)}
+\item{label}{Column name for label variable (default: "term").}
 
-\item{y}{Column name for label variable}
+\item{estimate}{Column name for estimates (e.g., odds ratio, hazard ratio; default: "hazard.ratio").}
 
-\item{estimate}{Column name for estimates (e.g., odds ratio, hazard ratio)}
+\item{error_lower}{Column name for lower error bounds (default: "ci.lower").}
 
-\item{error_lower}{Column name for lower error bounds}
+\item{error_upper}{Column name for upper error bounds (default: "ci.upper").}
 
-\item{error_upper}{Column name for upper error bounds}
+\item{color}{Column name for color grouping (default: NULL).}
 
-\item{color}{Column name for color grouping (default: x)}
+\item{facet}{Column name for facet grouping (default: NULL).}
 
-\item{facet}{Column name for facet grouping (default: NULL)}
+\item{title}{Title of the plot (default: "Forest Plot").}
 
-\item{show_table}{Logical, whether to show HR/p/n table (default: FALSE)}
+\item{xlab}{Label for x-axis (default: estimate).}
 
-\item{title}{Title of the plot}
+\item{ylab}{Label for y-axis (default: NULL).}
 
-\item{xlab}{Label for x-axis}
+\item{show_table}{Logical, whether to show HR/p-value table (default: FALSE).}
 
-\item{ylab}{Label for y-axis}
-
-\item{...}{Additional arguments to pass to ggplot}
+\item{p.value}{Column name for p-value (default: "p.value").}
 }
 \value{
-ggplot object (or cowplot grid if show_table = TRUE)
+ggplot object, or cowplot grid if show_table = TRUE.
 }
 \description{
-Create a forest plot from a data frame
+Create a forest plot from a data frame of estimates and confidence intervals.
 }

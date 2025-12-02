@@ -36,37 +36,25 @@ get_fc_list <- function(res, fc_col = "log2FoldChange", names = NULL) {
   return(fc)
 }
 
-# Define plot functions with error handling
-safe_ggplot <- function(plot_fn, filename) {
+#' Safe ggplot wrapper with error handling
+#' @param plot_fn Function that generates the plot
+#' @param out Output file path
+#' @return NULL invisibly, saves plot to file
+#' @keywords internal
+safe_ggplot <- function(plot_fn, out) {
   tryCatch(
     {
       plot <- plot_fn()
-      suppressMessages(ggsave(file.path(outpath, filename), plot))
+      suppressMessages(ggsave(out, plot))
     },
-    error = function(e) message(paste("Failed to generate", filename))
+    error = function(e) message(paste("Failed to generate", out))
   )
 }
 
-# Helper function to plot enrichment terms
-gse_barplot <- function(gse) {
-  gse_bar <- as.data.frame(gse) %>%
-    group_by(sign(NES)) %>%
-    arrange(qvalue) %>%
-    slice(1:10) %>%
-    mutate(
-      Description = gsub("^(REACTOME_|HALLMARK_|GO(CC|BP|MF)_|KEGG_)", "", Description),
-      Description = gsub("_", " ", Description),
-      Description = factor(stringr::str_wrap(Description, 40))
-    )
-  ggplot(gse_bar, aes(NES, fct_reorder(Description, NES), fill = qvalue)) +
-    geom_col(orientation = "y") +
-    scale_fill_continuous(low = "red", high = "blue", guide = guide_colorbar(reverse = TRUE)) +
-    labs(title = "Enrichment Barplot", y = NULL) +
-    theme_classic2()
-}
-
 #' Load custom gene sets
-#' @return List of custom gene sets.
+#' @description Combines mpa_geneset and press_geneset into a single data frame
+#' @return Data frame of combined custom gene sets with gs_name and gene_symbol columns
+#' @keywords internal
 get_custom_genesets <- function() {
   t2g <- rbind(mpa_geneset, press_geneset)
   return(t2g)
@@ -102,23 +90,12 @@ save_gse <- function(gse, outpath, terms2plot = c("inflam", "plat", "coag")) {
   saveRDS(gse, file.path(outpath, "enrichment_results.rds"))
 
   # Generate plots
-  safe_ggplot(function() enrichplot::dotplot(gse, showCategory = 20), "dotplot.pdf")
-  safe_ggplot(function() ggtangle::cnetplot(gse, node_label = "category"), "cnetplot.pdf")
-  safe_ggplot(function() plot_enrichment_terms(gse, terms2plot = terms2plot), "barplot_terms.pdf")
-  safe_ggplot(function() enrichplot::ridgeplot(gse, showCategory = 10), "ridgeplot.pdf")
-  safe_ggplot(function() enrichplot::heatplot(gse, showCategory = 10), "heatplot.pdf")
-  safe_ggplot(function() gse_barplot(gse_bar), "barplot.pdf")
-
-  safe_ggplot(
-    function() {
-      bp_data <- filter(as.data.frame(gse), grepl("^GOBP_", ID))
-      if (nrow(bp_data) == 0) {
-        return(NULL)
-      }
-      gse_barplot(bp_data)
-    },
-    "barplot_bp.pdf"
-  )
+  safe_ggplot(function() enrichplot::dotplot(gse, showCategory = 20), file.path(outpath, "dotplot.pdf"))
+  safe_ggplot(function() ggtangle::cnetplot(gse, node_label = "category"), file.path(outpath, "cnetplot.pdf"))
+  safe_ggplot(function() enrichplot::ridgeplot(gse, showCategory = 10), file.path(outpath, "ridgeplot.pdf"))
+  safe_ggplot(function() enrichplot::heatplot(gse, showCategory = 10), file.path(outpath, "heatplot.pdf"))
+  safe_ggplot(function() plot_enrichment(gse), file.path(outpath, "barplot.pdf"))
+  safe_ggplot(function() plot_enrichment(gse, terms2plot = terms2plot), file.path(outpath, "barplot_terms.pdf"))
 }
 
 #' Run simple enrichment with enrichGO or gseGO
@@ -126,7 +103,6 @@ save_gse <- function(gse, outpath, terms2plot = c("inflam", "plat", "coag")) {
 #' @param outpath Path to save results.
 #' @param keyType Key type for gene list.
 #' @param enricher_function Enrichment method to use (default is gseGO).
-#' @param image_type Type of image to save (default is pdf).
 #' @param ontology Ontology to use (default is ALL).
 #' @param terms2plot Terms to plot.
 #' @param ... Additional arguments to pass to enricher.
@@ -134,9 +110,11 @@ save_gse <- function(gse, outpath, terms2plot = c("inflam", "plat", "coag")) {
 #' @note Requires clusterProfiler and org.Hs.eg.db packages. Install with: BiocManager::install(c("clusterProfiler", "org.Hs.eg.db"))
 #' @export
 rna_enrichment <- function(
-    geneList, outpath,
-    keyType = NULL, enricher_function = NULL,
-    image_type = "pdf", ontology = "ALL",
+    geneList, 
+    outpath,
+    keyType = NULL, 
+    enricher_function = NULL,
+    ontology = "ALL",
     terms2plot = c("inflam", "immune", "plat"),
     ...) {
   # Check for required packages
@@ -168,7 +146,7 @@ rna_enrichment <- function(
     enricher_function <- clusterProfiler::gseGO
   }
 
-  gse <- do.call(enricher_function, list(geneList, org.Hs.eg.db::org.Hs.eg.db, keyType = keyType, ont = ontology, pvalueCutoff = Inf, ...))
+  gse <- do.call(enricher_function, list(geneList = geneList, orgDb = org.Hs.eg.db::org.Hs.eg.db, keyType = keyType, ont = ontology, pvalueCutoff = Inf, ...))
   write.csv(gse@result, file.path(outpath, "enrichment_results.csv"), quote = TRUE, row.names = FALSE)
   saveRDS(gse, file.path(outpath, "enrichment_results.rds"))
   save_gse(gse, outpath)
@@ -180,26 +158,40 @@ rna_enrichment <- function(
 #' @param outpath Path to save results.
 #' @param keyType Key type for gene list.
 #' @param ontology Ontology to use (default is ALL).
+#' @param species Species name for msigdbr (default is "Homo sapiens").
+#' @param minGSSize Minimum gene set size (default is 10).
+#' @param maxGSSize Maximum gene set size (default is 500).
+#' @param eps Boundary for calculating the p value (default is 1e-10).
+#' @param pvalueCutoff P-value cutoff (default is Inf).
+#' @param pAdjustMethod P-value adjustment method (default is "BH").
+#' @param verbose Logical indicating whether to print verbose output (default is FALSE).
 #' @return Enrichment results for each level of column of interest.
 #' @note Requires clusterProfiler and msigdbr packages. Install with: BiocManager::install(c("clusterProfiler", "msigdbr"))
 #' @export
 gsea_analysis <- function(
-    geneList, outpath,
-    keyType = NULL,
-    ontology = "ALL",
-    species = "Homo sapiens") {
+  geneList, outpath,
+  keyType = NULL,
+  ontology = "ALL",
+  species = "Homo sapiens",
+  minGSSize = 10,
+  maxGSSize = 500,
+  eps = 1e-10,
+  pvalueCutoff = Inf,
+  pAdjustMethod = "BH",
+  verbose = FALSE
+  ) {
   # Check for required packages
   check_suggested_package("clusterProfiler")
   check_suggested_package("msigdbr")
 
   if (is.null(keyType)) {
-    keyType <- detect_gene_id_type(names(geneList), strip = TRUE)
+  keyType <- detect_gene_id_type(names(geneList), strip = TRUE)
   }
 
   # ensure keytype is in our dict
   gene_keys <- list(SYMBOL = "gene_symbol", ENSEMBL = "ensembl_gene")
   if (!(keyType %in% names(gene_keys))) {
-    stop("Invalid keyType. Please use one of: ", paste(names(gene_keys), collapse = ", "))
+  stop("Invalid keyType. Please use one of: ", paste(names(gene_keys), collapse = ", "))
   }
 
   # match the keytype to the ID held in msigdbr
@@ -209,38 +201,47 @@ gsea_analysis <- function(
   # Get the species
   msigdb <- msigdbr::msigdbr(species = species)
 
+  # GO Terms
   GO_t2g <- subset(msigdb, gs_collection == "C5" & gs_subcollection != "HPO", select = c("gs_name", gene_key))
-  gse_go <- clusterProfiler::GSEA(geneList, TERM2GENE = GO_t2g, pvalueCutoff = Inf)
 
+  # Hallmark
   H_t2g <- subset(msigdb, gs_collection == "H", select = c("gs_name", gene_key))
-  gse_h <- clusterProfiler::GSEA(geneList, TERM2GENE = H_t2g, pvalueCutoff = Inf)
 
+  # Reactome
   reactome_t2g <- subset(msigdb, gs_collection == "C2" & gs_subcollection == "CP:REACTOME", select = c("gs_name", gene_key))
-  gse_reactome <- clusterProfiler::GSEA(geneList, TERM2GENE = reactome_t2g, pvalueCutoff = Inf)
 
+  # KEGG
   kegg_t2g <- subset(msigdb, gs_collection == "C2" & gs_subcollection == "CP:KEGG_MEDICUS", select = c("gs_name", gene_key))
-  gse_kegg <- clusterProfiler::GSEA(geneList, TERM2GENE = kegg_t2g, pvalueCutoff = Inf)
 
   # Custom t2g terms
   # Only run custom gene sets if keyType is SYMBOL
   if (keyType == "SYMBOL") {
-    cust_t2g <- get_custom_genesets()
-    gse_cust <- clusterProfiler::GSEA(geneList, TERM2GENE = cust_t2g, pvalueCutoff = Inf)
+    cust_t2g <- rbind(mpa_geneset, press_geneset)
   } else {
-    gse_cust <- NULL
+    cust_t2g <- NULL
   }
 
   gse_list <- list(
-    GO = gse_go,
-    H = gse_h,
-    REACTOME = gse_reactome,
-    KEGG = gse_kegg,
-    CUSTOM = gse_cust
+    GO = GO_t2g,
+    H = H_t2g,
+    REACTOME = reactome_t2g,
+    KEGG = kegg_t2g
   )
+  
+  # Only add CUSTOM if not NULL
+  if (!is.null(cust_t2g)) {
+    gse_list$CUSTOM <- cust_t2g
+  }
 
   for (idx in seq_along(gse_list)) {
-    gse <- gse_list[[idx]]
+    # Get the term to gene mapping and name
+    t2g <- gse_list[[idx]]
     name <- names(gse_list)[idx]
+
+    # Run GSEA
+    gse <- clusterProfiler::GSEA(geneList, TERM2GENE = t2g, minGSSize = minGSSize, maxGSSize = maxGSSize, eps = eps, pvalueCutoff = pvalueCutoff, pAdjustMethod = pAdjustMethod, verbose = verbose)
+
+    # Save results
     save_gse(gse, file.path(outpath, name))
   }
   return(gse_list)
@@ -253,14 +254,13 @@ gsea_analysis <- function(
 #' @param padj_cutoff Adjusted p-value cutoff for filtering results (default is 0.05).
 #' @param max_pathways Maximum number of pathways to display per direction (default is 10).
 #' @param ont GO ontology: "BP" (Biological Process), "MF" (Molecular Function), "CC" (Cellular Component), or "ALL" (default is "BP").
+#' @param OrgDb OrgDb object for annotation (default is org.Hs.eg.db).
 #' @param keyType Key type for gene IDs (default is "SYMBOL").
 #' @param pvalueCutoff P-value cutoff for enrichGO (default is 0.05).
 #' @param qvalueCutoff Q-value cutoff for enrichGO (default is 0.1).
 #' @param minGSSize Minimum gene set size (default is 10).
 #' @param maxGSSize Maximum gene set size (default is 500).
 #' @return List containing enrichment results for up and down genes, combined results, and plot.
-#' @importFrom clusterProfiler enrichGO
-#' @importFrom org.Hs.eg.db org.Hs.eg.db
 #' @importFrom purrr map map_dfr
 #' @importFrom dplyr filter arrange slice_head mutate bind_rows pull
 #' @importFrom ggplot2 ggplot aes geom_col labs ggsave scale_fill_manual coord_flip theme element_text

@@ -4,14 +4,14 @@
 \alias{olink_lod_qc}
 \title{Test level of detection (LOD) for each protein}
 \usage{
-olink_lod_qc(data, outdir, plot = TRUE)
+olink_lod_qc(data, outpath, plot = TRUE)
 }
 \arguments{
 \item{data}{Data frame of Olink data}
 
-\item{outdir}{Output directory}
+\item{outpath}{Output directory}
 
-\item{plot}{Boolean to indicate if plots should be generated}
+\item{plot}{Boolean to indicate if plots should be generated (default: TRUE)}
 }
 \value{
 List containing LOD results and outliers

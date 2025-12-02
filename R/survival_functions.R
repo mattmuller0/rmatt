@@ -61,7 +61,7 @@ log_rank_test <- function(
 
 #' @title Survival Analysis
 #' @description Make survival curves and HR plots for one or more conditions and censors using univariate analyses.
-#' @param df data.frame, data to make survival curves from.
+#' @param data data.frame, data to make survival curves from.
 #' @param condition character, condition(s) to make survival curves for. Can be a single condition or vector of conditions.
 #' @param censors character, censors to make survival curves for.
 #' @param outpath character, output directory to save plots to.
@@ -76,7 +76,7 @@ log_rank_test <- function(
 #' @importFrom purrr map_dfr
 #' @export
 survival_analysis <- function(
-    df,
+    data,
     condition,
     censors,
     outpath,
@@ -84,13 +84,13 @@ survival_analysis <- function(
     time_prefix = "time_to_") {
   # Validate inputs
   stopifnot(
-    "df must be a data.frame" = is.data.frame(df),
+    "data must be a data.frame" = is.data.frame(data),
     "condition must be character vector" = is.character(condition),
     "censors must be character vector" = is.character(censors)
   )
 
   # Check if condition variables exist in data
-  missing_vars <- condition[!condition %in% colnames(df)]
+  missing_vars <- condition[!condition %in% colnames(data)]
   if (length(missing_vars) > 0) {
     stop(sprintf("Condition variables not found in data: %s", paste(missing_vars, collapse = ", ")))
   }
@@ -100,8 +100,8 @@ survival_analysis <- function(
   time_vars <- paste0(time_prefix, censors_basenames)
 
   # Verify the censors and time_vars are in the data
-  stopifnot(all(censors %in% colnames(df)))
-  stopifnot(all(time_vars %in% colnames(df)))
+  stopifnot(all(censors %in% colnames(data)))
+  stopifnot(all(time_vars %in% colnames(data)))
 
   # Make lists to store the survival plots and HR results
   survival_plots <- list()
@@ -114,9 +114,9 @@ survival_analysis <- function(
       censor <- censors[idx]
       fmla <- as.formula(sprintf("Surv(%s, %s) ~ %s", time_var, censor, cond))
 
-      surv_obj <- do.call(survival::survfit, list(fmla, data = df))
-      surv_diff <- do.call(survival::survdiff, list(fmla, data = df))
-      coxmodel <- do.call(survival::coxph, list(fmla, data = df))
+      surv_obj <- do.call(survival::survfit, list(fmla, data = data))
+      surv_diff <- do.call(survival::survdiff, list(fmla, data = data))
+      coxmodel <- do.call(survival::coxph, list(fmla, data = data))
 
       # Create survival plot
       surv_plot <- ggsurvfit::ggsurvfit(surv_obj) +
@@ -172,13 +172,14 @@ survival_analysis <- function(
 #' @title Internal Hazard Ratios Helper
 #' @description Internal function to calculate hazard ratios for multiple conditions using univariate analyses.
 #' @param cs list, list of censors and time variables.
-#' @param df data.frame, data to make survival curves from.
+#' @param data data.frame, data to make survival curves from.
 #' @param condition character, condition(s) to make survival curves for. Can be single or multiple conditions.
 #' @param controls character, controls to include in the model. Default is NULL.
 #' @return data.frame, hazard ratios for the condition(s).
 #' @importFrom survival coxph
 #' @importFrom broom tidy
-hazards.internal <- function(cs, df, condition, controls) {
+#' @keywords internal
+hazards.internal <- function(cs, data, condition, controls) {
   # Univariate analysis: each condition separately
   results_list <- list()
 
@@ -188,7 +189,7 @@ hazards.internal <- function(cs, df, condition, controls) {
       cs$time, cs$censor,
       paste0(c(cond, controls), collapse = " + ")
     ))
-    coxmodel <- do.call(coxph, list(fmla, data = df))
+    coxmodel <- do.call(coxph, list(fmla, data = data))
 
     # Extract results for this condition
     o <- tidy(coxmodel)
@@ -206,8 +207,8 @@ hazards.internal <- function(cs, df, condition, controls) {
   o$hazard.ratio <- exp(o$estimate)
   o$ci.upper <- exp(o$estimate + 1.96 * o$std.error)
   o$ci.lower <- exp(o$estimate - 1.96 * o$std.error)
-  o$n_total <- nrow(df)
-  o$n_event <- sum(df[[cs$censor]] == 1)
+  o$n_total <- nrow(data)
+  o$n_event <- sum(data[[cs$censor]] == 1)
   o <- o[, c("censor", "condition", "term", "n_total", "n_event", "hazard.ratio", "ci.lower", "ci.upper", "p.value")]
 
   return(o)
@@ -215,7 +216,7 @@ hazards.internal <- function(cs, df, condition, controls) {
 
 #' @title Hazard Ratios Table
 #' @description Make HR tables for one or more conditions and censors using univariate analyses.
-#' @param df data.frame, data to make survival curves from.
+#' @param data data.frame, data to make survival curves from.
 #' @param condition character, condition(s) to make survival curves for. Can be a single condition or vector of conditions.
 #' @param censors character, censors to make survival curves for.
 #' @param controls character, controls to include in the model. Default is NULL.
@@ -229,7 +230,7 @@ hazards.internal <- function(cs, df, condition, controls) {
 #' @importFrom purrr map_dfr map flatten_dfr
 #' @export
 hazard_ratios_table <- function(
-    df,
+    data,
     condition,
     censors,
     controls = NULL,
@@ -241,13 +242,13 @@ hazard_ratios_table <- function(
     verbose = FALSE) {
   # Validate inputs and prepare data
   stopifnot(
-    "df must be a data.frame" = is.data.frame(df),
+    "data must be a data.frame" = is.data.frame(data),
     "condition must be character vector" = is.character(condition),
     "censors must be character vector" = is.character(censors)
   )
 
   # Check if condition variables exist in data
-  missing_vars <- condition[!condition %in% colnames(df)]
+  missing_vars <- condition[!condition %in% colnames(data)]
   if (length(missing_vars) > 0) {
     stop(sprintf("Condition variables not found in data: %s", paste(missing_vars, collapse = ", ")))
   }
@@ -256,24 +257,24 @@ hazard_ratios_table <- function(
   time_vars <- paste0(time_prefix, censors_basenames)
 
   stopifnot(
-    "Censors not found in data" = all(censors %in% colnames(df)),
-    "Time variables not found in data" = all(time_vars %in% colnames(df)),
-    "Condition must be numeric for per_sd" = !per_sd || all(sapply(condition, function(x) is.numeric(df[[x]])))
+    "Censors not found in data" = all(censors %in% colnames(data)),
+    "Time variables not found in data" = all(time_vars %in% colnames(data)),
+    "Condition must be numeric for per_sd" = !per_sd || all(sapply(condition, function(x) is.numeric(data[[x]])))
   )
 
   # Clean data
   cols_to_check <- c(condition, censors, controls)
-  na_count <- sum(!complete.cases(df[, cols_to_check]))
+  na_count <- sum(!complete.cases(data[, cols_to_check]))
   if (na_count > 0) {
     warning(sprintf("Removing %d rows with NA values", na_count))
-    df <- df[complete.cases(df[, cols_to_check]), ]
+    data <- data[complete.cases(data[, cols_to_check]), ]
   }
 
   # Standardize condition if requested
   if (per_sd) {
     for (cond in condition) {
-      if (is.numeric(df[[cond]])) {
-        df[, cond] <- scale(df[, cond])[, 1]
+      if (is.numeric(data[[cond]])) {
+        data[, cond] <- scale(data[, cond])[, 1]
       }
     }
   }
@@ -285,19 +286,19 @@ hazard_ratios_table <- function(
     if (verbose) message(sprintf("Performing subgroup analysis for: %s", paste(subgroups, collapse = ", ")))
 
     return(purrr::map_dfr(subgroups, function(subgroup_var) {
-      vals <- na.omit(unique(df[[subgroup_var]]))
+      vals <- na.omit(unique(data[[subgroup_var]]))
 
       purrr::map_dfr(vals, function(val) {
-        subset_df <- subset(df, df[[subgroup_var]] == val)
+        subset_data <- subset(data, data[[subgroup_var]] == val)
 
         if (verbose) {
-          message(sprintf("  Analyzing %s = %s (N = %d)", subgroup_var, val, nrow(subset_df)))
+          message(sprintf("  Analyzing %s = %s (N = %d)", subgroup_var, val, nrow(subset_data)))
         }
 
         tryCatch(
           {
             result <- hazard_ratios_table(
-              df = subset_df,
+              data = subset_data,
               condition = condition,
               censors = censors,
               controls = controls,
@@ -335,14 +336,14 @@ hazard_ratios_table <- function(
     # For multiple conditions with OVR, handle each condition separately
     if (length(condition) > 1) {
       return(purrr::map_dfr(condition, function(cond) {
-        df_encoded <- one_hot_encode_ovr(df, cond, binary = FALSE)
-        vals <- unique(df[[cond]])
+        data_encoded <- one_hot_encode_ovr(data, cond, binary = FALSE)
+        vals <- unique(data[[cond]])
         ovr_columns <- paste0(cond, "_", vals)
-        ovr_columns <- ovr_columns[ovr_columns %in% colnames(df_encoded)]
+        ovr_columns <- ovr_columns[ovr_columns %in% colnames(data_encoded)]
 
         purrr::map_dfr(ovr_columns, function(ovr_col) {
           hazard_ratios_table(
-            df = df_encoded,
+            data = data_encoded,
             condition = ovr_col,
             censors = censors,
             controls = controls,
@@ -355,14 +356,14 @@ hazard_ratios_table <- function(
       }))
     } else {
       # Single condition OVR
-      df_encoded <- one_hot_encode_ovr(df, condition[1], binary = FALSE)
-      vals <- unique(df[[condition[1]]])
+      data_encoded <- one_hot_encode_ovr(data, condition[1], binary = FALSE)
+      vals <- unique(data[[condition[1]]])
       ovr_columns <- paste0(condition[1], "_", vals)
-      ovr_columns <- ovr_columns[ovr_columns %in% colnames(df_encoded)]
+      ovr_columns <- ovr_columns[ovr_columns %in% colnames(data_encoded)]
 
       return(purrr::map_dfr(ovr_columns, function(ovr_col) {
         hazard_ratios_table(
-          df = df_encoded,
+          data = data_encoded,
           condition = ovr_col,
           censors = censors,
           controls = controls,
@@ -381,6 +382,6 @@ hazard_ratios_table <- function(
   # Univariate analysis: each condition separately
   purrr::map_dfr(seq_len(nrow(censors_df)), function(i) {
     cs <- list(censor = censors_df$censor[i], time = censors_df$time[i])
-    hazards.internal(cs, df, condition, controls)
+    hazards.internal(cs, data, condition, controls)
   })
 }

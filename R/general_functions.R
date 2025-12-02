@@ -1,88 +1,3 @@
-#' Summarize differential expression results
-#' @param results results of differential expression analysis
-#' @param logFC_column column to use for logFC
-#' @param pvalue_column column to use for pvalue
-#' @param padj_column column to use for padj
-#' @param padj_cutoffs list of padj cutoffs to use
-#' @param pvalue_cutoffs list of pvalue cutoffs to use
-#' @param logFC_cutoff logFC cutoff to use
-#' @return summary of results
-#' @export
-summarize_experiment <- function(
-  results,
-  logFC_column = "log2FoldChange",
-  pvalue_column = "pvalue",
-  padj_column = "padj",
-  pvalue_cutoffs = c(0.01, 0.05, 0.1),
-  padj_cutoffs = c(0.05, 0.1, 0.2),
-  logFC_cutoff = 0) {
-  
-  # Input validation
-  required_cols <- c(logFC_column, pvalue_column, padj_column)
-  if (!all(required_cols %in% colnames(results))) {
-  stop("Missing required columns: ", 
-     paste(setdiff(required_cols, colnames(results)), collapse = ", "))
-  }
-  
-  # Initialize results dataframe
-  summary <- data.frame(
-  variable = character(),
-  p_cutoff = numeric(),
-  fc_cutoff = numeric(),
-  n_sig = integer(),
-  n_up = integer(),
-  n_down = integer(),
-  stringsAsFactors = FALSE
-  )
-  
-  # Function to count genes based on criteria
-  count_genes <- function(data, p_col, p_cutoff, fc_col, fc_cutoff) {
-  # Get valid data (non-NA)
-  valid_idx <- !is.na(data[[p_col]]) & !is.na(data[[fc_col]])
-  valid_data <- data[valid_idx, ]
-  
-  # Get significant genes
-  sig_idx <- valid_data[[p_col]] < p_cutoff
-  fc_data <- valid_data[[fc_col]][sig_idx]
-  
-  o <- list(
-    n_sig = sum(sig_idx),
-    n_up = sum(fc_data > fc_cutoff),
-    n_down = sum(fc_data < -fc_cutoff)
-  )
-  return(o)
-  }
-  
-  # Process p-value cutoffs
-  for (cutoff in pvalue_cutoffs) {
-  counts <- count_genes(results, pvalue_column, cutoff, logFC_column, logFC_cutoff)
-  summary <- rbind(summary, data.frame(
-    variable = "pvalue",
-    p_cutoff = cutoff,
-    fc_cutoff = logFC_cutoff,
-    n_sig = counts$n_sig,
-    n_up = counts$n_up,
-    n_down = counts$n_down
-  ))
-  }
-  
-  # Process adjusted p-value cutoffs
-  for (cutoff in padj_cutoffs) {
-  counts <- count_genes(results, padj_column, cutoff, logFC_column, logFC_cutoff)
-  summary <- rbind(summary, data.frame(
-    variable = "padj",
-    p_cutoff = cutoff,
-    fc_cutoff = logFC_cutoff,
-    n_sig = counts$n_sig,
-    n_up = counts$n_up,
-    n_down = counts$n_down
-  ))
-  }
-  
-  rownames(summary) <- NULL
-  return(summary)
-}
-
 #' Function to get genes from a results table
 #' @param results results table
 #' @param pval p-value cutoff
@@ -109,24 +24,24 @@ getGenes <- function(results, pval = 0.05, metric = 0, name_col = "rownames", pv
 }
 
 #' Function to add missing rows to a matrix
-#' @param df matrix, rows = genes, cols = samples
+#' @param data matrix, rows = genes, cols = samples
 #' @param rows vector of rownames to add
 #' @param sorted logical, whether to sort the rows alphabetically
-#' @return df matrix, rows = genes, cols = samples
+#' @return data matrix, rows = genes, cols = samples
 #' @export
 add_missing_rows <- function(
-  df,
+  data,
   rows,
   sorted = TRUE) {
-  missingRowNames <- rows[which(!rows %in% rownames(df))]
-  df_tmp <- as.data.frame(matrix(0, nrow = length(missingRowNames), ncol = dim(df)[2]))
-  colnames(df_tmp) <- colnames(df)
-  rownames(df_tmp) <- missingRowNames
-  df <- rbind(df_tmp, df)
+  missingRowNames <- rows[which(!rows %in% rownames(data))]
+  data_tmp <- as.data.frame(matrix(0, nrow = length(missingRowNames), ncol = dim(data)[2]))
+  colnames(data_tmp) <- colnames(data)
+  rownames(data_tmp) <- missingRowNames
+  data <- rbind(data_tmp, data)
   if (sorted) {
-  df <- df[order(rownames(df)), ]
+  data <- data[order(rownames(data)), ]
   }
-  return(df)
+  return(data)
 }
 
 #' Function to make a SummarizedExperiment object
@@ -233,21 +148,21 @@ pairwise_combos <- function(vec) {
 }
 
 #' Function to one hot encode dataframe column
-#' @param df dataframe
+#' @param data dataframe
 #' @param column character, column name
 #' @param binary logical, whether to make the column binary
 #' @return dataframe with one hot encoded column
 #' @importFrom glue glue
 #' @export
-one_hot_encode_ovr <- function(df, column, binary = TRUE) {
-  unique_vals <- unique(df[[column]])
+one_hot_encode_ovr <- function(data, column, binary = TRUE) {
+  unique_vals <- unique(data[[column]])
   for (val in unique_vals) {
   new_col_name <- paste0(column, "_", val)
   if (binary) {
-    df[[new_col_name]] <- ifelse(df[[column]] == val, 1, 0)
+    data[[new_col_name]] <- ifelse(data[[column]] == val, 1, 0)
   } else {
-    df[[new_col_name]] <- factor(ifelse(df[[column]] == val, val, "rest"), levels = c("rest", val))
+    data[[new_col_name]] <- factor(ifelse(data[[column]] == val, val, "rest"), levels = c("rest", val))
   }
   }
-  return(df)
+  return(data)
 }

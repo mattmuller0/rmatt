@@ -63,7 +63,7 @@ test_that("survival_analysis produces expected output for binary group input", {
 
     # Test basic functionality
     result <- survival_analysis(
-        df = test_data,
+        data = test_data,
         condition = "group",
         censors = c("censor_death", "censor_progression"),
         outpath = temp_dir,
@@ -82,7 +82,7 @@ test_that("survival_analysis produces expected output for binary group input", {
 
     # Test error handling
     expect_error(survival_analysis(
-        df = test_data,
+        data = test_data,
         condition = "nonexistent",
         censors = c("censor_death"),
         outpath = temp_dir
@@ -98,7 +98,7 @@ test_that("survival_analysis produces expected output for multigroup input", {
 
     # Test basic functionality
     result <- survival_analysis(
-        df = test_data,
+        data = test_data,
         condition = "multigroup",
         censors = c("censor_death", "censor_progression"),
         outpath = temp_dir,
@@ -117,7 +117,7 @@ test_that("survival_analysis produces expected output for multigroup input", {
 
     # Test error handling
     expect_error(survival_analysis(
-        df = test_data,
+        data = test_data,
         condition = "nonexistent",
         censors = c("censor_death"),
         outpath = temp_dir
@@ -131,7 +131,7 @@ test_that("hazard_ratios_table works correctly with basic input", {
     
     # Test basic functionality
     result <- hazard_ratios_table(
-        df = test_data,
+        data = test_data,
         condition = "group",
         censors = c("censor_death", "censor_progression"),
         time_prefix = "time_to_",
@@ -150,7 +150,7 @@ test_that("hazard_ratios_table handles controls correctly", {
     test_data <- create_mock_survival_data()
     
     result <- hazard_ratios_table(
-        df = test_data,
+        data = test_data,
         condition = "group",
         censors = "censor_death",
         controls = c("age", "sex"),
@@ -167,7 +167,7 @@ test_that("hazard_ratios_table handles per_sd option correctly", {
     
     # Test with continuous variable
     result <- hazard_ratios_table(
-        df = test_data,
+        data = test_data,
         condition = "age",
         censors = "censor_death",
         per_sd = TRUE,
@@ -180,7 +180,7 @@ test_that("hazard_ratios_table handles per_sd option correctly", {
     # Should error with categorical variable
     expect_error(
         hazard_ratios_table(
-            df = test_data,
+            data = test_data,
             condition = "group",
             censors = "censor_death",
             per_sd = TRUE
@@ -194,7 +194,7 @@ test_that("hazard_ratios_table handles tibble input correctly", {
     test_data <- tidyr::as_tibble(test_data)
     
     result <- hazard_ratios_table(
-        df = test_data,
+        data = test_data,
         condition = "multigroup",
         censors = "censor_death",
         ovr = TRUE,
@@ -210,7 +210,7 @@ test_that("hazard_ratios_table handles one-vs-rest correctly", {
     test_data <- create_mock_survival_data()
     
     result <- hazard_ratios_table(
-        df = test_data,
+        data = test_data,
         condition = "multigroup",
         censors = "censor_death",
         ovr = TRUE,
@@ -228,7 +228,7 @@ test_that("hazard_ratios_table handles NA values appropriately", {
     
     expect_warning(
         result <- hazard_ratios_table(
-            df = test_data,
+            data = test_data,
             condition = "age",
             censors = "censor_death",
             time_prefix = "time_to_",
@@ -245,7 +245,7 @@ test_that("hazard_ratios_table validates input columns", {
     
     expect_error(
         hazard_ratios_table(
-            df = test_data,
+            data = test_data,
             condition = "nonexistent",
             censors = "censor_death"
         )
@@ -253,7 +253,7 @@ test_that("hazard_ratios_table validates input columns", {
     
     expect_error(
         hazard_ratios_table(
-            df = test_data,
+            data = test_data,
             condition = "group",
             censors = "nonexistent"
         )
@@ -265,7 +265,7 @@ test_that("hazard_ratios_table handles subgroup analyses correctly", {
     test_data$subgroup <- factor(sample(c("X", "Y"), nrow(test_data), replace = TRUE))
     
     result <- hazard_ratios_table(
-        df = test_data,
+        data = test_data,
         condition = "group",
         censors = "censor_death",
         subgroups = "subgroup",
@@ -300,7 +300,7 @@ test_that("survival_analysis works with multiple conditions", {
     
     # Test multiple conditions (always univariate)
     result <- survival_analysis(
-        df = test_data,
+        data = test_data,
         condition = c("group", "sex"),
         censors = c("censor_death", "censor_progression"),
         outpath = temp_dir
@@ -322,7 +322,7 @@ test_that("hazard_ratios_table works with multiple conditions", {
     
     # Test multiple conditions (always univariate)
     result <- hazard_ratios_table(
-        df = test_data,
+        data = test_data,
         condition = c("group", "sex"),
         censors = c("censor_death", "censor_progression")
     )
@@ -339,14 +339,14 @@ test_that("multiple conditions functionality maintains backward compatibility", 
     
     # Test that single condition (as vector) works the same as before
     result_single_vec <- survival_analysis(
-        df = test_data,
+        data = test_data,
         condition = c("group"),  # Single condition as vector
         censors = c("censor_death"),
         outpath = temp_dir
     )
     
     result_single_char <- survival_analysis(
-        df = test_data,
+        data = test_data,
         condition = "group",  # Single condition as character
         censors = c("censor_death"),
         outpath = temp_dir

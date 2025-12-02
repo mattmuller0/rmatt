@@ -11,7 +11,9 @@ run_deseq(
   pvalue = "padj",
   pCutoff = 0.05,
   fcCutoff = 0,
-  ...
+  deseq_args = list(test = "Wald", fitType = "parametric", sfType = "ratio", quiet =
+    TRUE, minReplicatesForReplace = 7, useT = FALSE, minmu = 0.5, parallel = FALSE,
+    BPPARAM = BiocParallel::bpparam())
 )
 }
 \arguments{
@@ -27,7 +29,7 @@ run_deseq(
 
 \item{fcCutoff}{Fold change cutoff for volcano plot}
 
-\item{...}{Additional arguments to pass to DESeq2}
+\item{deseq_args}{List of additional arguments to pass to DESeq2::DESeq}
 }
 \value{
 Results of differential expression analysis

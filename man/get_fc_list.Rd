@@ -17,6 +17,5 @@ get_fc_list(res, fc_col = "log2FoldChange", names = NULL)
 Named numeric vector of sorted fold changes
 }
 \description{
-Takes a results data frame and creates a named vector of fold changes sorted in
-descending order. Useful for preparing data for enrichment analysis.
+Create a sorted fold change vector from results
 }

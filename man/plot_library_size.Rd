@@ -11,11 +11,12 @@ plot_library_size(dds, title, bins = 10)
 
 \item{title}{Title of plot}
 
-\item{bins}{Number of bins for histogram}
+\item{bins}{Number of bins for histogram (default: 10)}
 }
 \value{
-ggplot object of library size
+ggplot object of library size histogram
 }
 \description{
 Function to plot library size of summarized experiment object
 }
+\keyword{internal}

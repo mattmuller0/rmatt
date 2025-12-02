@@ -18,17 +18,18 @@ ReadFeatureCounts(
 
 \item{idx}{Columns to extract for (1) gene name and (2) counts.}
 
-\item{sep}{Field separator character.}
+\item{sep}{Field separator character (default: "\\t").}
 
-\item{skip}{Number of lines to skip at the beginning of the file.}
+\item{skip}{Number of lines to skip at the beginning of the file (default: 1).}
 
-\item{comment.char}{Character indicating comment lines to ignore.}
+\item{comment.char}{Character indicating comment lines to ignore (default: "#").}
 
-\item{stringsAsFactors}{Logical indicating whether strings should be converted to factors.}
+\item{stringsAsFactors}{Logical indicating whether strings should be converted to factors (default: FALSE).}
 }
 \value{
-Data frame of counts.
+Data frame of counts with gene names and count columns.
 }
 \description{
 Function to read a feature counts output file.
 }
+\keyword{internal}

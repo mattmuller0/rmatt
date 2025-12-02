@@ -12,10 +12,13 @@ plot_volcano(
   labels = "rownames",
   title = NULL,
   n_labels = TRUE,
+  n_gene_labels = 40,
   pCutoff = 0.05,
   fcCutoff = NULL,
   xlim = c(min(dge[, x]) - 0.5, max(dge[, x], na.rm = TRUE) + 0.5),
-  ylim = c(0, max(-log10(dge[, y]), na.rm = TRUE) * 1.25)
+  ylim = c(0, max(-log10(dge[, y]), na.rm = TRUE) * 1.25),
+  xlabel = bquote(~Log[2] ~ "Fold Change"),
+  ylabel = bquote(~-log[10] ~ "(" ~ .(substitute(pvalue)) ~ ")")
 )
 }
 \arguments{

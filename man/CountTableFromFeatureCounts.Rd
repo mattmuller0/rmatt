@@ -15,22 +15,22 @@ CountTableFromFeatureCounts(
 )
 }
 \arguments{
-\item{directory}{Directory containing feature counts output.}
+\item{directory}{Directory containing feature counts output (default: ".").}
 
-\item{pattern}{Pattern to match for feature counts output.}
+\item{pattern}{Pattern to match for feature counts output (default: "featureCounts.txt$").}
 
-\item{idx}{Columns to extract for (1) gene name and (2) counts.}
+\item{idx}{Columns to extract for (1) gene name and (2) counts (default: 7).}
 
-\item{sep}{Field separator character.}
+\item{sep}{Field separator character (default: "\\t").}
 
-\item{skip}{Number of lines to skip at the beginning of the file.}
+\item{skip}{Number of lines to skip at the beginning of the file (default: 1).}
 
-\item{comment.char}{Character indicating comment lines to ignore.}
+\item{comment.char}{Character indicating comment lines to ignore (default: "#").}
 
-\item{stringsAsFactors}{Logical indicating whether strings should be converted to factors.}
+\item{stringsAsFactors}{Logical indicating whether strings should be converted to factors (default: FALSE).}
 }
 \value{
-Data frame of counts.
+Data frame of counts with genes as rows and samples as columns.
 }
 \description{
 Function to create a count table from feature counts output directory.
