@@ -4,10 +4,10 @@
 \alias{color_mapping}
 \title{Color Mapping}
 \usage{
-color_mapping(df, custom_colors = NULL, alpha = 1)
+color_mapping(data, custom_colors = NULL, alpha = 1)
 }
 \arguments{
-\item{df}{Data frame containing variables to be mapped}
+\item{data}{Data frame containing variables to be mapped}
 
 \item{custom_colors}{Optional list of custom color mappings}
 

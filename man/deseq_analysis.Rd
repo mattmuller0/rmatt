@@ -4,7 +4,7 @@
 \alias{deseq_analysis}
 \title{Function to run DESeq2 analysis on a variety of conditions}
 \usage{
-deseq_analysis(dds, conditions, controls = NULL, outpath, ...)
+deseq_analysis(dds, conditions, controls = NULL, outpath)
 }
 \arguments{
 \item{dds}{DESeq2 object}
@@ -14,8 +14,6 @@ deseq_analysis(dds, conditions, controls = NULL, outpath, ...)
 \item{controls}{List of controls to run DESeq2 on}
 
 \item{outpath}{Path to save results}
-
-\item{...}{Additional arguments to pass to DESeq2 for volcano plots}
 }
 \value{
 List of results of differential expression analysis

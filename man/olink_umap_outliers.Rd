@@ -6,7 +6,7 @@
 \usage{
 olink_umap_outliers(
   data,
-  outdir,
+  outpath,
   outlierDefX = 2.5,
   outlierDefY = 4,
   byPanel = TRUE,
@@ -16,13 +16,13 @@ olink_umap_outliers(
 \arguments{
 \item{data}{Data frame of Olink data}
 
-\item{outdir}{Output directory}
+\item{outpath}{Output directory}
 
-\item{outlierDefX}{Outlier definition for x axis}
+\item{outlierDefX}{Outlier definition for x axis (default: 2.5)}
 
-\item{outlierDefY}{Outlier definition for y axis}
+\item{outlierDefY}{Outlier definition for y axis (default: 4)}
 
-\item{byPanel}{Boolean to plot by panel}
+\item{byPanel}{Boolean to plot by panel (default: TRUE)}
 
 \item{...}{Additional arguments to pass to olink_umap_plot}
 }

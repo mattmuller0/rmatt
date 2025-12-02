@@ -5,9 +5,9 @@
 \title{Compare one column to many columns}
 \usage{
 compare_one_to_many(
-  df,
-  col,
-  cols,
+  data,
+  one,
+  many,
   outdir,
   plot = TRUE,
   method.continuous = "spearman",
@@ -21,11 +21,7 @@ compare_one_to_many(
 )
 }
 \arguments{
-\item{df}{data frame}
-
-\item{col}{column to compare}
-
-\item{cols}{columns to compare to}
+\item{data}{data frame}
 
 \item{outdir}{output directory}
 
@@ -46,6 +42,10 @@ compare_one_to_many(
 \item{wilcox_args}{additional arguments to pass to wilcoxon test}
 
 \item{kruskal_args}{additional arguments to pass to kruskal-wallis test}
+
+\item{col}{column to compare}
+
+\item{cols}{columns to compare to}
 }
 \value{
 list of stats results and plots

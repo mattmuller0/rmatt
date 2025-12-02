@@ -31,10 +31,11 @@ plot_library_depth <- function(dds, title, bins = 30) {
 #' @description Function to plot library size of summarized experiment object
 #' @param dds DESeq2 object
 #' @param title Title of plot
-#' @param bins Number of bins for histogram
-#' @return ggplot object of library size
+#' @param bins Number of bins for histogram (default: 10)
+#' @return ggplot object of library size histogram
 #' @importFrom SummarizedExperiment assay
 #' @importFrom ggpubr theme_classic2
+#' @keywords internal
 plot_library_size <- function(dds, title, bins = 10) {
   p <- ggplot(data.frame(log2(colSums(assay(dds)) + 0.001)), aes(x = log2(colSums(assay(dds)) + 0.001))) +
     geom_histogram(bins = bins, fill = "blue", alpha = 0.65) +
@@ -47,9 +48,10 @@ plot_library_size <- function(dds, title, bins = 10) {
 #' @description Function to plot percent of genes detected in each sample
 #' @param dds DESeq2 object
 #' @param title Title of plot
-#' @param min_value Minimum value for detection
-#' @return ggplot object of percent of genes detected
+#' @param min_value Minimum value for detection (default: 0)
+#' @return ggplot object of percent of genes detected histogram
 #' @importFrom ggpubr theme_classic2
+#' @keywords internal
 plot_percent_genes_detected <- function(dds, title, min_value = 0) {
   p <- ggplot(data.frame(percent_genes_detected = percentGenesDetected(dds, min_value)), aes(x = percent_genes_detected)) +
     geom_histogram(fill = "blue", alpha = 0.65) +
@@ -134,7 +136,7 @@ plot_heatmap <- function(
 #' @importFrom forcats fct_reorder
 #' @importFrom stringr str_wrap
 #' @export
-plot_enrichment_terms <- function(
+plot_enrichment <- function(
     gse,
     title = "Enrichment Plot",
     terms2plot = NULL,
@@ -195,18 +197,18 @@ plot_enrichment_terms <- function(
 
 #' @title Color Mapping
 #' @description Creates color maps for continuous and categorical variables
-#' @param df Data frame containing variables to be mapped
+#' @param data Data frame containing variables to be mapped
 #' @param custom_colors Optional list of custom color mappings
 #' @param alpha Color transparency (0-1, default: 0.8)
 #' @return List of color mappings for continuous and categorical variables
 #' @importFrom circlize colorRamp2
 #' @importFrom RColorBrewer brewer.pal
 #' @export
-color_mapping <- function(df, custom_colors = NULL, alpha = 1) {
-  if (!is.data.frame(df)) stop("Input must be a data frame")
+color_mapping <- function(data, custom_colors = NULL, alpha = 1) {
+  if (!is.data.frame(data)) stop("Input must be a data frame")
 
   # Identify variable types and initialize color maps
-  is_continuous <- sapply(df, is.numeric)
+  is_continuous <- sapply(data, is.numeric)
   cont_vars <- names(which(is_continuous))
   cat_vars <- names(which(!is_continuous))
   color_maps <- list()
@@ -218,7 +220,7 @@ color_mapping <- function(df, custom_colors = NULL, alpha = 1) {
       next
     }
 
-    values <- df[[var]][is.finite(df[[var]])]
+    values <- data[[var]][is.finite(data[[var]])]
     breaks <- if (length(values) == 0) c(0, 0.5, 1) else quantile(values, c(0, 0.5, 1))
 
     # Adjust breaks if all values are identical
@@ -239,7 +241,7 @@ color_mapping <- function(df, custom_colors = NULL, alpha = 1) {
       next
     }
 
-    levels <- unique(na.omit(as.factor(df[[var]])))
+    levels <- unique(na.omit(as.factor(data[[var]])))
     n_levels <- length(levels)
 
     if (n_levels > 0) {
@@ -286,8 +288,10 @@ plot_factors_heatmap <- function(
     cohort_tab,
     name = "Statistic",
     na_col = "#e2dede",
-    cluster_rows = FALSE, cluster_columns = FALSE,
-    show_row_names = TRUE, show_column_names = TRUE,
+    cluster_rows = FALSE, 
+    cluster_columns = FALSE,
+    show_row_names = TRUE, 
+    show_column_names = TRUE,
     row_title = "Clinical Factors",
     row_title_gp = gpar(fontsize = 12),
     row_names_gp = gpar(fontsize = 16),
@@ -327,57 +331,6 @@ plot_factors_heatmap <- function(
   return(hm)
 }
 
-#' @title Plot Odds Ratio Volcano Plot
-#' @description Function to plot the volcano plot of an odds ratio
-#' @param odds_ratio_df Data frame with odds ratio data
-#' @param x Column name for odds ratio
-#' @param y Column name for p-value
-#' @param color Column name for adjusted p-value
-#' @param labels Column name for labels
-#' @param pCutoff P-value cutoff for significance
-#' @importFrom dplyr case_when
-#' @importFrom glue glue
-#' @importFrom ggrepel geom_text_repel
-plot_odds_volcano <- function(
-    odds_ratio_df,
-    x = "odds.ratio",
-    y = "p.value",
-    color = "p.adj",
-    labels = "term",
-    pCutoff = 0.05) {
-  odds_ratio_df$signf <- case_when(
-    odds_ratio_df[, "p.adj.multi"] < pCutoff ~ glue("p.adj.multi < {pCutoff}"),
-    odds_ratio_df[, "p.adj"] < pCutoff ~ glue("p.adj < {pCutoff}"),
-    TRUE ~ "NS"
-  )
-  out <- ggplot(odds_ratio_df, aes(x = !!sym(x), y = -log10(!!sym(y)), color = !!sym(color) < pCutoff)) +
-    geom_point(aes(color = signf)) +
-    geom_vline(xintercept = 1, linetype = "dashed") +
-    ggplot2::scale_color_manual(values = c("grey", "red"), labels = c("NS", paste0(color, glue(" < {color}")))) +
-    geom_text_repel(aes(label = !!sym(labels)), show.legend = FALSE) +
-    theme_matt() +
-    theme(legend.position = "bottom") +
-    labs(x = "Odds Ratio", y = "-log10(p-value)", title = "Odds Ratio Volcano Plot") +
-    annotate(
-      geom = "text",
-      x = max(odds_ratio_df[, x]) * 0.9,
-      y = max(-log10(odds_ratio_df[, y])) * 0.9,
-      label = paste0("n up: ", nrow(odds_ratio_df[odds_ratio_df[, x] > 1 & odds_ratio_df[, color] < 0.05, ])),
-      size = 5,
-      color = "red"
-    ) +
-    annotate(
-      geom = "text",
-      x = min(odds_ratio_df[, x]) * 0.9,
-      y = max(-log10(odds_ratio_df[, y])) * 0.9,
-      label = paste0("n down: ", nrow(odds_ratio_df[odds_ratio_df[, x] < 1 & odds_ratio_df[, color] < 0.05, ])),
-      size = 5,
-      color = "red"
-    ) +
-    lims(x = c(min(odds_ratio_df[, x]) * 0.6, max(odds_ratio_df[, x]) * 1.2))
-  return(out)
-}
-
 #' @title Plot Volcano Plot
 #' @description Function to plot the volcano plot
 #' @param dge Data frame with differential gene expression data
@@ -403,10 +356,14 @@ plot_volcano <- function(
     labels = "rownames",
     title = NULL,
     n_labels = TRUE,
+    n_gene_labels = 40,
     pCutoff = 0.05,
     fcCutoff = NULL,
     xlim = c(min(dge[, x]) - 0.5, max(dge[, x], na.rm = TRUE) + 0.5),
-    ylim = c(0, max(-log10(dge[, y]), na.rm = TRUE) * 1.25)) {
+    ylim = c(0, max(-log10(dge[, y]), na.rm = TRUE) * 1.25),
+    xlabel = bquote(~ Log[2] ~ "Fold Change"),
+    ylabel = bquote(~ -log[10] ~ "(" ~ .(substitute(pvalue)) ~ ")")
+    ) {
   dge <- as.data.frame(dge)
 
   if (labels == "rownames" & !is.null(rownames(dge))) {
@@ -429,10 +386,10 @@ plot_volcano <- function(
   out <- ggplot(dge, aes(x = !!sym(x), y = -log10(!!sym(y)), color = signf)) +
     geom_point() +
     ggplot2::scale_color_manual(values = c("grey", "red")) +
-    geom_text_repel(data = head(dge[order(dge[, y]), ], 100), aes(label = !!sym(labels)), show.legend = FALSE) +
+    geom_text_repel(data = head(dge[order(dge[, y]), ], n_gene_labels), aes(label = !!sym(labels)), show.legend = FALSE) +
     theme_matt() +
     theme(legend.position = "bottom") +
-    labs(x = bquote(~ Log[2] ~ "Fold Change"), y = bquote(~ -log[10] ~ "(" ~ .(substitute(pvalue)) ~ ")"), title = title, color = NULL) +
+    labs(x = xlabel, y = ylabel, title = title, color = "Significance") +
     lims(x = xlim, y = ylim)
 
   if (n_labels) {
@@ -475,6 +432,7 @@ plot_correlation_matrix <- function(cor_mat, title = "", xlab = "", ylab = "", x
     labs(title = title, x = xlab, y = ylab, fill = "Correlation Sign", size = "Correlation Magnitude")
   return(plot)
 }
+
 #' @title Plot Forest Plot
 #' @description Create a forest plot from a data frame of estimates and confidence intervals.
 #' @param data Data frame containing estimates and confidence intervals.

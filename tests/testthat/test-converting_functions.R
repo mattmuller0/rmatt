@@ -111,7 +111,7 @@ test_that("normalize_counts performs different normalizations correctly", {
   # Test invalid method
   expect_error(
     normalize_counts(dds, method = "invalid"),
-    "Invalid normalization method"
+    "'arg' should be one of"
   )
   
   # Test log2 parameter

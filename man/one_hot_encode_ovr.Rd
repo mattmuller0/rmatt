@@ -4,10 +4,10 @@
 \alias{one_hot_encode_ovr}
 \title{Function to one hot encode dataframe column}
 \usage{
-one_hot_encode_ovr(df, column, binary = TRUE)
+one_hot_encode_ovr(data, column, binary = TRUE)
 }
 \arguments{
-\item{df}{dataframe}
+\item{data}{dataframe}
 
 \item{column}{character, column name}
 

@@ -100,17 +100,17 @@ test_that("gsea_analysis works correctly with ensembl", {
   # Create temp directory
   temp_dir <- tempdir()
 
-  # Run function
+  # Run function (using ENSEMBL keyType, so CUSTOM gene sets are excluded)
   result <- gsea_analysis(test_list, temp_dir)
 
   # Test return value structure
   expect_type(result, "list")
-  expect_equal(names(result), c("GO", "H", "REACTOME", "KEGG", "CUSTOM"))
+  # CUSTOM is only included when keyType is SYMBOL (default)
+  expect_equal(names(result), c("GO", "H", "REACTOME", "KEGG"))
 
   # Test file outputs
   expect_true(file.exists(file.path(temp_dir, "GO")))
   expect_true(file.exists(file.path(temp_dir, "H")))
   expect_true(file.exists(file.path(temp_dir, "REACTOME")))
   expect_true(file.exists(file.path(temp_dir, "KEGG")))
-  expect_true(file.exists(file.path(temp_dir, "CUSTOM")))
 })

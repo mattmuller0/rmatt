@@ -4,14 +4,14 @@
 \alias{save_gse}
 \title{Save and plot gse object}
 \usage{
-save_gse(gse, outpath, ...)
+save_gse(gse, outpath, terms2plot = c("inflam", "plat", "coag"))
 }
 \arguments{
 \item{gse}{GSE object.}
 
 \item{outpath}{Path to save to.}
 
-\item{...}{Additional arguments to pass to ggsave.}
+\item{terms2plot}{Terms to plot.}
 }
 \value{
 None.

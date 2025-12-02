@@ -19,19 +19,19 @@ rna_preprocessing(
 
 \item{outpath}{Path to output directory}
 
-\item{depth_filter}{Minimum library depth to keep}
+\item{depth_filter}{Minimum library depth to keep (default: 10). Set to NA to skip.}
 
-\item{size_filter}{Minimum library size to keep}
+\item{size_filter}{Minimum library size to keep (default: 1e6). Set to NA to skip.}
 
-\item{percent_filter}{Minimum percent of genes detected to keep}
+\item{percent_filter}{Minimum percent of genes detected to keep (default: 0.5). Set to NA to skip.}
 
-\item{normalize}{Normalization method}
+\item{normalize}{Normalization method for filtering (default: "none")}
 
-\item{group}{Column of interest}
+\item{group}{Column of interest for PCA grouping (optional)}
 }
 \value{
 DESeq2 object after preprocessing
 }
 \description{
-Run general preprocessing on a DESeq2 object
+Perform quality control filtering and generate diagnostic plots for RNA-seq data
 }

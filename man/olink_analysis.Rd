@@ -7,7 +7,7 @@
 olink_analysis(
   data,
   conditions,
-  outdir,
+  outpath,
   de_fxn = OlinkAnalyze::olink_wilcox,
   gsea_fxn = OlinkAnalyze::olink_pathway_enrichment,
   de_args = list(),
@@ -18,13 +18,13 @@ olink_analysis(
 \arguments{
 \item{data}{Data frame of Olink data}
 
-\item{conditions}{Condition column}
+\item{conditions}{Condition column(s) to analyze}
 
-\item{outdir}{Output directory}
+\item{outpath}{Output directory}
 
-\item{de_fxn}{Differential expression function}
+\item{de_fxn}{Differential expression function (default: OlinkAnalyze::olink_wilcox)}
 
-\item{gsea_fxn}{Pathway analysis function}
+\item{gsea_fxn}{Pathway analysis function (default: OlinkAnalyze::olink_pathway_enrichment)}
 
 \item{de_args}{Arguments to pass to differential expression function}
 

@@ -5,7 +5,7 @@
 \title{Unified feature selection}
 \usage{
 select_top_features(
-  df,
+  data,
   method = c("variability", "expression", "lasso"),
   n = 1000,
   min_expr = 1,
@@ -17,7 +17,7 @@ select_top_features(
 )
 }
 \arguments{
-\item{df}{Data frame or matrix (samples x features)}
+\item{data}{Data frame or matrix (samples x features)}
 
 \item{method}{One of 'variability', 'expression', 'lasso'}
 

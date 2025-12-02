@@ -5,7 +5,7 @@
 \title{Survival Analysis}
 \usage{
 survival_analysis(
-  df,
+  data,
   condition,
   censors,
   outpath,
@@ -14,7 +14,7 @@ survival_analysis(
 )
 }
 \arguments{
-\item{df}{data.frame, data to make survival curves from.}
+\item{data}{data.frame, data to make survival curves from.}
 
 \item{condition}{character, condition(s) to make survival curves for. Can be a single condition or vector of conditions.}
 

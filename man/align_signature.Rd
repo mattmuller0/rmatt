@@ -4,12 +4,12 @@
 \alias{align_signature}
 \title{Align a signature by average correlation with the derivation values}
 \usage{
-align_signature(sig, dat, by = "mean")
+align_signature(sig, data, by = "mean")
 }
 \arguments{
 \item{sig}{signature vector}
 
-\item{dat}{data matrix}
+\item{data}{data matrix}
 
 \item{by}{method to align by (default is "mean")}
 }

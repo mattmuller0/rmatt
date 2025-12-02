@@ -9,7 +9,6 @@ rna_enrichment(
   outpath,
   keyType = NULL,
   enricher_function = NULL,
-  image_type = "pdf",
   ontology = "ALL",
   terms2plot = c("inflam", "immune", "plat"),
   ...
@@ -23,8 +22,6 @@ rna_enrichment(
 \item{keyType}{Key type for gene list.}
 
 \item{enricher_function}{Enrichment method to use (default is gseGO).}
-
-\item{image_type}{Type of image to save (default is pdf).}
 
 \item{ontology}{Ontology to use (default is ALL).}
 

@@ -4,17 +4,17 @@
 \alias{add_missing_rows}
 \title{Function to add missing rows to a matrix}
 \usage{
-add_missing_rows(df, rows, sorted = TRUE)
+add_missing_rows(data, rows, sorted = TRUE)
 }
 \arguments{
-\item{df}{matrix, rows = genes, cols = samples}
+\item{data}{matrix, rows = genes, cols = samples}
 
 \item{rows}{vector of rownames to add}
 
 \item{sorted}{logical, whether to sort the rows alphabetically}
 }
 \value{
-df matrix, rows = genes, cols = samples
+data matrix, rows = genes, cols = samples
 }
 \description{
 Function to add missing rows to a matrix

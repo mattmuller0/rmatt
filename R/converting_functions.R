@@ -98,55 +98,50 @@ detect_gene_id_type <- function(geneList, strip = TRUE) {
 
 #' Function to normalize dds object and return counts
 #' @description Function to normalize DESeq2 dds object and return counts.
-#' @param dds DESeq2 object
-#' @param method normalization method
-#' @param log2 logical, whether to log2 transform the counts
-#' @return normalized counts
+#' @param dds DESeq2 or SummarizedExperiment object
+#' @param method Normalization method. One of: "mor" (median of ratios), "vst"/"vsd" 
+#'   (variance stabilizing transformation), "log2", "log2-mor", "rld"/"rlog" 
+#'   (regularized log), "cpm" (counts per million), "rpkm", "tmm", "rank", or "none"
+#' @param log2 Logical, whether to additionally log2 transform the counts (default: FALSE)
+#' @return Data frame of normalized counts with genes as rows and samples as columns
 #' @export
 #' 
 #' @importFrom SummarizedExperiment assay
-#' 
-#' 
-normalize_counts <- function(dds, method = "mor", log2 = FALSE) {
-  options <- c("mor", "vst", "vsd", "log2", "rld", "cpm", "rlog", "rpkm", "none", "tmm", "log2-mor", "rank")
-  if (method %in% options) {
-    normalize <- method
-  } else {
-    stop("Invalid normalization method. Please choose from: log2-mor, mor, vst, vsd, log2, rld, cpm, rlog, rpkm, tmm, rank, none")
-  }
-  if (normalize == "mor") {
-    if (is.null(DESeq2::sizeFactors(dds))) {
-      dds <- DESeq2::estimateSizeFactors(dds)
-    }
-    counttable <- DESeq2::counts(dds, normalize = TRUE)
-  }
-  if (normalize %in% c("vsd", "vst")) {
-    counttable <- SummarizedExperiment::assay(DESeq2::varianceStabilizingTransformation(dds))
-  }
-  if (normalize == "log2") {
-    counttable <- log2(SummarizedExperiment::assay(dds) + 1)
-  }
-  if (normalize == "log2-mor") {
-    counttable <- log2(DESeq2::counts(dds, normalize = TRUE) + 1)
-  }
-  if (normalize %in% c("rld", "rlog")) {
-    counttable <- DESeq2::rlog(dds)
-  }
-  if (normalize == "cpm") {
-    counttable <- edgeR::cpm(dds)
-  }
-  if (normalize == "rpkm") {
-    counttable <- edgeR::rpkm(dds)
-  }
-  if (normalize == "tmm") {
-    counttable <- edgeR::cpm(edgeR::calcNormFactors(dds, method = "TMM"))
-  }
-  if (normalize == "rank") {
-    counttable <- singscore::rankGenes(dds)
-  }
-  if (normalize == "none") {
-    counttable <- SummarizedExperiment::assay(dds)
-  }
+normalize_counts <- function(dds, method = c("mor", "vst", "vsd", "log2", "log2-mor", 
+                                              "rld", "rlog", "cpm", "rpkm", "tmm", 
+                                              "rank", "none"), log2 = FALSE) {
+  method <- match.arg(method)
+  
+  # Handle vsd as alias for vst, rld as alias for rlog
+  method <- switch(method,
+    vsd = "vst",
+    rld = "rlog",
+    method
+  )
+  
+  counttable <- switch(method,
+    mor = {
+      if (is.null(DESeq2::sizeFactors(dds))) {
+        dds <- DESeq2::estimateSizeFactors(dds)
+      }
+      DESeq2::counts(dds, normalize = TRUE)
+    },
+    vst = SummarizedExperiment::assay(DESeq2::varianceStabilizingTransformation(dds)),
+    log2 = log2(SummarizedExperiment::assay(dds) + 1),
+    `log2-mor` = {
+      if (is.null(DESeq2::sizeFactors(dds))) {
+        dds <- DESeq2::estimateSizeFactors(dds)
+      }
+      log2(DESeq2::counts(dds, normalize = TRUE) + 1)
+    },
+    rlog = SummarizedExperiment::assay(DESeq2::rlog(dds)),
+    cpm = edgeR::cpm(dds),
+    rpkm = edgeR::rpkm(dds),
+    tmm = edgeR::cpm(edgeR::calcNormFactors(dds, method = "TMM")),
+    rank = singscore::rankGenes(dds),
+    none = SummarizedExperiment::assay(dds)
+  )
+  
   counts <- as.data.frame(counttable)
   if (log2) {
     counts <- log2(counts + 1)

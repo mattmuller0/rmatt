@@ -1,30 +1,68 @@
 #' Get percent of genes detected
-#' @param dds DESeq2 object
-#' @param min_value Minimum value to consider a gene detected
-#' @return Data frame of percent of genes detected
+#' @description Calculate the proportion of samples in which each gene is detected
+#' @param dds DESeq2 or SummarizedExperiment object
+#' @param min_value Minimum value to consider a gene detected (default: 0)
+#' @return Numeric vector of percent of genes detected per gene
 #' @importFrom SummarizedExperiment assay
+#' @keywords internal
 percentGenesDetected <- function(dds, min_value = 0) {
   counts <- assay(dds)
   percent_genes_detected <- rowMeans(counts > min_value)
   return(percent_genes_detected)
 }
 
-#' Run general preprocessing on a DESeq2 object
+#' Plot QC diagnostics for RNA-seq data
+#' @description Internal function to generate hierarchical clustering and PCA plots
 #' @param dds DESeq2 object
 #' @param outpath Path to output directory
-#' @param depth_filter Minimum library depth to keep
-#' @param size_filter Minimum library size to keep
-#' @param percent_filter Minimum percent of genes detected to keep
-#' @param normalize Normalization method
-#' @param group Column of interest
+#' @param group Column of interest for PCA grouping (optional)
+#' @return NULL invisibly, saves plots to outpath
+#' @importFrom SummarizedExperiment assay colData
+#' @importFrom ggplot2 theme labs ggsave aes
+#' @importFrom ggpubr theme_classic2
+#' @importFrom ggrepel geom_text_repel
+#' @keywords internal
+.plot_qc_diagnostics <- function(dds, outpath, group = NULL) {
+  message("Checking hierarchical clustering")
+  counts <- scale(t(SummarizedExperiment::assay(DESeq2::vst(dds))))
+  sampleTree <- stats::hclust(stats::dist(counts))
+  ggtree::ggtree(sampleTree) +
+    ggtree::geom_tiplab(size = 2, hjust = -0.1) +
+    ggtree::theme_tree2() +
+    ggplot2::labs(title = "Sample clustering to detect outliers", subtitle = "", x = "", y = "")
+  ggplot2::ggsave(file.path(outpath, "sample_outliers.pdf"), dpi = 300)
+
+  message("Checking PCA")
+  pca <- stats::prcomp(counts)
+  if (is.null(group)) {
+    pca_plot <- ggbiplot::ggbiplot(pca, ellipse = TRUE, var.axes = FALSE)
+  } else {
+    pca_plot <- ggbiplot::ggbiplot(pca, groups = SummarizedExperiment::colData(dds)[, group], ellipse = TRUE, var.axes = FALSE)
+  }
+  pca_plot <- pca_plot +
+    ggplot2::theme(legend.direction = "horizontal", legend.position = "top") +
+    ggrepel::geom_text_repel(ggplot2::aes(label = rownames(counts)), size = 4, vjust = -1, max.overlaps = log10(length(colnames(dds)))) +
+    ggpubr::theme_classic2() +
+    ggplot2::labs(title = "PCA Plot")
+  ggplot2::ggsave(file.path(outpath, "pca_plot.pdf"), pca_plot, dpi = 300)
+  
+  invisible(NULL)
+}
+
+#' Run general preprocessing on a DESeq2 object
+#' @description Perform quality control filtering and generate diagnostic plots for RNA-seq data
+#' @param dds DESeq2 object
+#' @param outpath Path to output directory
+#' @param depth_filter Minimum library depth to keep (default: 10). Set to NA to skip.
+#' @param size_filter Minimum library size to keep (default: 1e6). Set to NA to skip.
+#' @param percent_filter Minimum percent of genes detected to keep (default: 0.5). Set to NA to skip.
+#' @param normalize Normalization method for filtering (default: "none")
+#' @param group Column of interest for PCA grouping (optional)
 #' @return DESeq2 object after preprocessing
 #' @importFrom SummarizedExperiment assay colData
-#' 
 #' @importFrom ggplot2 ggplot aes geom_point theme element_blank element_text labs ggsave
 #' @importFrom ggpubr theme_classic2
 #' @importFrom ggrepel geom_text_repel
-#' 
-#' 
 #' @importFrom cowplot plot_grid
 #' @export
 rna_preprocessing <- function(
@@ -74,30 +112,8 @@ rna_preprocessing <- function(
   all_plots <- plot_grid(depth_plots, size_plots, percent_plots, nrow = 3)
   ggsave(file.path(outpath, "preprocessing_plots.pdf"), all_plots)
 
-  message("Checking hierarchical clustering")
-  counts <- scale(t(normal(dds)))
-  sampleTree <- hclust(dist(counts))
-  ggtree(sampleTree) +
-    geom_tiplab(size = 2, hjust = -0.1) +
-    theme_tree2() +
-    labs(title = "Sample clustering to detect outliers", subtitle = "", x = "", y = "")
-  ggsave(file.path(outpath, "sample_outliers.pdf"))
-
-  message("Checking PCA")
-  counts <- scale(t(assay(vst(dds))))
-  pca <- prcomp(counts)
-  if (is.null(group)) {
-    pca_plot <- ggbiplot(pca, ellipse = TRUE, var.axes = FALSE)
-  } else {
-    pca_plot <- ggbiplot(pca, groups = colData(dds)[, group], ellipse = TRUE, var.axes = FALSE)
-  }
-
-  pca_plot <- pca_plot +
-    theme(legend.direction = "horizontal", legend.position = "top") +
-    geom_text_repel(aes(label = rownames(counts)), size = 4, vjust = -1, max.overlaps = log10(length(colnames(dds)))) +
-    theme_classic2() +
-    labs(title = "PCA Plot")
-  ggsave(file.path(outpath, "pca_plot.pdf"), pca_plot, dpi = 300)
+  # Generate QC diagnostics (hierarchical clustering and PCA)
+  .plot_qc_diagnostics(dds, outpath, group)
 
   message("Saving dds object")
   saveRDS(dds, file = file.path(outpath, "dds.rds"))
@@ -114,21 +130,18 @@ rna_preprocessing <- function(
 }
 
 #' Filter a DESeq2 object by expression and make plots of the filtering
+#' @description Filter genes using edgeR's filterByExpr and generate diagnostic plots
 #' @param dds DESeq2 object
 #' @param outpath Path to output directory
-#' @param group Column of interest
-#' @param min.count Minimum mean expression to keep
-#' @param min.prop Minimum proportion of samples to keep
-#' @param ... Additional arguments to pass to FilterByExpr
+#' @param group Column of interest for filtering and PCA grouping (optional)
+#' @param min.count Minimum mean expression to keep (default: 10)
+#' @param min.prop Minimum proportion of samples to keep (default: 0.5)
+#' @param ... Additional arguments to pass to edgeR::filterByExpr
 #' @return DESeq2 object after filtering
-#' 
 #' @importFrom SummarizedExperiment assay colData
-#' 
 #' @importFrom ggplot2 ggplot aes geom_point theme element_blank element_text labs ggsave
 #' @importFrom ggpubr theme_classic2
 #' @importFrom ggrepel geom_text_repel
-#' 
-#' 
 #' @importFrom cowplot plot_grid
 #' @export
 filter_edgeR <- function(
@@ -141,7 +154,8 @@ filter_edgeR <- function(
   dds_before <- dds
 
   message("Filtering with FilterByExpr from edgeR")
-  keep <- filterByExpr(dds, group = dds[[group]], min.count = min.count, ...)
+  keep <- edgeR::filterByExpr(dds, group = dds[[group]], min.count = min.count, ...)
+
   dds <- dds[keep, ]
 
   message("Plotting filtering results")
@@ -160,29 +174,8 @@ filter_edgeR <- function(
   all_plots <- plot_grid(depth_plots, size_plots, percent_plots, nrow = 3)
   ggsave(file.path(outpath, "filtering_plots.pdf"), all_plots)
 
-  message("Checking hierarchical clustering")
-  counts <- scale(t(assay(vst(dds))))
-  sampleTree <- hclust(dist(counts))
-  ggtree(sampleTree) +
-    geom_tiplab(size = 2, hjust = -0.1) +
-    theme_tree2() +
-    labs(title = "Sample clustering to detect outliers", subtitle = "", x = "", y = "")
-  ggsave(file.path(outpath, "sample_outliers.pdf"), dpi = 300)
-
-  message("Checking PCA")
-  counts <- scale(t(assay(vst(dds))))
-  pca <- prcomp(counts)
-  if (is.null(group)) {
-    pca_plot <- ggbiplot(pca, ellipse = TRUE, var.axes = FALSE)
-  } else {
-    pca_plot <- ggbiplot(pca, groups = colData(dds)[, group], ellipse = TRUE, var.axes = FALSE)
-  }
-  pca_plot <- pca_plot +
-    theme(legend.direction = "horizontal", legend.position = "top") +
-    geom_text_repel(aes(label = rownames(counts)), size = 4, vjust = -1, max.overlaps = log10(length(colnames(dds)))) +
-    theme_classic2() +
-    labs(title = "PCA Plot")
-  ggsave(file.path(outpath, "pca_plot.pdf"), pca_plot, dpi = 300)
+  # Generate QC diagnostics (hierarchical clustering and PCA)
+  .plot_qc_diagnostics(dds, outpath, group)
 
   message("Saving dds object")
   saveRDS(dds, file = file.path(outpath, "dds.rds"))

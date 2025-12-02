@@ -7,8 +7,9 @@
 get_custom_genesets()
 }
 \value{
-List of custom gene sets.
+Data frame of combined custom gene sets with gs_name and gene_symbol columns
 }
 \description{
-Load custom gene sets
+Combines mpa_geneset and press_geneset into a single data frame
 }
+\keyword{internal}

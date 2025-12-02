@@ -9,7 +9,13 @@ gsea_analysis(
   outpath,
   keyType = NULL,
   ontology = "ALL",
-  species = "Homo sapiens"
+  species = "Homo sapiens",
+  minGSSize = 10,
+  maxGSSize = 500,
+  eps = 1e-10,
+  pvalueCutoff = Inf,
+  pAdjustMethod = "BH",
+  verbose = FALSE
 )
 }
 \arguments{
@@ -20,6 +26,20 @@ gsea_analysis(
 \item{keyType}{Key type for gene list.}
 
 \item{ontology}{Ontology to use (default is ALL).}
+
+\item{species}{Species name for msigdbr (default is "Homo sapiens").}
+
+\item{minGSSize}{Minimum gene set size (default is 10).}
+
+\item{maxGSSize}{Maximum gene set size (default is 500).}
+
+\item{eps}{Boundary for calculating the p value (default is 1e-10).}
+
+\item{pvalueCutoff}{P-value cutoff (default is Inf).}
+
+\item{pAdjustMethod}{P-value adjustment method (default is "BH").}
+
+\item{verbose}{Logical indicating whether to print verbose output (default is FALSE).}
 }
 \value{
 Enrichment results for each level of column of interest.

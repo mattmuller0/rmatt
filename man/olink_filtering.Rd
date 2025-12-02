@@ -6,7 +6,7 @@
 \usage{
 olink_filtering(
   data,
-  outdir,
+  outpath,
   pca_args = list(),
   umap_args = list(),
   lod_args = list()
@@ -15,7 +15,7 @@ olink_filtering(
 \arguments{
 \item{data}{Data frame of Olink data}
 
-\item{outdir}{Output directory}
+\item{outpath}{Output directory}
 
 \item{pca_args}{List of arguments to pass to PCA function}
 

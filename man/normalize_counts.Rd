@@ -4,17 +4,24 @@
 \alias{normalize_counts}
 \title{Function to normalize dds object and return counts}
 \usage{
-normalize_counts(dds, method = "mor", log2 = FALSE)
+normalize_counts(
+  dds,
+  method = c("mor", "vst", "vsd", "log2", "log2-mor", "rld", "rlog", "cpm", "rpkm",
+    "tmm", "rank", "none"),
+  log2 = FALSE
+)
 }
 \arguments{
-\item{dds}{DESeq2 object}
+\item{dds}{DESeq2 or SummarizedExperiment object}
 
-\item{method}{normalization method}
+\item{method}{Normalization method. One of: "mor" (median of ratios), "vst"/"vsd" 
+(variance stabilizing transformation), "log2", "log2-mor", "rld"/"rlog" 
+(regularized log), "cpm" (counts per million), "rpkm", "tmm", "rank", or "none"}
 
-\item{log2}{logical, whether to log2 transform the counts}
+\item{log2}{Logical, whether to additionally log2 transform the counts (default: FALSE)}
 }
 \value{
-normalized counts
+Data frame of normalized counts with genes as rows and samples as columns
 }
 \description{
 Function to normalize DESeq2 dds object and return counts.

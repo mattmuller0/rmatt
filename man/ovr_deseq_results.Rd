@@ -14,8 +14,6 @@ ovr_deseq_results(dds, column, outpath, controls = NULL)
 \item{outpath}{Output path for results}
 
 \item{controls}{Control groups}
-
-\item{...}{Additional arguments to pass to DESeq2}
 }
 \value{
 OVR results for each level of column of interest

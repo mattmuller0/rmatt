@@ -6,7 +6,7 @@
 \usage{
 eigen_decompose(
   method = c("pca", "svd", "reg_svd", "nmf", "ica"),
-  df = NULL,
+  data = NULL,
   outdir = NULL,
   pcs = 1,
   align = TRUE,
@@ -35,7 +35,7 @@ eigen_decompose(
 \arguments{
 \item{method}{Decomposition method: "pca", "svd", "reg_svd", "nmf", or "ica"}
 
-\item{df}{Data frame or matrix [samples x genes] (for all methods except reg_svd)}
+\item{data}{Data frame or matrix [samples x genes] (for all methods except reg_svd)}
 
 \item{outdir}{Output directory (for all methods except reg_svd)}
 
