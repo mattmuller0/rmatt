@@ -6,8 +6,8 @@
 \usage{
 compare_one_to_many(
   data,
-  one,
-  many,
+  col,
+  cols,
   outdir,
   plot = TRUE,
   method.continuous = "spearman",
@@ -22,6 +22,10 @@ compare_one_to_many(
 }
 \arguments{
 \item{data}{data frame}
+
+\item{col}{column to compare}
+
+\item{cols}{columns to compare to}
 
 \item{outdir}{output directory}
 
@@ -42,10 +46,6 @@ compare_one_to_many(
 \item{wilcox_args}{additional arguments to pass to wilcoxon test}
 
 \item{kruskal_args}{additional arguments to pass to kruskal-wallis test}
-
-\item{col}{column to compare}
-
-\item{cols}{columns to compare to}
 }
 \value{
 list of stats results and plots
