@@ -7,10 +7,10 @@
 rna_preprocessing(
   dds,
   outpath,
-  depth_filter = 10,
-  size_filter = 1e+06,
-  percent_filter = 0.5,
-  normalize = "none",
+  min.count = 10,
+  min.total.count = 15,
+  min.prop = 0.5,
+  min.library.size = 1e+06,
   group = NULL
 )
 }
@@ -19,13 +19,13 @@ rna_preprocessing(
 
 \item{outpath}{Path to output directory}
 
-\item{depth_filter}{Minimum library depth to keep (default: 10). Set to NA to skip.}
+\item{min.count}{Minimum count required for a gene to be considered expressed in a sample (default: 10)}
 
-\item{size_filter}{Minimum library size to keep (default: 1e6). Set to NA to skip.}
+\item{min.total.count}{Minimum total count required across all samples (default: 15)}
 
-\item{percent_filter}{Minimum percent of genes detected to keep (default: 0.5). Set to NA to skip.}
+\item{min.prop}{Minimum proportion of samples that must express the gene (default: 0.5)}
 
-\item{normalize}{Normalization method for filtering (default: "none")}
+\item{min.library.size}{Minimum library size (total counts) per sample to keep (default: 1e6). Set to NA to skip.}
 
 \item{group}{Column of interest for PCA grouping (optional)}
 }

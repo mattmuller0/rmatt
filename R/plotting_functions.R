@@ -122,6 +122,7 @@ plot_heatmap <- function(
   heatmap <- do.call(ComplexHeatmap::Heatmap, heatmap_args)
   return(heatmap)
 }
+
 #' @title Plot Enrichment Terms
 #' @description Function to plot enrichment from gse object
 #' @param gse gse object

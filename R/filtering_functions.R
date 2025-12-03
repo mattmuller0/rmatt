@@ -131,6 +131,7 @@ rna_preprocessing <- function(
 #' @param min.total.count Minimum total count required across all samples (default: 15)
 #' @param large.n Number of samples per group considered "large" (default: 10)
 #' @param min.prop Minimum proportion of samples in the smallest group that express the gene (default: 0.7)
+#' @param normalization Normalization method for saved output (default: "vst")
 #' @param ... Additional arguments to pass to edgeR::filterByExpr
 #' @return DESeq2 object after filtering
 #' @importFrom SummarizedExperiment assay colData

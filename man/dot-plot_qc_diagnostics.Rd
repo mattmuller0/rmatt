@@ -17,6 +17,6 @@
 NULL invisibly, saves plots to outpath
 }
 \description{
-Internal function to generate hierarchical clustering and PCA plots
+Internal function to generate hierarchical clustering, PCA, library size, and library depth plots
 }
 \keyword{internal}
