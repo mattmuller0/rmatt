@@ -213,7 +213,6 @@ gsea_analysis <- function(
   # KEGG
   kegg_t2g <- subset(msigdb, gs_collection == "C2" & gs_subcollection == "CP:KEGG_MEDICUS", select = c("gs_name", gene_key))
 
-  # Custom t2g terms
   # Only run custom gene sets if keyType is SYMBOL
   if (keyType == "SYMBOL") {
     cust_t2g <- rbind(mpa_geneset, press_geneset)
