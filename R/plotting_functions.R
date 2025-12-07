@@ -178,7 +178,7 @@ plot_enrichment <- function(
   # Limit to max_terms
   enrichment_terms <- enrichment_terms %>%
     group_by(sign(NES)) %>%
-    dplyr::slice_head(n = max_terms)
+    dplyr::slice_head(n = max_terms / 2)
 
   # Plot
   p <- ggplot(enrichment_terms, aes(x = NES, y = Description, fill = qvalue)) +
