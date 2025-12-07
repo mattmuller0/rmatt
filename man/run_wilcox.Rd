@@ -12,6 +12,7 @@ run_wilcox(
   wilcox.exact = FALSE,
   wilcox.paired = FALSE,
   wilcox.alternative = "two.sided",
+  wilcox.conf.int = TRUE,
   volcano.pCutoff = 0.05
 )
 }

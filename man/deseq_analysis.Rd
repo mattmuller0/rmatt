@@ -9,7 +9,7 @@ deseq_analysis(dds, conditions, controls = NULL, outpath)
 \arguments{
 \item{dds}{DESeq2 object}
 
-\item{conditions}{List of conditions to run DESeq2 on}
+\item{conditions}{List of conditions to run DESeq2 on (must be factors)}
 
 \item{controls}{List of controls to run DESeq2 on}
 

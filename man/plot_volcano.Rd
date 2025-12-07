@@ -14,11 +14,11 @@ plot_volcano(
   n_labels = TRUE,
   n_gene_labels = 40,
   pCutoff = 0.05,
-  fcCutoff = NULL,
   xlim = c(min(dge[, x]) - 0.5, max(dge[, x], na.rm = TRUE) + 0.5),
   ylim = c(0, max(-log10(dge[, y]), na.rm = TRUE) * 1.25),
   xlabel = bquote(~Log[2] ~ "Fold Change"),
-  ylabel = bquote(~-log[10] ~ "(" ~ .(substitute(pvalue)) ~ ")")
+  ylabel = bquote(~-log[10] ~ "(" ~ .(substitute(pvalue)) ~ ")"),
+  color_scale = c("grey", "red")
 )
 }
 \arguments{
@@ -28,17 +28,15 @@ plot_volcano(
 
 \item{y}{Column name for p-value}
 
-\item{color}{Column name for adjusted p-value}
+\item{color}{Column name for coloring points (if pCutoff not provided, color using this column)}
 
 \item{labels}{Column name for labels}
 
 \item{title}{Title of the plot}
 
-\item{n_labels}{Logical, whether to show number of labels}
+\item{n_labels}{Logical, whether to show number of up/down regulated genes}
 
 \item{pCutoff}{P-value cutoff for significance}
-
-\item{fcCutoff}{Fold change cutoff for significance}
 
 \item{xlim}{Limits for x-axis}
 

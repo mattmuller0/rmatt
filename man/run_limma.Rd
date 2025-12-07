@@ -9,12 +9,17 @@ run_limma(
   outpath,
   condition,
   controls = NULL,
+  normalize = "TMM",
   pCutoff = 0.05,
   fcCutoff = 0.5,
   topTable.coef = 2,
   topTable.n = Inf,
   topTable.adjust.method = "BH",
-  voom.plot = TRUE
+  voom.weights = NULL,
+  voom.plot = TRUE,
+  lm.method = "ls",
+  ebayes.trend = TRUE,
+  ebayes.robust = TRUE
 )
 }
 \arguments{

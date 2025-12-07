@@ -22,7 +22,7 @@ plot_library_depth <- function(dds, title, bins = 30) {
 
   p <- ggplot(data.frame(log2(rowMeans(assay(dds)) + 0.001)), aes(x = log2(rowMeans(assay(dds)) + 0.001))) +
     geom_histogram(bins = bins, fill = "blue", alpha = 0.65) +
-    labs(x = "Log Library Depth", y = "Count", title = title) +
+    labs(x = "Log Library Depth", y = "Count") +
     theme_classic2()
   return(p)
 }
@@ -35,11 +35,11 @@ plot_library_depth <- function(dds, title, bins = 30) {
 #' @return ggplot object of library size histogram
 #' @importFrom SummarizedExperiment assay
 #' @importFrom ggpubr theme_classic2
-#' @keywords internal
+#' @export
 plot_library_size <- function(dds, title, bins = 10) {
   p <- ggplot(data.frame(log2(colSums(assay(dds)) + 0.001)), aes(x = log2(colSums(assay(dds)) + 0.001))) +
     geom_histogram(bins = bins, fill = "blue", alpha = 0.65) +
-    labs(x = "Log Library Size", y = "Count", title = title) +
+    labs(x = "Log Library Size", y = "Count") +
     theme_classic2()
   return(p)
 }
@@ -51,11 +51,11 @@ plot_library_size <- function(dds, title, bins = 10) {
 #' @param min_value Minimum value for detection (default: 0)
 #' @return ggplot object of percent of genes detected histogram
 #' @importFrom ggpubr theme_classic2
-#' @keywords internal
+#' @export
 plot_percent_genes_detected <- function(dds, title, min_value = 0) {
   p <- ggplot(data.frame(percent_genes_detected = percentGenesDetected(dds, min_value)), aes(x = percent_genes_detected)) +
     geom_histogram(fill = "blue", alpha = 0.65) +
-    labs(x = "Percent Genes Detected", y = "Count", title = title) +
+    labs(x = "Percent Genes Detected", y = "Count") +
     theme_classic2()
   return(p)
 }
@@ -176,7 +176,9 @@ plot_enrichment <- function(
     )
 
   # Limit to max_terms
-  enrichment_terms <- dplyr::slice_head(enrichment_terms, n = max_terms)
+  enrichment_terms <- enrichment_terms %>%
+    group_by(sign(NES)) %>%
+    dplyr::slice_head(n = max_terms)
 
   # Plot
   p <- ggplot(enrichment_terms, aes(x = NES, y = Description, fill = qvalue)) +
@@ -202,8 +204,6 @@ plot_enrichment <- function(
 #' @param custom_colors Optional list of custom color mappings
 #' @param alpha Color transparency (0-1, default: 0.8)
 #' @return List of color mappings for continuous and categorical variables
-#' @importFrom circlize colorRamp2
-#' @importFrom RColorBrewer brewer.pal
 #' @export
 color_mapping <- function(data, custom_colors = NULL, alpha = 1) {
   if (!is.data.frame(data)) stop("Input must be a data frame")
@@ -222,7 +222,7 @@ color_mapping <- function(data, custom_colors = NULL, alpha = 1) {
     }
 
     values <- data[[var]][is.finite(data[[var]])]
-    breaks <- if (length(values) == 0) c(0, 0.5, 1) else quantile(values, c(0, 0.5, 1))
+    breaks <- if (length(values) == 0) c(0, 0.5, 1) else stats::quantile(values, c(0, 0.5, 1))
 
     # Adjust breaks if all values are identical
     if (length(unique(breaks)) == 1) {
@@ -242,7 +242,7 @@ color_mapping <- function(data, custom_colors = NULL, alpha = 1) {
       next
     }
 
-    levels <- unique(na.omit(as.factor(data[[var]])))
+    levels <- unique(stats::na.omit(as.factor(data[[var]])))
     n_levels <- length(levels)
 
     if (n_levels > 0) {
@@ -289,9 +289,9 @@ plot_factors_heatmap <- function(
     cohort_tab,
     name = "Statistic",
     na_col = "#e2dede",
-    cluster_rows = FALSE, 
+    cluster_rows = FALSE,
     cluster_columns = FALSE,
-    show_row_names = TRUE, 
+    show_row_names = TRUE,
     show_column_names = TRUE,
     row_title = "Clinical Factors",
     row_title_gp = gpar(fontsize = 12),
@@ -337,17 +337,14 @@ plot_factors_heatmap <- function(
 #' @param dge Data frame with differential gene expression data
 #' @param x Column name for log2 fold change
 #' @param y Column name for p-value
-#' @param color Column name for adjusted p-value
+#' @param color Column name for coloring points (if pCutoff not provided, color using this column)
 #' @param labels Column name for labels
 #' @param title Title of the plot
-#' @param n_labels Logical, whether to show number of labels
+#' @param n_labels Logical, whether to show number of up/down regulated genes
 #' @param pCutoff P-value cutoff for significance
-#' @param fcCutoff Fold change cutoff for significance
 #' @param xlim Limits for x-axis
 #' @param ylim Limits for y-axis
 #' @return ggplot object
-#' @importFrom dplyr case_when
-#' @importFrom ggrepel geom_text_repel
 #' @export
 plot_volcano <- function(
     dge,
@@ -359,38 +356,36 @@ plot_volcano <- function(
     n_labels = TRUE,
     n_gene_labels = 40,
     pCutoff = 0.05,
-    fcCutoff = NULL,
     xlim = c(min(dge[, x]) - 0.5, max(dge[, x], na.rm = TRUE) + 0.5),
     ylim = c(0, max(-log10(dge[, y]), na.rm = TRUE) * 1.25),
     xlabel = bquote(~ Log[2] ~ "Fold Change"),
-    ylabel = bquote(~ -log[10] ~ "(" ~ .(substitute(pvalue)) ~ ")")
-    ) {
+    ylabel = bquote(~ -log[10] ~ "(" ~ .(substitute(pvalue)) ~ ")"),
+    color_scale = c("grey", "red")) {
   dge <- as.data.frame(dge)
 
   if (labels == "rownames" & !is.null(rownames(dge))) {
     dge[, "rownames"] <- rownames(dge)
   }
 
-  dge[, color] <- ifelse(is.na(dge[, color]), 1, dge[, color])
-  if (!is.null(fcCutoff)) {
-    dge$signf <- case_when(
-      dge[, color] < pCutoff & abs(dge[, x]) > fcCutoff ~ paste0(color, " < ", pCutoff, " & |", x, "| > ", fcCutoff),
-      TRUE ~ "NS"
-    )
+  # Define significance based on cutoffs (if cutoffs provided)
+  if (!is.null(pCutoff)) {
+    dge[, color] <- ifelse(is.na(dge[, color]), 1, dge[, color])
+      dge$significance <- dplyr::case_when(
+        dge[, color] < pCutoff ~ paste0(color, " < ", pCutoff),
+        TRUE ~ "NS"
+      )
+      color_label <- "Significance"
   } else {
-    dge$signf <- case_when(
-      dge[, color] < pCutoff ~ paste0(color, " < ", pCutoff),
-      TRUE ~ "NS"
-    )
+    dge$significance <- dge[, color]
+    color_label <- color
   }
 
-  out <- ggplot(dge, aes(x = !!sym(x), y = -log10(!!sym(y)), color = signf)) +
+  out <- ggplot(dge, aes(x = !!sym(x), y = -log10(!!sym(y)), color = significance)) +
     geom_point() +
-    ggplot2::scale_color_manual(values = c("grey", "red")) +
-    geom_text_repel(data = head(dge[order(dge[, y]), ], n_gene_labels), aes(label = !!sym(labels)), show.legend = FALSE) +
-    theme_matt() +
+    ggplot2::scale_color_manual(values = color_scale) +
+    ggrepel::geom_text_repel(data = head(dge[order(dge[, y]), ], n_gene_labels), aes(label = !!sym(labels)), show.legend = FALSE) +
     theme(legend.position = "bottom") +
-    labs(x = xlabel, y = ylabel, title = title, color = "Significance") +
+    labs(x = xlabel, y = ylabel, title = title, color = color_label) +
     lims(x = xlim, y = ylim)
 
   if (n_labels) {
@@ -502,7 +497,7 @@ plot_forest <- function(
     if (!all(required_cols %in% colnames(data))) {
       stop(sprintf("Data frame must contain columns: %s", paste(required_cols, collapse = ", ")))
     }
-    data$HR <- sprintf("%.2f (%.2f–%.2f)", data[[estimate]], data[[error_lower]], data[[error_upper]])
+    data$HR <- sprintf("%.2f (%.2f-%.2f)", data[[estimate]], data[[error_lower]], data[[error_upper]])
     p_right <- ggplot(data, aes(y = !!sym(label))) +
       geom_text(aes(x = 0, label = HR), hjust = 0) +
       geom_text(aes(x = 1, label = signif(data[[p.value]], 3)), hjust = 0) +

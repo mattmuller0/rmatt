@@ -80,11 +80,11 @@ test_that("run_limma produces expected output", {
   expect_true(file.exists(file.path(temp_dir, "limma_results.csv")))
 })
 
-# # Test calculate_correlations function
-test_that("calculate_correlations returns expected format", {
+# # Test run_correlations function
+test_that("run_correlations returns expected format", {
   dds <- create_mock_dds()
   
-  result <- suppressWarnings(calculate_correlations(
+  result <- suppressWarnings(run_correlations(
     dds = dds,
     condition = "condition"
   )) # suppress warnings for test clarity

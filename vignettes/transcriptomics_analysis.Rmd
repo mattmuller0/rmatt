@@ -72,25 +72,6 @@ set.seed(123)
 
 # Data Import and Preprocessing
 
-## Reading Count Data
-
-The `rmatt` package provides convenient functions for reading count data from various sources. The most common scenario is reading FeatureCounts output:
-
-```{r data_import, eval=FALSE}
-# Read count data from FeatureCounts output directory
-count_table <- CountTableFromFeatureCounts(
-  directory = "path/to/featurecounts/output",
-  pattern = "featureCounts.txt$",
-  idx = 7  # Column containing count data
-)
-
-# Alternatively, read individual FeatureCounts files
-single_file <- ReadFeatureCounts(
-  f = "sample1.featureCounts.txt",
-  idx = 7
-)
-```
-
 For demonstration purposes, let's create a simulated dataset:
 
 ```{r simulate_data}
