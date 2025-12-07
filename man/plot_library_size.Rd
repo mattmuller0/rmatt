@@ -19,4 +19,3 @@ ggplot object of library size histogram
 \description{
 Function to plot library size of summarized experiment object
 }
-\keyword{internal}

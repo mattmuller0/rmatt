@@ -41,3 +41,4 @@ None
 \description{
 Function to handle DESeq output and generate plots and results
 }
+\keyword{internal}

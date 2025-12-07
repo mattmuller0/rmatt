@@ -19,4 +19,3 @@ ggplot object of percent of genes detected histogram
 \description{
 Function to plot percent of genes detected in each sample
 }
-\keyword{internal}

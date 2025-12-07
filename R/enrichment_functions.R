@@ -89,13 +89,32 @@ save_gse <- function(gse, outpath, terms2plot = c("inflam", "plat", "coag")) {
   write.csv(filter(gse@result, qvalue < 0.1), file.path(outpath, "enrichment_results_sig.csv"), quote = TRUE, row.names = FALSE)
   saveRDS(gse, file.path(outpath, "enrichment_results.rds"))
 
-  # Generate plots
-  safe_ggplot(function() enrichplot::dotplot(gse, showCategory = 20), file.path(outpath, "dotplot.pdf"))
-  safe_ggplot(function() ggtangle::cnetplot(gse, node_label = "category"), file.path(outpath, "cnetplot.pdf"))
-  safe_ggplot(function() enrichplot::ridgeplot(gse, showCategory = 10), file.path(outpath, "ridgeplot.pdf"))
-  safe_ggplot(function() enrichplot::heatplot(gse, showCategory = 10), file.path(outpath, "heatplot.pdf"))
-  safe_ggplot(function() plot_enrichment(gse), file.path(outpath, "barplot.pdf"))
-  safe_ggplot(function() plot_enrichment(gse, terms2plot = terms2plot), file.path(outpath, "barplot_terms.pdf"))
+  # Check if the gse is a 'enrichResult' object
+  if (inherits(gse, "enrichResult")) {
+    safe_ggplot(function() enrichplot::dotplot(gse, showCategory = 10), file.path(outpath, "dotplot.pdf"))
+    safe_ggplot(function() ggtangle::cnetplot(gse, node_label = "category", color_category='firebrick', color_gene='steelblue'), file.path(outpath, "cnetplot.pdf"))
+    safe_ggplot(function() enrichplot::heatplot(gse, showCategory = 5), file.path(outpath, "heatplot.pdf"))
+    safe_ggplot(function() enrichplot::emapplot(pairwise_termsim(gse), node_label = "group"), file.path(outpath, "emapplot.pdf"))
+    return(NULL)
+  }
+
+  # Check if the gse is a 'gseaResult' object
+  if (inherits(gse, "gseaResult")) {
+    safe_ggplot(function() plot_enrichment(gse), file.path(outpath, "barplot.pdf"))
+    safe_ggplot(function() plot_enrichment(gse, terms2plot = terms2plot), file.path(outpath, "barplot_terms.pdf"))
+    safe_ggplot(function() enrichplot::ridgeplot(gse, showCategory = 10), file.path(outpath, "ridgeplot.pdf"))
+    safe_ggplot(function() enrichplot::emapplot(pairwise_termsim(gse), node_label = "group"), file.path(outpath, "emapplot.pdf"))
+    return(NULL)
+  }
+
+  # Check if the gse is a 'compareClusterResult' object
+  if (inherits(gse, "compareClusterResult")) {
+    safe_ggplot(function() enrichplot::dotplot(gse, showCategory = 10), file.path(outpath, "dotplot.pdf"))
+    safe_ggplot(function() enrichplot::emapplot(pairwise_termsim(gse), node_label = "group"), file.path(outpath, "emapplot.pdf"))
+    return(NULL)
+}
+  message("Unsupported gse object type for plotting")
+  return(NULL)
 }
 
 #' Run simple enrichment with enrichGO or gseGO
@@ -213,7 +232,6 @@ gsea_analysis <- function(
   # KEGG
   kegg_t2g <- subset(msigdb, gs_collection == "C2" & gs_subcollection == "CP:KEGG_MEDICUS", select = c("gs_name", gene_key))
 
-  # Custom t2g terms
   # Only run custom gene sets if keyType is SYMBOL
   if (keyType == "SYMBOL") {
     cust_t2g <- rbind(mpa_geneset, press_geneset)

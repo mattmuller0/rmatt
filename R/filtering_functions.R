@@ -27,7 +27,7 @@ percentGenesDetected <- function(dds, min_value = 0) {
   message("Plotting library size and depth")
   depth_plot <- plot_library_depth(dds, "Library Depth", bins = 100)
   size_plot <- plot_library_size(dds, "Library Size", bins = 10)
-  library_plots <- cowplot::plot_grid(depth_plot, size_plot, ncol = 2)
+  library_plots <- cowplot::plot_grid(depth_plot, size_plot, nrow = 2)
   ggplot2::ggsave(file.path(outpath, "library_qc.pdf"), library_plots, dpi = 300)
 
   message("Checking hierarchical clustering")

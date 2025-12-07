@@ -1,5 +1,4 @@
 #' Map Gene IDs
-#'
 #' @description Function to map gene IDs with `AnnotationDbi`.
 #' @param geneList list or vector of gene IDs.
 #' @param from character, type of gene ID to convert from (if NULL, will detect).
@@ -8,7 +7,6 @@
 #' @param remove_missing logical, keep unmatched gene IDs.
 #' @param ... additional arguments to pass to `AnnotationDbi::mapIds`.
 #' @return list, converted gene IDs.
-#' 
 #' @importFrom stringr str_split
 #' @export
 map_gene_ids <- function(geneList, from = NULL, to, orgDb = NULL, remove_missing = FALSE, ...) {
@@ -40,13 +38,13 @@ map_gene_ids <- function(geneList, from = NULL, to, orgDb = NULL, remove_missing
 }
 
 #' Detect Gene ID Type
-#'
 #' @description Function to detect gene ID type based on the first gene ID.
 #' @param geneList list or vector of gene IDs.
 #' @param strip logical, whether to strip version numbers from gene IDs.
 #' @return character, type of gene ID.
 #' @importFrom stringr str_split
 #' @importFrom glue glue
+#' @export
 detect_gene_id_type <- function(geneList, strip = TRUE) {
   id_types <- list(
     # Start with the most common gene ID types
@@ -104,12 +102,12 @@ detect_gene_id_type <- function(geneList, strip = TRUE) {
 #'   (regularized log), "cpm" (counts per million), "rpkm", "tmm", "rank", or "none"
 #' @param log2 Logical, whether to additionally log2 transform the counts (default: FALSE)
 #' @return Data frame of normalized counts with genes as rows and samples as columns
-#' @export
-#' 
 #' @importFrom SummarizedExperiment assay
-normalize_counts <- function(dds, method = c("mor", "vst", "vsd", "log2", "log2-mor", 
-                                              "rld", "rlog", "cpm", "rpkm", "tmm", 
-                                              "rank", "none"), log2 = FALSE) {
+#' @export
+normalize_counts <- function(
+  dds, 
+  method = c("mor", "vst", "vsd", "log2", "log2-mor", "rld", "rlog", "cpm", "rpkm", "tmm", "rank", "none"), 
+  log2 = FALSE) {
   method <- match.arg(method)
   
   # Handle vsd as alias for vst, rld as alias for rlog

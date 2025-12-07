@@ -117,8 +117,9 @@ test_that("plot_volcano handles custom cutoffs", {
         padj = p.adjust(runif(100), method = "BH"),
         row.names = paste0("gene", 1:100)
     )
+    mock_results$custom_metric <- runif(100)
 
-    p <- plot_volcano(mock_results, pCutoff = 0.1, fcCutoff = 1)
+    p <- plot_volcano(mock_results, color = "custom_metric", pCutoff = NULL)
     expect_s3_class(p, "ggplot")
 })
 

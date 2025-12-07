@@ -1,53 +1,3 @@
-# ======================== Reading Functions ========================
-#' @title Read Feature Counts
-#' @description Function to read a feature counts output file.
-#' @param f File path to the feature counts output.
-#' @param idx Columns to extract for (1) gene name and (2) counts.
-#' @param sep Field separator character (default: "\\t").
-#' @param skip Number of lines to skip at the beginning of the file (default: 1).
-#' @param comment.char Character indicating comment lines to ignore (default: "#").
-#' @param stringsAsFactors Logical indicating whether strings should be converted to factors (default: FALSE).
-#' @return Data frame of counts with gene names and count columns.
-#' @importFrom dplyr select
-#' @keywords internal
-ReadFeatureCounts <- function(f, idx, sep = "\t", skip = 1, comment.char = "#", stringsAsFactors = FALSE) {
-  if (missing(f)) {
-    stop("f is missing")
-  }
-  if (!file.exists(f)) {
-    stop("file not found")
-  }
-  message("reading ", f, " ...")
-  a <- utils::read.table(f, header = TRUE, sep = sep, skip = skip, comment.char = comment.char, stringsAsFactors = stringsAsFactors)
-  a <- dplyr::select(a, 1, idx)
-  return(a)
-}
-
-#' @title Create Count Table from Feature Counts
-#' @description Function to create a count table from feature counts output directory.
-#' @param directory Directory containing feature counts output (default: ".").
-#' @param pattern Pattern to match for feature counts output (default: "featureCounts.txt$").
-#' @param idx Columns to extract for (1) gene name and (2) counts (default: 7).
-#' @param sep Field separator character (default: "\\t").
-#' @param skip Number of lines to skip at the beginning of the file (default: 1).
-#' @param comment.char Character indicating comment lines to ignore (default: "#").
-#' @param stringsAsFactors Logical indicating whether strings should be converted to factors (default: FALSE).
-#' @return Data frame of counts with genes as rows and samples as columns.
-#' @importFrom purrr map reduce
-#' @importFrom dplyr inner_join
-#' @export
-CountTableFromFeatureCounts <- function(directory = ".", pattern = "featureCounts.txt$", idx = 7, sep = "\t", skip = 1, comment.char = "#", stringsAsFactors = FALSE) {
-  if (missing(directory)) {
-    stop("directory is missing")
-  }
-  fl <- list.files(directory, pattern = pattern, full.names = TRUE, recursive = TRUE)
-  message("reading ", length(fl), " samples ...")
-  sample_names <- utils::basename(fl)
-  l <- purrr::map(fl, ReadFeatureCounts, idx = idx, sep = sep, skip = skip, comment.char = comment.char, stringsAsFactors = stringsAsFactors)
-  tbl <- purrr::reduce(l, dplyr::inner_join)
-  return(tbl)
-}
-
 # ======================== Summary Functions ========================
 #' Summarize differential expression results
 #' @description Generate summary statistics of differential expression results at various cutoffs
@@ -135,6 +85,34 @@ summarize_experiment <- function(
   return(summary)
 }
 
+#' Compare DESeq Results
+#' @description Function to compare different DESeq results.
+#' @param res1 Results of differential expression analysis 1.
+#' @param res2 Results of differential expression analysis 2.
+#' @param metric Metric to compare.
+#' @param by Column to join on.
+#' @param suffix Suffix for columns.
+#' @return Data frame of results.
+#' @importFrom dplyr inner_join
+#' @importFrom tibble rownames_to_column
+#' @export
+compare_results <- function(res1, res2, metric = "log2FoldChange", by = "rowname", suffix = c("_1", "_2")) {
+  res1 <- as.data.frame(res1)
+  res2 <- as.data.frame(res2)
+  # ensure the metric and labels are in the results
+  if (!metric %in% c(colnames(res1), "rowname")) {
+    stop("metric not in results 1")
+  }
+  out <- inner_join(
+    res1 %>% rownames_to_column("rowname"),
+    res2 %>% rownames_to_column("rowname"),
+    by = by,
+    suffix = suffix
+  )
+  # return the data frame
+  return(out)
+}
+
 # ======================== Testing Functions ========================
 #' @title Wilcoxon Test
 #' @description Function to perform Wilcoxon test on a dds object
@@ -147,10 +125,7 @@ summarize_experiment <- function(
 #' @param wilcox.alternative Alternative hypothesis for Wilcoxon test (default is "two.sided")
 #' @param volcano.pCutoff p-value cutoff for volcano plot (default is 0.05)
 #' @return Data frame of results with Wilcoxon test statistics
-#' @importFrom SummarizedExperiment colData
 #' @importFrom magrittr %>%
-#' @importFrom purrr map
-#' @importFrom broom tidy
 #' @importFrom ggplot2 ggsave ggplot aes geom_histogram geom_density labs theme_minimal
 #' @export
 run_wilcox <- function(
@@ -161,6 +136,7 @@ run_wilcox <- function(
     wilcox.exact = FALSE,
     wilcox.paired = FALSE,
     wilcox.alternative = "two.sided",
+    wilcox.conf.int = TRUE,
     volcano.pCutoff = 0.05) {
   # Input validation
   if (missing(dds) || is.null(dds)) {
@@ -186,7 +162,7 @@ run_wilcox <- function(
 
   # Get the counts matrix and colData
   counts <- normalize_counts(dds, method = normalize.method)
-  col_data <- as.data.frame(colData(dds))
+  col_data <- as.data.frame(SummarizedExperiment::colData(dds))
 
   # Check if the group column has any NA values and combine counts with colData
   dat <- cbind(col_data, t(counts))
@@ -200,30 +176,28 @@ run_wilcox <- function(
 
   # Create a data frame to store results
   genes <- rownames(counts)
-  res <- map(genes, function(gene) {
+  res <- purrr::map(genes, function(gene) {
     # Split data by group levels
-    group_levels <- levels(dat[[group]])
-    x1 <- dat[[gene]][dat[[group]] == group_levels[1]] # Reference group
-    x2 <- dat[[gene]][dat[[group]] == group_levels[2]] # Second group
-
+    group_data <- split(dat[[gene]], dat[[group]])
     w <- wilcox.test(
-      x1, x2,
+      group_data[[1]], 
+      group_data[[2]],
       exact = wilcox.exact,
       paired = wilcox.paired,
       alternative = wilcox.alternative,
-      conf.int = TRUE # Include confidence interval
+      conf.int = wilcox.conf.int
     )
-    o <- tidy(w)
+    o <- broom::tidy(w)
     o$gene <- gene
     return(o)
   })
   res <- bind_rows(res)
-
-  # Adjust p-values
   res$padj <- p.adjust(res$p.value, method = "BH")
 
   # order the results
-  res <- res %>% select(gene, everything())
+  res <- res %>% 
+    dplyr::select(gene, everything()) %>%
+    arrange(p.value)
 
   # save the results
   write.csv(res, file.path(outpath, "wilcox_results.csv"), row.names = FALSE)
@@ -237,7 +211,7 @@ run_wilcox <- function(
   suppressMessages(ggsave(file.path(outpath, "wilcox_pvalue_histogram.pdf"), p_hist))
 
   # create a volcano plot
-  v <- plot_volcano(res, x = "estimate", y = "p.value", color = "padj", labels = "gene", pCutoff = volcano.pCutoff)
+  v <- plot_volcano(res, x = "estimate", y = "p.value", labels = "gene", pCutoff = volcano.pCutoff)
   suppressMessages(ggsave(file.path(outpath, "wilcox_volcano.pdf"), v))
 
   # get the fc list
@@ -270,12 +244,18 @@ run_limma <- function(
     outpath,
     condition,
     controls = NULL,
+    normalize = "TMM",
     pCutoff = 0.05,
     fcCutoff = 0.5,
     topTable.coef = 2,
     topTable.n = Inf,
     topTable.adjust.method = "BH",
-    voom.plot = TRUE) {
+    voom.weights = NULL,
+    voom.plot = TRUE,
+    lm.method = "ls",
+    ebayes.trend = TRUE,
+    ebayes.robust = TRUE
+    ) {
   # Check for required packages
   check_suggested_package("limma")
   check_suggested_package("edgeR")
@@ -292,12 +272,10 @@ run_limma <- function(
   metadata <- metadata[keep, , drop = FALSE]
 
   # Normalize the counts matrix using TMM normalization
-
   dge <- edgeR::DGEList(counts = assay(se))
-  norm_counts <- edgeR::calcNormFactors(dge, method = "TMM")
-  # norm_counts <- cpm(norm_counts)
+  dge <- edgeR::calcNormFactors(dge, method = normalize)
 
-  # Create the design matrix
+  # Create the design matrix (ensure condition is coef 2)
   if (is.null(controls)) {
     fmla <- as.formula(paste("~", paste(condition, collapse = " + ")))
   } else {
@@ -314,10 +292,10 @@ run_limma <- function(
     message("Running voom without plot...")
   }
 
-  # Perform voom transformation
-  v <- limma::voom(norm_counts, design, plot = voom.plot)
-  fit <- limma::lmFit(v, design = design)
-  fit <- limma::eBayes(fit)
+  # Perform voom transformation and fit the linear model
+  v <- limma::voom(dge, design, plot = voom.plot, weights = voom.weights)
+  fit <- limma::lmFit(v, design = design, lm.method = lm.method)
+  fit <- limma::eBayes(fit, trend = ebayes.trend, robust = ebayes.robust)
 
   # Print the name of the coefficient being tested
   message(glue::glue("Testing coefficient: {colnames(design)[topTable.coef]}"))
@@ -338,25 +316,37 @@ run_limma <- function(
   return(results)
 }
 
-#' Calculate Correlations
+#' Run Correlations
 #' @param dds DESeq2 object
 #' @param condition Column of interest
 #' @param normalize Normalization method to use
-#' @param method Correlation method to use
-#' @param ... Additional arguments to pass to cor.test
+#' @param cor.method Correlation method to use
+#' @param cor.alternative Alternative hypothesis for correlation test
+#' @param cor.exact Logical indicating whether to use exact correlation test
 #' @return Correlation results for each gene
-#' @importFrom SummarizedExperiment colData
 #' @export
-calculate_correlations <- function(dds, condition, normalize = "mor", method = "spearman", ...) {
+run_correlations <- function(
+  dds, 
+  condition, 
+  normalize = "mor", 
+  cor.method = "spearman", 
+  cor.alternative = "two.sided",
+  cor.exact = NULL
+  ) {
   # Extract the condition vector
   condition <- as.numeric(SummarizedExperiment::colData(dds)[, condition])
 
   # Extract the gene expression data
   gene_expression <- normalize_counts(dds, method = normalize)
 
-  # Apply the cor() function to each row of the gene_expression matrix
+  # Apply the cor function to each row of the gene_expression matrix
   gene_expression_correlations <- apply(gene_expression, 1, function(x) {
-    correlation <- stats::cor.test(x, condition, method = method, ...)
+    correlation <- stats::cor.test(
+      x, 
+      condition,
+      method = cor.method,
+      alternative = cor.alternative
+    )
     return(list(correlation = correlation$estimate, pvalue = correlation$p.value))
   })
 
@@ -374,7 +364,6 @@ calculate_correlations <- function(dds, condition, normalize = "mor", method = "
   return(gene_expression_correlations_df)
 }
 
-
 #' Handle DESeq Output
 #' @description Function to handle DESeq output and generate plots and results
 #' @param dds DESeq2 object
@@ -388,6 +377,7 @@ calculate_correlations <- function(dds, condition, normalize = "mor", method = "
 #' @param contrast Contrast used in the analysis
 #' @return None
 #' @importFrom ggplot2 ggsave
+#' @keywords internal
 handle_deseq_output <- function(dds, res, resLFC, outpath, name, pvalue, pCutoff, fcCutoff, contrast) {
   # MA plot
   pdf(file.path(outpath, "MAplot.pdf"))
@@ -467,9 +457,9 @@ run_deseq <- function(
 
   # Use contrast if provided, otherwise default to coef = 2
   if (!is.na(contrast)[1]) {
+    name <- paste0(contrast[1], "__", contrast[2], "_vs_", contrast[3])
     res <- DESeq2::results(dds, contrast = contrast)
     resLFC <- DESeq2::lfcShrink(dds, coef = 2)
-    name <- paste0(contrast[1], "__", contrast[2], "_vs_", contrast[3])
   } else {
     name <- DESeq2::resultsNames(dds)[2]
     res <- DESeq2::results(dds, name = name)
@@ -523,11 +513,10 @@ ovr_deseq_results <- function(dds, column, outpath, controls = NULL) {
   return(list_out)
 }
 
-
 #' Function to run DESeq2 analysis on a variety of conditions
 #' @description Function to run DESeq2 analysis on a variety of conditions with optional controls
 #' @param dds DESeq2 object
-#' @param conditions List of conditions to run DESeq2 on
+#' @param conditions List of conditions to run DESeq2 on (must be factors)
 #' @param controls List of controls to run DESeq2 on
 #' @param outpath Path to save results
 #' @return List of results of differential expression analysis
@@ -615,33 +604,4 @@ deseq_analysis <- function(dds, conditions, controls = NULL, outpath) {
   # Save summary dataframe
   utils::write.csv(summary_df, file.path(outpath, "deseq_analysis_summary.csv"), row.names = FALSE)
   return(analysis_list)
-}
-
-# ======================== Summary Functions ========================
-#' Compare DESeq Results
-#' @description Function to compare different DESeq results.
-#' @param res1 Results of differential expression analysis 1.
-#' @param res2 Results of differential expression analysis 2.
-#' @param metric Metric to compare.
-#' @param by Column to join on.
-#' @param suffix Suffix for columns.
-#' @return Data frame of results.
-#' @importFrom dplyr inner_join
-#' @importFrom tibble rownames_to_column
-#' @export
-compare_results <- function(res1, res2, metric = "log2FoldChange", by = "rowname", suffix = c("_1", "_2")) {
-  res1 <- as.data.frame(res1)
-  res2 <- as.data.frame(res2)
-  # ensure the metric and labels are in the results
-  if (!metric %in% c(colnames(res1), "rowname")) {
-    stop("metric not in results 1")
-  }
-  out <- inner_join(
-    res1 %>% rownames_to_column("rowname"),
-    res2 %>% rownames_to_column("rowname"),
-    by = by,
-    suffix = suffix
-  )
-  # return the data frame
-  return(out)
 }
