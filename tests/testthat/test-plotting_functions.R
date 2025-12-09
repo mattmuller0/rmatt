@@ -195,3 +195,31 @@ test_that("plot_forest handles faceting", {
 
     expect_s3_class(p, "ggplot")
 })
+
+test_that("plot_forest handles tables", {
+    df <- data.frame(
+        group = letters[1:5],
+        estimate = rnorm(5),
+        ci_lower = rnorm(5, mean = -0.5),
+        ci_higher = rnorm(5, mean = 0.5),
+        p_value = runif(5),
+        category = rep(c("A", "B"), length.out = 5),
+        table_col1 = sample(letters, 5),
+        table_col2 = sample(1:100, 5)
+    )
+
+    p <- plot_forest(
+        data = df,
+        y = "group",
+        estimate = "estimate",
+        label = "table_col1",
+        error_lower = "ci_lower",
+        error_upper = "ci_higher",
+        color = "category",
+        p.value = "p_value",
+        show_table = TRUE,
+        log_scale = FALSE
+    )
+
+    expect_s3_class(p, "ggplot")
+})

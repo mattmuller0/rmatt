@@ -178,7 +178,7 @@ plot_enrichment <- function(
   # Limit to max_terms
   enrichment_terms <- enrichment_terms %>%
     group_by(sign(NES)) %>%
-    dplyr::slice_head(n = max_terms)
+    dplyr::slice_head(n = max_terms / 2)
 
   # Plot
   p <- ggplot(enrichment_terms, aes(x = NES, y = Description, fill = qvalue)) +
@@ -436,6 +436,7 @@ plot_correlation_matrix <- function(cor_mat, title = "", xlab = "", ylab = "", x
 #' @param estimate Column name for estimates (e.g., odds ratio, hazard ratio; default: "hazard.ratio").
 #' @param error_lower Column name for lower error bounds (default: "ci.lower").
 #' @param error_upper Column name for upper error bounds (default: "ci.upper").
+#' @param group Column name for grouping variable (default: NULL).
 #' @param color Column name for color grouping (default: NULL).
 #' @param facet Column name for facet grouping (default: NULL).
 #' @param show_table Logical, whether to show HR/p-value table (default: FALSE).
@@ -443,6 +444,8 @@ plot_correlation_matrix <- function(cor_mat, title = "", xlab = "", ylab = "", x
 #' @param title Title of the plot (default: "Forest Plot").
 #' @param xlab Label for x-axis (default: estimate).
 #' @param ylab Label for y-axis (default: NULL).
+#' @param vline X-intercept for null effect line (default: 1).
+#' @param log_scale Logical, use log10 scale for x-axis (default: TRUE if vline = 1).
 #' @return ggplot object, or cowplot grid if show_table = TRUE.
 #' @importFrom dplyr mutate
 #' @importFrom cowplot plot_grid
@@ -453,6 +456,7 @@ plot_forest <- function(
     estimate = "hazard.ratio",
     error_lower = "ci.lower",
     error_upper = "ci.upper",
+    group = NULL,
     color = NULL,
     facet = NULL,
     title = "Forest Plot",
@@ -461,56 +465,87 @@ plot_forest <- function(
     vline = 1,
     log_scale = ifelse(vline == 1, TRUE, FALSE),
     show_table = FALSE,
-    p.value = "p.value") {
-  # Cap extreme values for better visualization
-  data[[estimate]] <- pmin(data[[estimate]], 20)
-  data[[error_lower]] <- pmin(data[[error_lower]], 20)
-  data[[error_upper]] <- pmin(data[[error_upper]], 20)
+    p.value = "p.value"
+    ) {
+  
+  # Cap extreme values
+  data[c(estimate, error_lower, error_upper)] <- lapply(data[c(estimate, error_lower, error_upper)], pmin, 20)
 
-  # Main forest plot aesthetics
-  aes_args <- aes(x = !!sym(estimate), y = !!sym(label))
-  if (!is.null(color)) {
-    aes_args <- aes(x = !!sym(estimate), y = !!sym(label), color = !!sym(color))
-  }
+  # Build plot
+  aes_list <- list(x = sym(estimate), y = sym(label))
+  if (!is.null(color)) aes_list$color <- sym(color)
+  if (!is.null(group)) aes_list$group <- sym(group)
+  aes_arg <- do.call(aes, aes_list)
+  p <- ggplot(data, aes_arg) +
+    geom_vline(xintercept = vline, linetype = "dashed", color = "grey50", linewidth = 0.5) +
+    geom_errorbar(aes(xmin = !!sym(error_lower), xmax = !!sym(error_upper)), height = 0.3, linewidth = 0.7) +
+    geom_point(size = 3) +
+    {if (log_scale) scale_x_log10()} +
+    {if (!is.null(facet)) facet_grid(rows = vars(!!sym(facet)), scales = "free_y", switch = "y", space = "free_y")} +
+    theme(
+      strip.background = element_blank(),
+      strip.placement = "outside",
+      strip.text.y.left = element_text(angle = 0, margin = margin(0, 0, 0, 0)),
+      legend.position = if (!is.null(color)) "bottom" else "none",
+      axis.title.y = element_text(angle = 90, vjust = 0.5)
+    ) +
+    labs(x = xlab, y = ylab, title = title, color = color)
 
-  p <- ggplot(data, aes_args) +
-    geom_point() +
-    geom_errorbar(aes(xmin = !!sym(error_lower), xmax = !!sym(error_upper)), width = 0.2) +
-    geom_vline(xintercept = vline, linetype = "dashed") +
-    theme_matt() +
-    theme(legend.position = "bottom") +
-    labs(title = title, x = xlab, y = ylab, color = color)
-
-  # Log scale for x-axis if required
-  if (log_scale) {
-    p <- p + scale_x_log10()
-  }
-
-  # Faceting if requested
-  if (!is.null(facet)) {
-    p <- p + facet_grid(rows = vars(!!sym(facet)), scales = "free_y", switch = "y", space = "free_y")
-  }
-
-  # Optionally add HR/p-value table
+  # Add table if requested
   if (show_table) {
-    required_cols <- c(estimate, error_lower, error_upper, p.value)
-    if (!all(required_cols %in% colnames(data))) {
-      stop(sprintf("Data frame must contain columns: %s", paste(required_cols, collapse = ", ")))
-    }
-    data$HR <- sprintf("%.2f (%.2f-%.2f)", data[[estimate]], data[[error_lower]], data[[error_upper]])
-    p_right <- ggplot(data, aes(y = !!sym(label))) +
-      geom_text(aes(x = 0, label = HR), hjust = 0) +
-      geom_text(aes(x = 1, label = signif(data[[p.value]], 3)), hjust = 0) +
-      coord_cartesian(xlim = c(-0.5, 2.5)) +
-      scale_x_continuous(breaks = c(0, 1), labels = c("HR [95% CI]", "p-value"), position = "top") +
-      theme_void()
-    if (!is.null(facet)) {
-      p_right <- p_right + facet_grid(rows = vars(!!sym(facet)), scales = "free_y", switch = "y", space = "free_y")
-    }
-    p <- cowplot::plot_grid(p, p_right, ncol = 2, rel_widths = c(1, 0.75), align = "h")
+    p_table <- .create_forest_table(data, label, estimate, error_lower, error_upper, p.value, facet)
+    p <- cowplot::plot_grid(p, p_table, ncol = 2, rel_widths = c(2, 1), align = "h", axis = "tb")
   }
 
   return(p)
+}
+
+#' @title Create Forest Plot Table
+#' @description Internal helper function to create HR/p-value table for forest plots
+#' @param data Data frame with results
+#' @param label Label column name
+#' @param estimate Estimate column name
+#' @param error_lower Lower CI column name
+#' @param error_upper Upper CI column name
+#' @param p.value P-value column name
+#' @param facet Facet column name (optional)
+#' @return ggplot object
+#' @keywords internal
+.create_forest_table <- function(data, label, estimate, error_lower, error_upper, p.value, facet = NULL) {
+  # Validate columns
+  required_cols <- c(estimate, error_lower, error_upper, p.value)
+  if (!all(required_cols %in% colnames(data))) {
+    stop(sprintf("Data frame must contain columns: %s", paste(required_cols, collapse = ", ")))
+  }
+
+  # Format text
+  data$HR_text <- sprintf("%.2f (%.2f-%.2f)", 
+                          data[[estimate]], data[[error_lower]], data[[error_upper]])
+  data$p_text <- signif(data[[p.value]], 2)
+
+  # Create table plot
+  p_table <- ggplot(data, aes(y = !!sym(label))) +
+    geom_text(aes(x = 0, label = HR_text)) +
+    geom_text(aes(x = 1, label = p_text)) +
+    coord_cartesian(xlim = c(-0.5, 1.5)) +
+    scale_y_discrete() +
+    theme_void() +
+    scale_x_continuous(breaks = c(0, 1), labels = c("HR [95% CI]", "p-value"), position = "top") +
+    theme(
+      axis.text.x = element_text(size = 12, face = "bold"),
+      strip.background = element_blank(),
+      strip.placement = "none",
+      strip.text = element_blank(),
+      plot.margin = margin(5, 5, 5, 5)
+    )
+
+  # Add faceting if needed
+  if (!is.null(facet)) {
+    p_table <- p_table +
+      facet_grid(rows = vars(!!sym(facet)), scales = "free_y", switch = "y", space = "free_y")
+  }
+
+  return(p_table)
 }
 
 #' @title Custom ggplot2 Theme
