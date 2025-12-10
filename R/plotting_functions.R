@@ -142,12 +142,12 @@ plot_enrichment <- function(
     title = "Enrichment Plot",
     terms2plot = NULL,
     genes2plot = NULL,
-    qvalueCutoff = 0.2,
+    padjCutoff = 0.2,
     max_terms = 20,
     wrap_width = 40) {
   enrichment_terms <- as.data.frame(gse@result) %>%
-    dplyr::arrange(qvalue) %>%
-    dplyr::filter(qvalue < qvalueCutoff)
+    dplyr::arrange(pvalue) %>%
+    dplyr::filter(p.adjust < padjCutoff)
 
   # Filter by terms if provided
   if (!is.null(terms2plot)) {
@@ -181,7 +181,7 @@ plot_enrichment <- function(
     dplyr::slice_head(n = max_terms / 2)
 
   # Plot
-  p <- ggplot(enrichment_terms, aes(x = NES, y = Description, fill = qvalue)) +
+  p <- ggplot(enrichment_terms, aes(x = NES, y = Description, fill = p.adjust)) +
     geom_col(orientation = "y", width = 0.7) +
     scale_fill_gradient(low = "red", high = "blue", guide = guide_colorbar(reverse = TRUE)) +
     labs(
