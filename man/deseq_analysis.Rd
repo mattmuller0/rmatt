@@ -4,7 +4,21 @@
 \alias{deseq_analysis}
 \title{Function to run DESeq2 analysis on a variety of conditions}
 \usage{
-deseq_analysis(dds, conditions, controls = NULL, outpath)
+deseq_analysis(
+  dds,
+  conditions,
+  controls = NULL,
+  outpath,
+  pvalue = "padj",
+  pCutoff = 0.05,
+  fcCutoff = 0,
+  run_pca = TRUE,
+  run_gsea = TRUE,
+  normalize_method = "vst",
+  deseq_args = list(test = "Wald", fitType = "parametric", sfType = "ratio", quiet =
+    TRUE, minReplicatesForReplace = 7, useT = FALSE, minmu = 0.5, parallel = FALSE,
+    BPPARAM = BiocParallel::bpparam())
+)
 }
 \arguments{
 \item{dds}{DESeq2 object}
@@ -14,6 +28,20 @@ deseq_analysis(dds, conditions, controls = NULL, outpath)
 \item{controls}{List of controls to run DESeq2 on}
 
 \item{outpath}{Path to save results}
+
+\item{pvalue}{p-value column name for significance (default: "padj")}
+
+\item{pCutoff}{p-value cutoff for significance (default: 0.05)}
+
+\item{fcCutoff}{Fold change cutoff for significance (default: 0)}
+
+\item{run_pca}{Logical, whether to run PCA analysis (default: TRUE)}
+
+\item{run_gsea}{Logical, whether to run GSEA analysis (default: TRUE)}
+
+\item{normalize_method}{Normalization method for PCA (default: "vst")}
+
+\item{deseq_args}{List of additional arguments to pass to DESeq2::DESeq}
 }
 \value{
 List of results of differential expression analysis

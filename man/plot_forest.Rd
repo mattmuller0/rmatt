@@ -10,6 +10,7 @@ plot_forest(
   estimate = "hazard.ratio",
   error_lower = "ci.lower",
   error_upper = "ci.upper",
+  group = NULL,
   color = NULL,
   facet = NULL,
   title = "Forest Plot",
@@ -32,6 +33,8 @@ plot_forest(
 
 \item{error_upper}{Column name for upper error bounds (default: "ci.upper").}
 
+\item{group}{Column name for grouping variable (default: NULL).}
+
 \item{color}{Column name for color grouping (default: NULL).}
 
 \item{facet}{Column name for facet grouping (default: NULL).}
@@ -41,6 +44,10 @@ plot_forest(
 \item{xlab}{Label for x-axis (default: estimate).}
 
 \item{ylab}{Label for y-axis (default: NULL).}
+
+\item{vline}{X-intercept for null effect line (default: 1).}
+
+\item{log_scale}{Logical, use log10 scale for x-axis (default: TRUE if vline = 1).}
 
 \item{show_table}{Logical, whether to show HR/p-value table (default: FALSE).}
 
