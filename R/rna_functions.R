@@ -18,14 +18,15 @@ summarize_experiment <- function(
     pvalue_cutoffs = c(0.01, 0.05, 0.1),
     padj_cutoffs = c(0.05, 0.1, 0.2),
     logFC_cutoff = 0) {
-  
   # Input validation
   required_cols <- c(logFC_column, pvalue_column, padj_column)
   if (!all(required_cols %in% colnames(results))) {
-    stop("Missing required columns: ", 
-         paste(setdiff(required_cols, colnames(results)), collapse = ", "))
+    stop(
+      "Missing required columns: ",
+      paste(setdiff(required_cols, colnames(results)), collapse = ", ")
+    )
   }
-  
+
   # Initialize results dataframe
   summary <- data.frame(
     variable = character(),
@@ -36,17 +37,17 @@ summarize_experiment <- function(
     n_down = integer(),
     stringsAsFactors = FALSE
   )
-  
+
   # Function to count genes based on criteria
   count_genes <- function(data, p_col, p_cutoff, fc_col, fc_cutoff) {
     # Get valid data (non-NA)
     valid_idx <- !is.na(data[[p_col]]) & !is.na(data[[fc_col]])
     valid_data <- data[valid_idx, ]
-    
+
     # Get significant genes
     sig_idx <- valid_data[[p_col]] < p_cutoff
     fc_data <- valid_data[[fc_col]][sig_idx]
-    
+
     o <- list(
       n_sig = sum(sig_idx),
       n_up = sum(fc_data > fc_cutoff),
@@ -54,7 +55,7 @@ summarize_experiment <- function(
     )
     return(o)
   }
-  
+
   # Process p-value cutoffs
   for (cutoff in pvalue_cutoffs) {
     counts <- count_genes(results, pvalue_column, cutoff, logFC_column, logFC_cutoff)
@@ -67,7 +68,7 @@ summarize_experiment <- function(
       n_down = counts$n_down
     ))
   }
-  
+
   # Process adjusted p-value cutoffs
   for (cutoff in padj_cutoffs) {
     counts <- count_genes(results, padj_column, cutoff, logFC_column, logFC_cutoff)
@@ -80,7 +81,7 @@ summarize_experiment <- function(
       n_down = counts$n_down
     ))
   }
-  
+
   rownames(summary) <- NULL
   return(summary)
 }
@@ -180,7 +181,7 @@ run_wilcox <- function(
     # Split data by group levels
     group_data <- split(dat[[gene]], dat[[group]])
     w <- wilcox.test(
-      group_data[[1]], 
+      group_data[[1]],
       group_data[[2]],
       exact = wilcox.exact,
       paired = wilcox.paired,
@@ -195,7 +196,7 @@ run_wilcox <- function(
   res$padj <- p.adjust(res$p.value, method = "BH")
 
   # order the results
-  res <- res %>% 
+  res <- res %>%
     dplyr::select(gene, everything()) %>%
     arrange(p.value)
 
@@ -254,8 +255,7 @@ run_limma <- function(
     voom.plot = TRUE,
     lm.method = "ls",
     ebayes.trend = TRUE,
-    ebayes.robust = TRUE
-    ) {
+    ebayes.robust = TRUE) {
   # Check for required packages
   check_suggested_package("limma")
   check_suggested_package("edgeR")
@@ -326,13 +326,12 @@ run_limma <- function(
 #' @return Correlation results for each gene
 #' @export
 run_correlations <- function(
-  dds, 
-  condition, 
-  normalize = "mor", 
-  cor.method = "spearman", 
-  cor.alternative = "two.sided",
-  cor.exact = NULL
-  ) {
+    dds,
+    condition,
+    normalize = "mor",
+    cor.method = "spearman",
+    cor.alternative = "two.sided",
+    cor.exact = NULL) {
   # Extract the condition vector
   condition <- as.numeric(SummarizedExperiment::colData(dds)[, condition])
 
@@ -342,7 +341,7 @@ run_correlations <- function(
   # Apply the cor function to each row of the gene_expression matrix
   gene_expression_correlations <- apply(gene_expression, 1, function(x) {
     correlation <- stats::cor.test(
-      x, 
+      x,
       condition,
       method = cor.method,
       alternative = cor.alternative
@@ -391,6 +390,7 @@ handle_deseq_output <- function(dds, res, resLFC, outpath, name, pvalue, pCutoff
 
   # Heatmap of significant genes
   sign_genes <- rownames(res)[res[[pvalue]] < pCutoff & abs(res$log2FoldChange) > fcCutoff]
+  sign_genes <- na.omit(sign_genes)
   if (length(sign_genes) == 0) {
     message("No significant genes found")
   } else {
@@ -525,8 +525,11 @@ ovr_deseq_results <- function(dds, column, outpath, controls = NULL) {
 #' @param controls List of controls to run DESeq2 on
 #' @param outpath Path to save results
 #' @param pvalue p-value column name for significance (default: "padj")
-#' @param pCutoff p-value cutoff for significance (default: 0.05)
-#' @param fcCutoff Fold change cutoff for significance (default: 0)
+#' @param pCutoff p-value cutoff for plots and heatmaps (default: 0.05)
+#' @param fcCutoff Fold change cutoff for plots and heatmaps (default: 0)
+#' @param summary_pvalue_cutoffs Numeric vector of p-value cutoffs for summary (default: c(0.01, 0.05, 0.1))
+#' @param summary_padj_cutoffs Numeric vector of adjusted p-value cutoffs for summary (default: c(0.05, 0.1, 0.2))
+#' @param summary_fc_cutoff Log fold change cutoff for summary (default: 0)
 #' @param run_pca Logical, whether to run PCA analysis (default: TRUE)
 #' @param run_gsea Logical, whether to run GSEA analysis (default: TRUE)
 #' @param normalize_method Normalization method for PCA (default: "vst")
@@ -536,16 +539,21 @@ ovr_deseq_results <- function(dds, column, outpath, controls = NULL) {
 #' @importFrom ggplot2 ggsave
 #' @export
 deseq_analysis <- function(
-    dds, 
-    conditions, 
-    controls = NULL, 
+    dds,
+    conditions,
+    controls = NULL,
     outpath,
     pvalue = "padj",
     pCutoff = 0.05,
     fcCutoff = 0,
+    # Summary parameters
+    summary_pvalue_cutoffs = c(0.01, 0.05, 0.1),
+    summary_padj_cutoffs = c(0.05, 0.1, 0.2),
+    summary_fc_cutoff = 0,
     run_pca = TRUE,
     run_gsea = TRUE,
     normalize_method = "vst",
+    # deseq arguments
     deseq_args = list(
       test = "Wald",
       fitType = "parametric",
@@ -556,8 +564,7 @@ deseq_analysis <- function(
       minmu = 0.5,
       parallel = FALSE,
       BPPARAM = BiocParallel::bpparam()
-    )
-) {
+    )) {
   # Create output directory
   dir.create(outpath, showWarnings = FALSE, recursive = TRUE)
 
@@ -612,7 +619,11 @@ deseq_analysis <- function(
     if (length(levels) > 2) {
       # One-vs-Rest analysis
       res <- ovr_deseq_results(dds_, condition, file.path(outpath, condition), controls = controls)
-      summary <- lapply(res, summarize_experiment, pvalue_cutoffs = pCutoff, padj_cutoffs = pCutoff, logFC_cutoff = fcCutoff)
+      summary <- lapply(res, summarize_experiment,
+        pvalue_cutoffs = summary_pvalue_cutoffs,
+        padj_cutoffs = summary_padj_cutoffs,
+        logFC_cutoff = summary_fc_cutoff
+      )
       for (i in seq_along(summary)) {
         summary[[i]]$condition <- names(res)[i]
       }
@@ -623,10 +634,17 @@ deseq_analysis <- function(
     } else if (length(levels) == 2) {
       # Two-group comparison
       contrast <- c(condition, levels[2], levels[1])
-      res <- run_deseq(dds_, file.path(outpath, condition), contrast = contrast, 
-                       pvalue = pvalue, pCutoff = pCutoff, fcCutoff = fcCutoff, 
-                       deseq_args = deseq_args, run_gsea = run_gsea)
-      summary <- summarize_experiment(res, pvalue_cutoffs = pCutoff, padj_cutoffs = pCutoff, logFC_cutoff = fcCutoff)
+      res <- run_deseq(dds_, file.path(outpath, condition),
+        contrast = contrast,
+        pvalue = pvalue, pCutoff = pCutoff, fcCutoff = fcCutoff,
+        deseq_args = deseq_args, run_gsea = run_gsea
+      )
+      summary <- summarize_experiment(
+        results = res,
+        pvalue_cutoffs = summary_pvalue_cutoffs,
+        padj_cutoffs = summary_padj_cutoffs,
+        logFC_cutoff = summary_fc_cutoff
+      )
       summary$condition <- condition
       summary <- summary[, c(ncol(summary), 1:(ncol(summary) - 1))]
       summary_df <<- rbind(summary_df, summary)
