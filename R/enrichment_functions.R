@@ -51,26 +51,12 @@ safe_ggplot <- function(plot_fn, out) {
   )
 }
 
-#' Load custom gene sets
-#' @description Combines mpa_geneset and press_geneset into a single data frame
-#' @return Data frame of combined custom gene sets with gs_name and gene_symbol columns
-#' @keywords internal
-get_custom_genesets <- function() {
-  t2g <- rbind(mpa_geneset, press_geneset)
-  return(t2g)
-}
-
 #' Save and plot gse object
 #' @param gse GSE object.
 #' @param outpath Path to save to.
 #' @param terms2plot Terms to plot.
 #' @return None.
 #' @note Requires enrichplot package for plotting. Install with: BiocManager::install("enrichplot")
-#' @importFrom dplyr filter mutate group_by arrange slice
-#' @importFrom ggplot2 ggplot aes geom_col scale_fill_continuous labs ggsave guide_colorbar ggtitle
-#' @importFrom forcats fct_reorder
-#' @importFrom stringr str_wrap
-#' @importFrom ggpubr theme_classic2
 #' @export
 save_gse <- function(gse, outpath, terms2plot = c("inflam", "plat", "coag")) {
   dir.create(outpath, showWarnings = FALSE, recursive = TRUE)
@@ -92,9 +78,9 @@ save_gse <- function(gse, outpath, terms2plot = c("inflam", "plat", "coag")) {
   # Check if the gse is a 'enrichResult' object
   if (inherits(gse, "enrichResult")) {
     safe_ggplot(function() enrichplot::dotplot(gse, showCategory = 10), file.path(outpath, "dotplot.pdf"))
-    safe_ggplot(function() ggtangle::cnetplot(gse, node_label = "category", color_category='firebrick', color_gene='steelblue'), file.path(outpath, "cnetplot.pdf"))
+    safe_ggplot(function() ggtangle::cnetplot(gse, node_label = "category", color_category = "firebrick", color_gene = "steelblue"), file.path(outpath, "cnetplot.pdf"))
     safe_ggplot(function() enrichplot::heatplot(gse, showCategory = 5), file.path(outpath, "heatplot.pdf"))
-    safe_ggplot(function() enrichplot::emapplot(pairwise_termsim(gse), node_label = "group"), file.path(outpath, "emapplot.pdf"))
+    safe_ggplot(function() enrichplot::emapplot(enrichplot::pairwise_termsim(gse), node_label = "group"), file.path(outpath, "emapplot.pdf"))
     return(NULL)
   }
 
@@ -103,16 +89,17 @@ save_gse <- function(gse, outpath, terms2plot = c("inflam", "plat", "coag")) {
     safe_ggplot(function() plot_enrichment(gse), file.path(outpath, "barplot.pdf"))
     safe_ggplot(function() plot_enrichment(gse, terms2plot = terms2plot), file.path(outpath, "barplot_terms.pdf"))
     safe_ggplot(function() enrichplot::ridgeplot(gse, showCategory = 10), file.path(outpath, "ridgeplot.pdf"))
-    safe_ggplot(function() enrichplot::emapplot(pairwise_termsim(gse), node_label = "group"), file.path(outpath, "emapplot.pdf"))
+    safe_ggplot(function() enrichplot::emapplot(enrichplot::pairwise_termsim(gse), node_label = "group"), file.path(outpath, "emapplot.pdf"))
     return(NULL)
   }
 
   # Check if the gse is a 'compareClusterResult' object
   if (inherits(gse, "compareClusterResult")) {
     safe_ggplot(function() enrichplot::dotplot(gse, showCategory = 10), file.path(outpath, "dotplot.pdf"))
-    safe_ggplot(function() enrichplot::emapplot(pairwise_termsim(gse), node_label = "group"), file.path(outpath, "emapplot.pdf"))
+    safe_ggplot(function() enrichplot::emapplot(enrichplot::pairwise_termsim(gse), node_label = "group"), file.path(outpath, "emapplot.pdf"))
     return(NULL)
-}
+  }
+  
   message("Unsupported gse object type for plotting")
   return(NULL)
 }
@@ -129,9 +116,9 @@ save_gse <- function(gse, outpath, terms2plot = c("inflam", "plat", "coag")) {
 #' @note Requires clusterProfiler and org.Hs.eg.db packages. Install with: BiocManager::install(c("clusterProfiler", "org.Hs.eg.db"))
 #' @export
 rna_enrichment <- function(
-    geneList, 
+    geneList,
     outpath,
-    keyType = NULL, 
+    keyType = NULL,
     enricher_function = NULL,
     ontology = "ALL",
     terms2plot = c("inflam", "immune", "plat"),
@@ -188,29 +175,28 @@ rna_enrichment <- function(
 #' @note Requires clusterProfiler and msigdbr packages. Install with: BiocManager::install(c("clusterProfiler", "msigdbr"))
 #' @export
 gsea_analysis <- function(
-  geneList, outpath,
-  keyType = NULL,
-  ontology = "ALL",
-  species = "Homo sapiens",
-  minGSSize = 10,
-  maxGSSize = 500,
-  eps = 1e-10,
-  pvalueCutoff = Inf,
-  pAdjustMethod = "BH",
-  verbose = FALSE
-  ) {
+    geneList, outpath,
+    keyType = NULL,
+    ontology = "ALL",
+    species = "Homo sapiens",
+    minGSSize = 10,
+    maxGSSize = 500,
+    eps = 1e-10,
+    pvalueCutoff = Inf,
+    pAdjustMethod = "BH",
+    verbose = FALSE) {
   # Check for required packages
   check_suggested_package("clusterProfiler")
   check_suggested_package("msigdbr")
 
   if (is.null(keyType)) {
-  keyType <- detect_gene_id_type(names(geneList), strip = TRUE)
+    keyType <- detect_gene_id_type(names(geneList), strip = TRUE)
   }
 
   # ensure keytype is in our dict
   gene_keys <- list(SYMBOL = "gene_symbol", ENSEMBL = "ensembl_gene")
   if (!(keyType %in% names(gene_keys))) {
-  stop("Invalid keyType. Please use one of: ", paste(names(gene_keys), collapse = ", "))
+    stop("Invalid keyType. Please use one of: ", paste(names(gene_keys), collapse = ", "))
   }
 
   # match the keytype to the ID held in msigdbr
@@ -245,7 +231,7 @@ gsea_analysis <- function(
     REACTOME = reactome_t2g,
     KEGG = kegg_t2g
   )
-  
+
   # Only add CUSTOM if not NULL
   if (!is.null(cust_t2g)) {
     gse_list$CUSTOM <- cust_t2g
@@ -296,8 +282,7 @@ stratified_overrepresentation <- function(
     pvalueCutoff = 0.05,
     qvalueCutoff = 0.1,
     minGSSize = 10,
-    maxGSSize = 500
-) {
+    maxGSSize = 500) {
   # Load required packages
   check_suggested_package("clusterProfiler")
   check_suggested_package("org.Hs.eg.db")
@@ -326,37 +311,39 @@ stratified_overrepresentation <- function(
       return(NULL)
     }
 
-    tryCatch({
-      enr <- enrichGO(
-        gene = genes,
-        OrgDb = org,
-        keyType = keyType,
-        ont = ont,
-        pvalueCutoff = pvalueCutoff,
-        qvalueCutoff = qvalueCutoff,
-        minGSSize = minGSSize,
-        maxGSSize = maxGSSize,
-        readable = TRUE
-      )
+    tryCatch(
+      {
+        enr <- enrichGO(
+          gene = genes,
+          OrgDb = org,
+          keyType = keyType,
+          ont = ont,
+          pvalueCutoff = pvalueCutoff,
+          qvalueCutoff = qvalueCutoff,
+          minGSSize = minGSSize,
+          maxGSSize = maxGSSize,
+          readable = TRUE
+        )
 
-      if (is.null(enr) || nrow(enr@result) == 0) {
-        message(sprintf("No enrichment results found for %s genes", direction))
+        if (is.null(enr) || nrow(enr@result) == 0) {
+          message(sprintf("No enrichment results found for %s genes", direction))
+          return(NULL)
+        }
+
+        # Save individual results
+        dir.create(file.path(outpath, direction), showWarnings = FALSE, recursive = TRUE)
+        write.csv(enr@result, file.path(outpath, direction, "enrichGO_results.csv"), row.names = FALSE)
+        saveRDS(enr, file.path(outpath, direction, "enrichGO_object.rds"))
+
+        # Return results with direction
+        enr@result %>%
+          mutate(direction = direction)
+      },
+      error = function(e) {
+        message(sprintf("Error in enrichGO for %s genes: %s", direction, e$message))
         return(NULL)
       }
-
-      # Save individual results
-      dir.create(file.path(outpath, direction), showWarnings = FALSE, recursive = TRUE)
-      write.csv(enr@result, file.path(outpath, direction, "enrichGO_results.csv"), row.names = FALSE)
-      saveRDS(enr, file.path(outpath, direction, "enrichGO_object.rds"))
-
-      # Return results with direction
-      enr@result %>%
-        mutate(direction = direction)
-
-    }, error = function(e) {
-      message(sprintf("Error in enrichGO for %s genes: %s", direction, e$message))
-      return(NULL)
-    })
+    )
   }
 
   # Run enrichment for up and down genes
@@ -412,9 +399,11 @@ stratified_overrepresentation <- function(
       ) +
       labs(
         title = sprintf("GO Enrichment Analysis (%s)", ont),
-        subtitle = sprintf("Up: %d genes, Down: %d genes | padj < %s", 
-                          length(up_genes), length(down_genes), padj_cutoff),
-        x = expression("Signed -log"[10]*"(adjusted p-value)"),
+        subtitle = sprintf(
+          "Up: %d genes, Down: %d genes | padj < %s",
+          length(up_genes), length(down_genes), padj_cutoff
+        ),
+        x = expression("Signed -log"[10] * "(adjusted p-value)"),
         y = NULL,
         fill = "Direction"
       ) +
