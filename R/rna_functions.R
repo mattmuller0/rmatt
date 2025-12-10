@@ -375,10 +375,11 @@ run_correlations <- function(
 #' @param pCutoff p-value cutoff for volcano plot
 #' @param fcCutoff Fold change cutoff for volcano plot
 #' @param contrast Contrast used in the analysis
+#' @param run_gsea Logical, whether to run GSEA analysis (default: TRUE)
 #' @return None
 #' @importFrom ggplot2 ggsave
 #' @keywords internal
-handle_deseq_output <- function(dds, res, resLFC, outpath, name, pvalue, pCutoff, fcCutoff, contrast) {
+handle_deseq_output <- function(dds, res, resLFC, outpath, name, pvalue, pCutoff, fcCutoff, contrast, run_gsea = TRUE) {
   # MA plot
   pdf(file.path(outpath, "MAplot.pdf"))
   DESeq2::plotMA(resLFC)
@@ -400,8 +401,10 @@ handle_deseq_output <- function(dds, res, resLFC, outpath, name, pvalue, pCutoff
   }
 
   # Gene list and GSEA
-  geneList <- get_fc_list(res)
-  gse_list <- gsea_analysis(geneList, outpath)
+  if (run_gsea) {
+    geneList <- get_fc_list(res)
+    gse_list <- gsea_analysis(geneList, outpath)
+  }
 
   message("Results Summary:")
   summary(res)
@@ -419,6 +422,7 @@ handle_deseq_output <- function(dds, res, resLFC, outpath, name, pvalue, pCutoff
 #' @param pvalue p-value column name
 #' @param pCutoff p-value cutoff for volcano plot
 #' @param fcCutoff Fold change cutoff for volcano plot
+#' @param run_gsea Logical, whether to run GSEA analysis (default: TRUE)
 #' @param deseq_args List of additional arguments to pass to DESeq2::DESeq
 #' @return Results of differential expression analysis
 #' @note Requires DESeq2 package. Install with: BiocManager::install("DESeq2")
@@ -431,6 +435,7 @@ run_deseq <- function(
     pvalue = "padj",
     pCutoff = 0.05,
     fcCutoff = 0,
+    run_gsea = TRUE,
     deseq_args = list(
       test = "Wald",
       fitType = "parametric",
@@ -467,7 +472,7 @@ run_deseq <- function(
   }
 
   # Handle output
-  handle_deseq_output(dds, res, resLFC, outpath, name, pvalue, pCutoff, fcCutoff, contrast)
+  handle_deseq_output(dds, res, resLFC, outpath, name, pvalue, pCutoff, fcCutoff, contrast, run_gsea)
   return(res)
 }
 
@@ -519,11 +524,40 @@ ovr_deseq_results <- function(dds, column, outpath, controls = NULL) {
 #' @param conditions List of conditions to run DESeq2 on (must be factors)
 #' @param controls List of controls to run DESeq2 on
 #' @param outpath Path to save results
+#' @param pvalue p-value column name for significance (default: "padj")
+#' @param pCutoff p-value cutoff for significance (default: 0.05)
+#' @param fcCutoff Fold change cutoff for significance (default: 0)
+#' @param run_pca Logical, whether to run PCA analysis (default: TRUE)
+#' @param run_gsea Logical, whether to run GSEA analysis (default: TRUE)
+#' @param normalize_method Normalization method for PCA (default: "vst")
+#' @param deseq_args List of additional arguments to pass to DESeq2::DESeq
 #' @return List of results of differential expression analysis
 #' @importFrom SummarizedExperiment colData
 #' @importFrom ggplot2 ggsave
 #' @export
-deseq_analysis <- function(dds, conditions, controls = NULL, outpath) {
+deseq_analysis <- function(
+    dds, 
+    conditions, 
+    controls = NULL, 
+    outpath,
+    pvalue = "padj",
+    pCutoff = 0.05,
+    fcCutoff = 0,
+    run_pca = TRUE,
+    run_gsea = TRUE,
+    normalize_method = "vst",
+    deseq_args = list(
+      test = "Wald",
+      fitType = "parametric",
+      sfType = "ratio",
+      quiet = TRUE,
+      minReplicatesForReplace = 7,
+      useT = FALSE,
+      minmu = 0.5,
+      parallel = FALSE,
+      BPPARAM = BiocParallel::bpparam()
+    )
+) {
   # Create output directory
   dir.create(outpath, showWarnings = FALSE, recursive = TRUE)
 
@@ -561,22 +595,24 @@ deseq_analysis <- function(dds, conditions, controls = NULL, outpath) {
     message(paste0("Running Analysis on ", condition))
 
     # PCA plot
-    tryCatch(
-      {
-        pcs <- prcomp(scale(t(normalize_counts(dds_, method = "vst"))))
-        pca_plot <- ggbiplot::ggbiplot(pcs, groups = SummarizedExperiment::colData(dds_)[, condition], ellipse = TRUE, var.axes = FALSE)
-        suppressMessages(ggplot2::ggsave(file.path(outpath, condition, "pca_plot.pdf"), pca_plot))
-      },
-      error = function(e) {
-        message("An error occurred while generating the PCA plot: ", conditionMessage(e))
-      }
-    )
+    if (run_pca) {
+      tryCatch(
+        {
+          pcs <- prcomp(scale(t(normalize_counts(dds_, method = normalize_method))))
+          pca_plot <- ggbiplot::ggbiplot(pcs, groups = SummarizedExperiment::colData(dds_)[, condition], ellipse = TRUE, var.axes = FALSE)
+          suppressMessages(ggplot2::ggsave(file.path(outpath, condition, "pca_plot.pdf"), pca_plot))
+        },
+        error = function(e) {
+          message("An error occurred while generating the PCA plot: ", conditionMessage(e))
+        }
+      )
+    }
 
     # Return results based on number of levels
     if (length(levels) > 2) {
       # One-vs-Rest analysis
-      res <- ovr_deseq_results(dds_, condition, file.path(outpath, condition))
-      summary <- lapply(res, summarize_experiment)
+      res <- ovr_deseq_results(dds_, condition, file.path(outpath, condition), controls = controls)
+      summary <- lapply(res, summarize_experiment, pvalue_cutoffs = pCutoff, padj_cutoffs = pCutoff, logFC_cutoff = fcCutoff)
       for (i in seq_along(summary)) {
         summary[[i]]$condition <- names(res)[i]
       }
@@ -587,8 +623,10 @@ deseq_analysis <- function(dds, conditions, controls = NULL, outpath) {
     } else if (length(levels) == 2) {
       # Two-group comparison
       contrast <- c(condition, levels[2], levels[1])
-      res <- run_deseq(dds_, file.path(outpath, condition), contrast = contrast)
-      summary <- summarize_experiment(res)
+      res <- run_deseq(dds_, file.path(outpath, condition), contrast = contrast, 
+                       pvalue = pvalue, pCutoff = pCutoff, fcCutoff = fcCutoff, 
+                       deseq_args = deseq_args, run_gsea = run_gsea)
+      summary <- summarize_experiment(res, pvalue_cutoffs = pCutoff, padj_cutoffs = pCutoff, logFC_cutoff = fcCutoff)
       summary$condition <- condition
       summary <- summary[, c(ncol(summary), 1:(ncol(summary) - 1))]
       summary_df <<- rbind(summary_df, summary)

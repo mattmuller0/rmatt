@@ -13,7 +13,8 @@ handle_deseq_output(
   pvalue,
   pCutoff,
   fcCutoff,
-  contrast
+  contrast,
+  run_gsea = TRUE
 )
 }
 \arguments{
@@ -34,6 +35,8 @@ handle_deseq_output(
 \item{fcCutoff}{Fold change cutoff for volcano plot}
 
 \item{contrast}{Contrast used in the analysis}
+
+\item{run_gsea}{Logical, whether to run GSEA analysis (default: TRUE)}
 }
 \value{
 None

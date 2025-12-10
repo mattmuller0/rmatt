@@ -11,6 +11,7 @@ run_deseq(
   pvalue = "padj",
   pCutoff = 0.05,
   fcCutoff = 0,
+  run_gsea = TRUE,
   deseq_args = list(test = "Wald", fitType = "parametric", sfType = "ratio", quiet =
     TRUE, minReplicatesForReplace = 7, useT = FALSE, minmu = 0.5, parallel = FALSE,
     BPPARAM = BiocParallel::bpparam())
@@ -28,6 +29,8 @@ run_deseq(
 \item{pCutoff}{p-value cutoff for volcano plot}
 
 \item{fcCutoff}{Fold change cutoff for volcano plot}
+
+\item{run_gsea}{Logical, whether to run GSEA analysis (default: TRUE)}
 
 \item{deseq_args}{List of additional arguments to pass to DESeq2::DESeq}
 }
