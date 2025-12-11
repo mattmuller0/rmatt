@@ -463,11 +463,11 @@ run_deseq <- function(
   if (!is.na(contrast)[1]) {
     name <- paste0(contrast[1], "__", contrast[2], "_vs_", contrast[3])
     res <- DESeq2::results(dds, contrast = contrast)
-    resLFC <- DESeq2::lfcShrink(dds, coef = 2)
+    resLFC <- DESeq2::lfcShrink(dds, coef = 2, quiet = TRUE)
   } else {
     name <- DESeq2::resultsNames(dds)[2]
     res <- DESeq2::results(dds, name = name)
-    resLFC <- DESeq2::lfcShrink(dds, coef = 2)
+    resLFC <- DESeq2::lfcShrink(dds, coef = 2, quiet = TRUE)
   }
 
   # Handle output

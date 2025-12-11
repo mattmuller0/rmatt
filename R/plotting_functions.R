@@ -6,20 +6,8 @@
 #' @param bins Number of bins for histogram
 #' @return ggplot object of library depth
 #' @importFrom SummarizedExperiment assay
-#' @importFrom ggpubr theme_classic2
 #' @export
 plot_library_depth <- function(dds, title, bins = 30) {
-  # Input validation
-  if (missing(dds) || is.null(dds)) {
-    stop("Argument 'dds' is required and cannot be NULL")
-  }
-  if (missing(title) || is.null(title) || !is.character(title)) {
-    stop("Argument 'title' must be a character string")
-  }
-  if (!is.numeric(bins) || bins <= 0) {
-    stop("Argument 'bins' must be a positive number")
-  }
-
   p <- ggplot2::ggplot(data.frame(log2(rowMeans(assay(dds)) + 0.001)), aes(x = log2(rowMeans(assay(dds)) + 0.001))) +
     ggplot2::geom_histogram(bins = bins, fill = "blue", alpha = 0.65) +
     ggplot2::labs(x = "Log Library Depth", y = "Count")
@@ -33,7 +21,6 @@ plot_library_depth <- function(dds, title, bins = 30) {
 #' @param bins Number of bins for histogram (default: 10)
 #' @return ggplot object of library size histogram
 #' @importFrom SummarizedExperiment assay
-#' @importFrom ggpubr theme_classic2
 #' @export
 plot_library_size <- function(dds, title, bins = 10) {
   p <- ggplot2::ggplot(data.frame(log2(colSums(assay(dds)) + 0.001)), aes(x = log2(colSums(assay(dds)) + 0.001))) +
@@ -48,13 +35,11 @@ plot_library_size <- function(dds, title, bins = 10) {
 #' @param title Title of plot
 #' @param min_value Minimum value for detection (default: 0)
 #' @return ggplot object of percent of genes detected histogram
-#' @importFrom ggpubr theme_classic2
 #' @export
 plot_percent_genes_detected <- function(dds, title, min_value = 0) {
   p <- ggplot(data.frame(percent_genes_detected = percentGenesDetected(dds, min_value)), aes(x = percent_genes_detected)) +
     geom_histogram(fill = "blue", alpha = 0.65) +
-    labs(x = "Percent Genes Detected", y = "Count") +
-    theme_classic2()
+    labs(x = "Percent Genes Detected", y = "Count")
   return(p)
 }
 
@@ -97,7 +82,9 @@ plot_heatmap <- function(
     genes <- genes[genes %in% rownames(norm_counts)]
   }
 
-  norm_counts <- norm_counts[genes, ]
+  # Subset normalized counts to selected genes
+  norm_counts <- norm_counts[genes, , drop = FALSE]
+  
   # Create heatmap using do.call
   heatmap_args <- list(
     matrix = norm_counts,
