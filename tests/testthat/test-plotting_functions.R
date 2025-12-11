@@ -65,6 +65,12 @@ test_that("plot_heatmap handles NULL gene list", {
     expect_s4_class(hm, "Heatmap")
 })
 
+test_that("plot_heatmap handles one gene", {
+    dds <- create_mock_dds()
+    hm <- plot_heatmap(dds, genes = rownames(dds)[1], annotations = c("condition", "batch"))
+    expect_s4_class(hm, "Heatmap")
+})
+
 # Test color_mapping
 test_that("color_mapping creates valid color mappings", {
     df <- data.frame(

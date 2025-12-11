@@ -9,8 +9,10 @@ plot_heatmap(
   genes = NULL,
   annotations = NULL,
   normalize = "vst",
-  width = unit(max(4, min(12, 4 + 0.2 * ncol(dds))), "cm"),
-  height = unit(max(4, min(12, 4 + 0.1 * length(intersect(genes, rownames(dds))))), "cm"),
+  width = unit(max(4, min(20, 0.2 * ncol(dds))), "cm"),
+  height = unit(max(4, min(20, 0.5 * length(intersect(genes, rownames(dds))))), "cm"),
+  show_row_names = ifelse(length(genes) <= 50, TRUE, FALSE),
+  show_column_names = ifelse(ncol(dds) <= 20, TRUE, FALSE),
   ...
 )
 }

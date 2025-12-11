@@ -6,24 +6,11 @@
 #' @param bins Number of bins for histogram
 #' @return ggplot object of library depth
 #' @importFrom SummarizedExperiment assay
-#' @importFrom ggpubr theme_classic2
 #' @export
 plot_library_depth <- function(dds, title, bins = 30) {
-  # Input validation
-  if (missing(dds) || is.null(dds)) {
-    stop("Argument 'dds' is required and cannot be NULL")
-  }
-  if (missing(title) || is.null(title) || !is.character(title)) {
-    stop("Argument 'title' must be a character string")
-  }
-  if (!is.numeric(bins) || bins <= 0) {
-    stop("Argument 'bins' must be a positive number")
-  }
-
-  p <- ggplot(data.frame(log2(rowMeans(assay(dds)) + 0.001)), aes(x = log2(rowMeans(assay(dds)) + 0.001))) +
-    geom_histogram(bins = bins, fill = "blue", alpha = 0.65) +
-    labs(x = "Log Library Depth", y = "Count") +
-    theme_classic2()
+  p <- ggplot2::ggplot(data.frame(log2(rowMeans(assay(dds)) + 0.001)), aes(x = log2(rowMeans(assay(dds)) + 0.001))) +
+    ggplot2::geom_histogram(bins = bins, fill = "blue", alpha = 0.65) +
+    ggplot2::labs(x = "Log Library Depth", y = "Count")
   return(p)
 }
 
@@ -34,13 +21,11 @@ plot_library_depth <- function(dds, title, bins = 30) {
 #' @param bins Number of bins for histogram (default: 10)
 #' @return ggplot object of library size histogram
 #' @importFrom SummarizedExperiment assay
-#' @importFrom ggpubr theme_classic2
 #' @export
 plot_library_size <- function(dds, title, bins = 10) {
-  p <- ggplot(data.frame(log2(colSums(assay(dds)) + 0.001)), aes(x = log2(colSums(assay(dds)) + 0.001))) +
-    geom_histogram(bins = bins, fill = "blue", alpha = 0.65) +
-    labs(x = "Log Library Size", y = "Count") +
-    theme_classic2()
+  p <- ggplot2::ggplot(data.frame(log2(colSums(assay(dds)) + 0.001)), aes(x = log2(colSums(assay(dds)) + 0.001))) +
+    ggplot2::geom_histogram(bins = bins, fill = "blue", alpha = 0.65) +
+    ggplot2::labs(x = "Log Library Size", y = "Count")
   return(p)
 }
 
@@ -50,13 +35,11 @@ plot_library_size <- function(dds, title, bins = 10) {
 #' @param title Title of plot
 #' @param min_value Minimum value for detection (default: 0)
 #' @return ggplot object of percent of genes detected histogram
-#' @importFrom ggpubr theme_classic2
 #' @export
 plot_percent_genes_detected <- function(dds, title, min_value = 0) {
   p <- ggplot(data.frame(percent_genes_detected = percentGenesDetected(dds, min_value)), aes(x = percent_genes_detected)) +
     geom_histogram(fill = "blue", alpha = 0.65) +
-    labs(x = "Percent Genes Detected", y = "Count") +
-    theme_classic2()
+    labs(x = "Percent Genes Detected", y = "Count")
   return(p)
 }
 
@@ -75,8 +58,10 @@ plot_percent_genes_detected <- function(dds, title, min_value = 0) {
 #' @export
 plot_heatmap <- function(
     dds, genes = NULL, annotations = NULL, normalize = "vst",
-    width = unit(max(4, min(12, 4 + 0.2 * ncol(dds))), "cm"),
-    height = unit(max(4, min(12, 4 + 0.1 * length(intersect(genes, rownames(dds))))), "cm"),
+    width = unit(max(4, min(20, 0.2 * ncol(dds))), "cm"),
+    height = unit(max(4, min(20, 0.5 * length(intersect(genes, rownames(dds))))), "cm"),
+    show_row_names = ifelse(length(genes) <= 50, TRUE, FALSE),
+    show_column_names = ifelse(ncol(dds) <= 20, TRUE, FALSE),
     ...) {
   # Check for ComplexHeatmap package
   check_bioc_package("ComplexHeatmap")
@@ -97,7 +82,9 @@ plot_heatmap <- function(
     genes <- genes[genes %in% rownames(norm_counts)]
   }
 
-  norm_counts <- norm_counts[genes, ]
+  # Subset normalized counts to selected genes
+  norm_counts <- norm_counts[genes, , drop = FALSE]
+  
   # Create heatmap using do.call
   heatmap_args <- list(
     matrix = norm_counts,
@@ -302,7 +289,7 @@ plot_factors_heatmap <- function(
     border = TRUE,
     rect_gp = gpar(col = "black", lwd = 1),
     width = unit(0.6 * nrow(cohort_tab), "cm"),
-    height = unit(1.4 * nrow(cohort_tab), "cm"),
+    height = unit(1.0 * nrow(cohort_tab), "cm"),
     ...) {
   # Check for ComplexHeatmap package
   check_bioc_package("ComplexHeatmap")
@@ -361,6 +348,7 @@ plot_volcano <- function(
     xlabel = bquote(~ Log[2] ~ "Fold Change"),
     ylabel = bquote(~ -log[10] ~ "(" ~ .(substitute(pvalue)) ~ ")"),
     color_scale = c("grey", "red")) {
+  # Convert to data frame
   dge <- as.data.frame(dge)
 
   if (labels == "rownames" & !is.null(rownames(dge))) {
@@ -370,18 +358,18 @@ plot_volcano <- function(
   # Define significance based on cutoffs (if cutoffs provided)
   if (!is.null(pCutoff)) {
     dge[, color] <- ifelse(is.na(dge[, color]), 1, dge[, color])
-      dge$significance <- dplyr::case_when(
-        dge[, color] < pCutoff ~ paste0(color, " < ", pCutoff),
-        TRUE ~ "NS"
-      )
-      color_label <- "Significance"
+    dge$significance <- dplyr::case_when(
+      dge[, color] < pCutoff ~ paste0(color, " < ", pCutoff),
+      TRUE ~ "NS"
+    )
+    color_label <- "Significance"
   } else {
     dge$significance <- dge[, color]
     color_label <- color
   }
 
-  out <- ggplot(dge, aes(x = !!sym(x), y = -log10(!!sym(y)), color = significance)) +
-    geom_point() +
+  out <- ggplot2::ggplot(dge, aes(x = !!sym(x), y = -log10(!!sym(y)), color = significance)) +
+    ggplot2::geom_point() +
     ggplot2::scale_color_manual(values = color_scale) +
     ggrepel::geom_text_repel(data = head(dge[order(dge[, y]), ], n_gene_labels), aes(label = !!sym(labels)), show.legend = FALSE) +
     theme(legend.position = "bottom") +
@@ -390,8 +378,8 @@ plot_volcano <- function(
 
   if (n_labels) {
     out <- out +
-      annotate(geom = "label", x = xlim[2] * 0.75, y = ylim[2] * 0.9, label = paste0("n up: ", nrow(dge[dge[, x] > 0 & dge[, color] < pCutoff, ])), size = 5, color = "black") +
-      annotate(geom = "label", x = xlim[1] * 0.75, y = ylim[2] * 0.9, label = paste0("n down: ", nrow(dge[dge[, x] < 0 & dge[, color] < pCutoff, ])), size = 5, color = "black")
+      ggplot2::annotate(geom = "label", x = xlim[2] * 0.75, y = ylim[2] * 0.9, label = paste0("n up: ", nrow(dge[dge[, x] > 0 & dge[, color] < pCutoff, ])), size = 5, color = "black") +
+      ggplot2::annotate(geom = "label", x = xlim[1] * 0.75, y = ylim[2] * 0.9, label = paste0("n down: ", nrow(dge[dge[, x] < 0 & dge[, color] < pCutoff, ])), size = 5, color = "black")
   }
   return(out)
 }
@@ -465,9 +453,7 @@ plot_forest <- function(
     vline = 1,
     log_scale = ifelse(vline == 1, TRUE, FALSE),
     show_table = FALSE,
-    p.value = "p.value"
-    ) {
-  
+    p.value = "p.value") {
   # Cap extreme values
   data[c(estimate, error_lower, error_upper)] <- lapply(data[c(estimate, error_lower, error_upper)], pmin, 20)
 
@@ -480,8 +466,12 @@ plot_forest <- function(
     geom_vline(xintercept = vline, linetype = "dashed", color = "grey50", linewidth = 0.5) +
     geom_errorbar(aes(xmin = !!sym(error_lower), xmax = !!sym(error_upper)), height = 0.3, linewidth = 0.7) +
     geom_point(size = 3) +
-    {if (log_scale) scale_x_log10()} +
-    {if (!is.null(facet)) facet_grid(rows = vars(!!sym(facet)), scales = "free_y", switch = "y", space = "free_y")} +
+    {
+      if (log_scale) scale_x_log10()
+    } +
+    {
+      if (!is.null(facet)) facet_grid(rows = vars(!!sym(facet)), scales = "free_y", switch = "y", space = "free_y")
+    } +
     theme(
       strip.background = element_blank(),
       strip.placement = "outside",
@@ -519,8 +509,10 @@ plot_forest <- function(
   }
 
   # Format text
-  data$HR_text <- sprintf("%.2f (%.2f-%.2f)", 
-                          data[[estimate]], data[[error_lower]], data[[error_upper]])
+  data$HR_text <- sprintf(
+    "%.2f (%.2f-%.2f)",
+    data[[estimate]], data[[error_lower]], data[[error_upper]]
+  )
   data$p_text <- signif(data[[p.value]], 2)
 
   # Create table plot

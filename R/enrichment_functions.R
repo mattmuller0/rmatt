@@ -89,6 +89,7 @@ save_gse <- function(gse, outpath, terms2plot = c("inflam", "plat", "coag")) {
     safe_ggplot(function() plot_enrichment(gse), file.path(outpath, "barplot.pdf"))
     safe_ggplot(function() plot_enrichment(gse, terms2plot = terms2plot), file.path(outpath, "barplot_terms.pdf"))
     safe_ggplot(function() enrichplot::ridgeplot(gse, showCategory = 10), file.path(outpath, "ridgeplot.pdf"))
+    safe_ggplot(function() enrichplot::heatplot(gse, showCategory = 5), file.path(outpath, "heatplot.pdf"))
     safe_ggplot(function() enrichplot::emapplot(enrichplot::pairwise_termsim(gse), node_label = "group"), file.path(outpath, "emapplot.pdf"))
     return(NULL)
   }
@@ -99,7 +100,7 @@ save_gse <- function(gse, outpath, terms2plot = c("inflam", "plat", "coag")) {
     safe_ggplot(function() enrichplot::emapplot(enrichplot::pairwise_termsim(gse), node_label = "group"), file.path(outpath, "emapplot.pdf"))
     return(NULL)
   }
-  
+
   message("Unsupported gse object type for plotting")
   return(NULL)
 }

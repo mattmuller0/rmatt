@@ -9,7 +9,7 @@ plot_enrichment(
   title = "Enrichment Plot",
   terms2plot = NULL,
   genes2plot = NULL,
-  qvalueCutoff = 0.2,
+  padjCutoff = 0.2,
   max_terms = 20,
   wrap_width = 40
 )
@@ -23,11 +23,11 @@ plot_enrichment(
 
 \item{genes2plot}{List of genes to plot (optional)}
 
-\item{qvalueCutoff}{Q-value cutoff (default: 0.2)}
-
 \item{max_terms}{Maximum number of terms to plot (default: 20)}
 
 \item{wrap_width}{Width for wrapping term descriptions (default: 40)}
+
+\item{qvalueCutoff}{Q-value cutoff (default: 0.2)}
 }
 \value{
 ggplot object of enrichment terms

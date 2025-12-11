@@ -134,20 +134,24 @@ test_that("ovr_deseq_results handles multiple conditions", {
 })
 
 # Test deseq_analysis function
-test_that("deseq_analysis handles multiple conditions", {
+test_that("deseq_analysis works with custom parameters", {
   dds <- create_mock_dds()
   temp_dir <- tempdir()
-  
+
   expect_warning(
     result <- deseq_analysis(
       dds = dds,
       conditions = c("condition"),
       controls = "batch",
-      outpath = temp_dir
+      outpath = temp_dir,
+      # Custom parameters
+      pCutoff = 0.1,
+      run_gsea = FALSE,
+      # Deseq args
+      deseq_args = list(test = "Wald", fitType = "parametric", sfType = "ratio", quiet = TRUE, minReplicatesForReplace = 4, useT = FALSE, minmu = 0.5, parallel = FALSE, BPPARAM = BiocParallel::bpparam())
     ),
     regexp = "ggrepel" # Suppress warning for test clarity
   )
-  
   expect_type(result, "list")
   expect_true(file.exists(file.path(temp_dir, "deseq_analysis_summary.csv")))
 })

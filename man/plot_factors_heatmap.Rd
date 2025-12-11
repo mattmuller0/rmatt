@@ -21,7 +21,7 @@ plot_factors_heatmap(
   border = TRUE,
   rect_gp = gpar(col = "black", lwd = 1),
   width = unit(0.6 * nrow(cohort_tab), "cm"),
-  height = unit(1.4 * nrow(cohort_tab), "cm"),
+  height = unit(1 * nrow(cohort_tab), "cm"),
   ...
 )
 }
