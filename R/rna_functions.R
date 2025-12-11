@@ -127,7 +127,7 @@ compare_results <- function(res1, res2, metric = "log2FoldChange", by = "rowname
 #' @param volcano.pCutoff p-value cutoff for volcano plot (default is 0.05)
 #' @return Data frame of results with Wilcoxon test statistics
 #' @importFrom magrittr %>%
-#' @importFrom ggplot2 ggsave ggplot aes geom_histogram geom_density labs theme_minimal
+#' @importFrom ggplot2 ggsave ggplot aes geom_histogram geom_density labs after_stat
 #' @export
 run_wilcox <- function(
     dds,
@@ -205,10 +205,9 @@ run_wilcox <- function(
 
   # make a histogram of the p-values
   p_hist <- ggplot(res, aes(x = p.value)) +
-    geom_histogram(aes(y = after_stat(density)), alpha = 0.7) +
-    geom_density(color = "red", linewidth = 1) +
-    labs(title = "Histogram of P-values", x = "P-value", y = "Frequency") +
-    theme_minimal()
+    ggplot2::geom_histogram(aes(y = ggplot2::after_stat(density)), alpha = 0.7) +
+    ggplot2::geom_density(color = "red", linewidth = 1) +
+    ggplot2::labs(title = "Histogram of P-values", x = "P-value", y = "Frequency")
   suppressMessages(ggsave(file.path(outpath, "wilcox_pvalue_histogram.pdf"), p_hist))
 
   # create a volcano plot
@@ -486,7 +485,27 @@ run_deseq <- function(
 #' @importFrom SummarizedExperiment assay colData
 #' @importFrom purrr map
 #' @export
-ovr_deseq_results <- function(dds, column, outpath, controls = NULL) {
+ovr_deseq_results <- function(
+    dds,
+    column,
+    outpath,
+    controls = NULL,
+    pvalue = "padj",
+    pCutoff = 0.05,
+    fcCutoff = 0,
+    run_gsea = TRUE,
+    deseq_args = list(
+      test = "Wald",
+      fitType = "parametric",
+      sfType = "ratio",
+      quiet = TRUE,
+      minReplicatesForReplace = 7,
+      useT = FALSE,
+      minmu = 0.5,
+      parallel = FALSE,
+      BPPARAM = BiocParallel::bpparam()
+    )
+  ) {
   dir.create(outpath, showWarnings = FALSE, recursive = TRUE)
 
   # This function takes in a DDS or SE object, the condition column of interest
@@ -510,7 +529,16 @@ ovr_deseq_results <- function(dds, column, outpath, controls = NULL) {
     input_ <- ifelse(is.null(controls), "condition", paste0(append(controls, "condition"), collapse = " + "))
     fmla <- as.formula(paste0("~ ", input_))
     design(dds) <- fmla
-    res <- run_deseq(dds, path, contrast = c("condition", lvl, "rest"))
+    res <- run_deseq(
+      dds,
+      path,
+      contrast = c("condition", lvl, "rest"),
+      pvalue = pvalue,
+      pCutoff = pCutoff,
+      fcCutoff = fcCutoff,
+      run_gsea = run_gsea,
+      deseq_args = deseq_args
+    )
 
     return(res)
   })
@@ -538,7 +566,7 @@ ovr_deseq_results <- function(dds, column, outpath, controls = NULL) {
 #' @importFrom SummarizedExperiment colData
 #' @importFrom ggplot2 ggsave
 #' @export
-deseq_analysis <- function(
+  deseq_analysis <- function(
     dds,
     conditions,
     controls = NULL,
@@ -564,7 +592,8 @@ deseq_analysis <- function(
       minmu = 0.5,
       parallel = FALSE,
       BPPARAM = BiocParallel::bpparam()
-    )) {
+    )
+  ) {
   # Create output directory
   dir.create(outpath, showWarnings = FALSE, recursive = TRUE)
 
@@ -618,7 +647,17 @@ deseq_analysis <- function(
     # Return results based on number of levels
     if (length(levels) > 2) {
       # One-vs-Rest analysis
-      res <- ovr_deseq_results(dds_, condition, file.path(outpath, condition), controls = controls)
+      res <- ovr_deseq_results(
+        dds_,
+        column = condition,
+        outpath = file.path(outpath, condition),
+        controls = controls,
+        pvalue = pvalue,
+        pCutoff = pCutoff,
+        fcCutoff = fcCutoff,
+        run_gsea = run_gsea,
+        deseq_args = deseq_args
+      )
       summary <- lapply(res, summarize_experiment,
         pvalue_cutoffs = summary_pvalue_cutoffs,
         padj_cutoffs = summary_padj_cutoffs,
@@ -634,10 +673,15 @@ deseq_analysis <- function(
     } else if (length(levels) == 2) {
       # Two-group comparison
       contrast <- c(condition, levels[2], levels[1])
-      res <- run_deseq(dds_, file.path(outpath, condition),
+      res <- run_deseq(
+        dds = dds_,
+        outpath = file.path(outpath, condition),
         contrast = contrast,
-        pvalue = pvalue, pCutoff = pCutoff, fcCutoff = fcCutoff,
-        deseq_args = deseq_args, run_gsea = run_gsea
+        pvalue = pvalue,
+        pCutoff = pCutoff,
+        fcCutoff = fcCutoff,
+        deseq_args = deseq_args,
+        run_gsea = run_gsea
       )
       summary <- summarize_experiment(
         results = res,

@@ -12,6 +12,9 @@ deseq_analysis(
   pvalue = "padj",
   pCutoff = 0.05,
   fcCutoff = 0,
+  summary_pvalue_cutoffs = c(0.01, 0.05, 0.1),
+  summary_padj_cutoffs = c(0.05, 0.1, 0.2),
+  summary_fc_cutoff = 0,
   run_pca = TRUE,
   run_gsea = TRUE,
   normalize_method = "vst",
@@ -31,9 +34,15 @@ deseq_analysis(
 
 \item{pvalue}{p-value column name for significance (default: "padj")}
 
-\item{pCutoff}{p-value cutoff for significance (default: 0.05)}
+\item{pCutoff}{p-value cutoff for plots and heatmaps (default: 0.05)}
 
-\item{fcCutoff}{Fold change cutoff for significance (default: 0)}
+\item{fcCutoff}{Fold change cutoff for plots and heatmaps (default: 0)}
+
+\item{summary_pvalue_cutoffs}{Numeric vector of p-value cutoffs for summary (default: c(0.01, 0.05, 0.1))}
+
+\item{summary_padj_cutoffs}{Numeric vector of adjusted p-value cutoffs for summary (default: c(0.05, 0.1, 0.2))}
+
+\item{summary_fc_cutoff}{Log fold change cutoff for summary (default: 0)}
 
 \item{run_pca}{Logical, whether to run PCA analysis (default: TRUE)}
 
