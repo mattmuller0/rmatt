@@ -483,7 +483,7 @@ plot_forest <- function(
 
   # Add table if requested
   if (show_table) {
-    p_table <- .create_forest_table(data, label, estimate, error_lower, error_upper, p.value, facet)
+    p_table <- create_forest_table(data, label, estimate, error_lower, error_upper, p.value, facet)
     p <- cowplot::plot_grid(p, p_table, ncol = 2, rel_widths = c(2, 1), align = "h", axis = "tb")
   }
 
@@ -500,8 +500,16 @@ plot_forest <- function(
 #' @param p.value P-value column name
 #' @param facet Facet column name (optional)
 #' @return ggplot object
-#' @keywords internal
-.create_forest_table <- function(data, label, estimate, error_lower, error_upper, p.value, facet = NULL) {
+#' @importFrom ggplot2 ggplot aes geom_text coord_cartesian scale_y_discrete theme_void scale_x_continuous facet_grid theme margin
+#' @export
+create_forest_table <- function(
+  data, 
+  label = "term", 
+  estimate = "hazard.ratio", 
+  error_lower = "ci.lower", 
+  error_upper = "ci.upper", 
+  p.value = "p.value", 
+  facet = NULL) {
   # Validate columns
   required_cols <- c(estimate, error_lower, error_upper, p.value)
   if (!all(required_cols %in% colnames(data))) {
