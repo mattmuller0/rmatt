@@ -51,18 +51,18 @@ plot_percent_genes_detected <- function(dds, title, min_value = 0) {
 #' @param normalize Type of normalization to use (default: "vst")
 #' @param width Width of the heatmap (default: 4 + 0.2 * ncol(dds))
 #' @param height Height of the heatmap (default: 4 + 0.1 * length(intersect(genes, rownames(dds))))
-#' @param ... Additional arguments to pass to ComplexHeatmap
+#' @param ... Additional arguments to pass to ComplexHeatmap::Heatmap
 #' @return ComplexHeatmap object of gene heatmap
 #' @importFrom SummarizedExperiment colData
 #' @importFrom dplyr select any_of
 #' @export
 plot_heatmap <- function(
-    dds, genes = NULL, annotations = NULL, normalize = "vst",
-    width = unit(max(4, min(20, 0.2 * ncol(dds))), "cm"),
-    height = unit(max(4, min(20, 0.5 * length(intersect(genes, rownames(dds))))), "cm"),
-    show_row_names = ifelse(length(genes) <= 50, TRUE, FALSE),
-    show_column_names = ifelse(ncol(dds) <= 20, TRUE, FALSE),
-    ...) {
+  dds, genes = NULL, annotations = NULL, normalize = "vst",
+  width = unit(max(4, min(20, 0.2 * ncol(dds))), "cm"),
+  height = unit(max(4, min(20, 0.5 * length(intersect(genes, rownames(dds))))), "cm"),
+  show_row_names = ifelse(length(genes) <= 40, TRUE, FALSE),
+  show_column_names = ifelse(ncol(dds) <= 20, TRUE, FALSE),
+  ...) {
   # Check for ComplexHeatmap package
   check_bioc_package("ComplexHeatmap")
 
@@ -72,41 +72,43 @@ plot_heatmap <- function(
 
   # Ensure genes are in the matrix
   if (is.null(genes)) {
-    genes <- rownames(norm_counts)
+  genes <- rownames(norm_counts)
   }
 
   # Check if any of the genes aren't in the matrix
   if (any(!genes %in% rownames(norm_counts))) {
-    missing <- genes[!genes %in% rownames(norm_counts)]
-    warning("Some genes are not in the matrix and will be removed (", paste0(missing, collapse = ", "), ")")
-    genes <- genes[genes %in% rownames(norm_counts)]
+  missing <- genes[!genes %in% rownames(norm_counts)]
+  warning("Some genes are not in the matrix and will be removed (", paste0(missing, collapse = ", "), ")")
+  genes <- genes[genes %in% rownames(norm_counts)]
   }
 
   # Subset normalized counts to selected genes
   norm_counts <- norm_counts[genes, , drop = FALSE]
-  
-  # Create heatmap using do.call
-  heatmap_args <- list(
-    matrix = norm_counts,
-    name = "Z-Score",
-    width = width,
-    height = height,
-    ...
-  )
 
+  # Prepare top annotation if needed
+  top_annotation <- NULL
   if (!is.null(annotations)) {
-    cd_df <- as.data.frame(colData(dds))
-    selected_df <- dplyr::select(cd_df, any_of(annotations))
-    annotations_top <- ComplexHeatmap::HeatmapAnnotation(
-      df = selected_df,
-      col = color_mapping(selected_df),
-      annotation_name_side = "left",
-      na_col = "white"
-    )
-    heatmap_args$top_annotation <- annotations_top
+  cd_df <- as.data.frame(colData(dds))
+  selected_df <- dplyr::select(cd_df, any_of(annotations))
+  top_annotation <- ComplexHeatmap::HeatmapAnnotation(
+    df = selected_df,
+    col = color_mapping(selected_df),
+    annotation_name_side = "left",
+    na_col = "white"
+  )
   }
 
-  heatmap <- do.call(ComplexHeatmap::Heatmap, heatmap_args)
+  # Call ComplexHeatmap::Heatmap directly, passing ... and explicit arguments
+  heatmap <- ComplexHeatmap::Heatmap(
+  matrix = norm_counts,
+  name = "Z-Score",
+  width = width,
+  height = height,
+  show_row_names = show_row_names,
+  show_column_names = show_column_names,
+  top_annotation = top_annotation,
+  ...
+  )
   return(heatmap)
 }
 
@@ -483,7 +485,7 @@ plot_forest <- function(
 
   # Add table if requested
   if (show_table) {
-    p_table <- .create_forest_table(data, label, estimate, error_lower, error_upper, p.value, facet)
+    p_table <- create_forest_table(data, label, estimate, error_lower, error_upper, p.value, facet)
     p <- cowplot::plot_grid(p, p_table, ncol = 2, rel_widths = c(2, 1), align = "h", axis = "tb")
   }
 
@@ -500,8 +502,16 @@ plot_forest <- function(
 #' @param p.value P-value column name
 #' @param facet Facet column name (optional)
 #' @return ggplot object
-#' @keywords internal
-.create_forest_table <- function(data, label, estimate, error_lower, error_upper, p.value, facet = NULL) {
+#' @importFrom ggplot2 ggplot aes geom_text coord_cartesian scale_y_discrete theme_void scale_x_continuous facet_grid theme margin
+#' @export
+create_forest_table <- function(
+  data, 
+  label = "term", 
+  estimate = "hazard.ratio", 
+  error_lower = "ci.lower", 
+  error_upper = "ci.upper", 
+  p.value = "p.value", 
+  facet = NULL) {
   # Validate columns
   required_cols <- c(estimate, error_lower, error_upper, p.value)
   if (!all(required_cols %in% colnames(data))) {
