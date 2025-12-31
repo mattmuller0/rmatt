@@ -192,7 +192,7 @@ filter_expression <- function(
 detect_contamination <- function(
     dds,
     contaminants = list(
-    WBC = "PTPRC",
+    Leukocyte = c("PTPRC"),
     T_cell = c("CD3E", "CD3D"),
     B_cell = c("CD19", "CD79A"),
     Monocyte = c("CD14", "FCGR1A"),
