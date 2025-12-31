@@ -454,10 +454,15 @@ plot_forest <- function(
     ylab = NULL,
     vline = 1,
     log_scale = ifelse(vline == 1, TRUE, FALSE),
+    clip = c(0, 20),
     show_table = FALSE,
     p.value = "p.value") {
   # Cap extreme values
-  data[c(estimate, error_lower, error_upper)] <- lapply(data[c(estimate, error_lower, error_upper)], pmin, 20)
+  data[c(estimate, error_lower, error_upper)] <- lapply(data[c(estimate, error_lower, error_upper)], function(x) {
+    x[x < clip[1]] <- clip[1]
+    x[x > clip[2]] <- clip[2]
+    return(x)
+  })
 
   # Build plot
   aes_list <- list(x = sym(estimate), y = sym(label))
