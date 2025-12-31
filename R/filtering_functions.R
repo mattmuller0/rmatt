@@ -179,60 +179,117 @@ filter_expression <- function(
   return(dds)
 }
 
-#' Detect WBC contamination in platelet RNA-seq
+#' Detect contamination in RNA-seq
 #' @param dds DESeq2 object
-#' @param outpath Path to output directory
-#' @param group Column of interest
+#' @param contaminants Named list of contamination marker genes by cell type
+#' @param reference Character vector of platelet reference genes
 #' @param normalize Normalization method
-#' @return DESeq2 object after detecting WBC contamination
-#' @importFrom SummarizedExperiment colData
-#' @importFrom ggplot2 ggplot aes geom_point theme element_blank element_text labs ggsave
-#' @importFrom ggrepel geom_text_repel
+#' @param agg_method Aggregation method for multiple genes
+#' @param threshold Threshold for flagging contaminated samples
+#' @param color_by Column name to color points by (default: contamination score)
+#' @return List with plot, scores data.frame, and flagged sample IDs
 #' @export
-detect_wbc <- function(dds, outpath, group = NULL, normalize = "vst") {
-  dir.create(outpath, showWarnings = FALSE, recursive = TRUE)
-  dds_before <- dds
+detect_contamination <- function(
+    dds,
+    contaminants = list(
+      WBC = "PTPRC", T_cell = c("CD3E", "CD3D"), B_cell = "CD19",
+      Monocyte = "CD14", Neutrophil = c("FCGR3B", "CSF3R")
+    ),
+    reference = c("ITGA2B", "ITGB3", "GP1BA", "PF4", "PPBP", "TUBB1"),
+    normalize = c("mor", "vst", "vsd", "log2", "log2-mor", "rld", "rlog", "cpm", "rpkm", "tmm", "rank", "none"),
+    agg_method = c("median", "mean", "max"),
+    threshold = 0.1,
+    color_by = NULL
+) {
+  normalize <- match.arg(normalize)
+  agg_method <- match.arg(agg_method)
   counts <- normalize_counts(dds, normalize)
-
-  # Get the counts for PTPRC and ITGA2B
-  if (!all(c("PTPRC", "ITGA2B") %in% rownames(counts))) {
-    stop("Genes PTPRC and ITGA2B not found in counts")
-  }
-  ratio <- counts["PTPRC", ] / counts["ITGA2B", ]
-  colnames(ratio) <- "PTPRC/ITGA2B"
-
-  # get the group
-  if (is.null(group)) {
-    grouping <- ratio > 1
-  } else {
-    grouping <- dds[[group]]
-  }
-
-  # get the IDs
-  IDs <- rownames(colData(dds))
-
-  # plot the data
-  plotting_df <- data.frame(IDs, ratio, grouping)
-  plot <- ggplot(data.frame(ratio), aes(
-    x = IDs, y = ratio,
-    col = grouping
-  )) +
-    geom_point() +
-    theme_matt(18) +
-    labs(
-      title = "WBC Contamination",
-      x = "PTPRC/ITGA2B", y = "Count"
-    ) +
-    theme(
-      axis.text.x = element_blank(),
-      axis.ticks.x = element_blank()
-    ) +
-    geom_text_repel(
-      label = IDs,
-      size = 5, show.legend = FALSE
+  
+  # Filter to available genes
+  contaminants <- lapply(contaminants, intersect, rownames(counts))
+  contaminants <- contaminants[lengths(contaminants) > 0]
+  reference <- intersect(reference, rownames(counts))
+  stopifnot("No valid contaminant genes" = length(contaminants) > 0,
+            "No valid reference genes" = length(reference) > 0)
+  
+  # Aggregation helper
+  agg <- function(genes) {
+    mat <- counts[genes, , drop = FALSE]
+    switch(agg_method,
+      median = apply(mat, 2, median),
+      mean = colMeans(mat),
+      max = apply(mat, 2, max)
     )
-  ggsave(file.path(outpath, "wbc_contamination.pdf"), plot)
-  write.csv(plotting_df, file.path(outpath, "wbc_contamination.csv"))
-  saveRDS(dds, file.path(outpath, "dds.rds"))
-  return(dds)
+  }
+  
+  # Calculate scores
+  ref_score <- agg(reference)
+  contam_ratios <- sapply(contaminants, function(g) agg(g) / (ref_score + 1e-6))
+  composite <- exp(rowMeans(log(contam_ratios + 1e-6)))
+  
+  # Wide format scores
+  scores_df <- data.frame(
+    sample_id = colnames(counts),
+    reference_score = ref_score,
+    composite = composite,
+    contam_ratios,
+    as.data.frame(SummarizedExperiment::colData(dds))
+  )
+  
+  # Create facet labels with genes
+  facet_labels <- c(
+    composite = "Composite",
+    sapply(names(contaminants), function(ct) {
+      paste0(ct, " (", paste(contaminants[[ct]], collapse = ", "), ")")
+    })
+  )
+  
+  # Long format for plotting
+  scores_long <- tidyr::pivot_longer(
+    scores_df,
+    cols = c("composite", names(contaminants)),
+    names_to = "cell_type",
+    values_to = "contamination"
+  ) %>%
+    dplyr::mutate(
+      cell_type = factor(cell_type, levels = names(facet_labels), labels = facet_labels)
+    )
+  
+  # Determine color aesthetic
+  if (is.null(color_by)) {
+    color_aes <- aes(color = contamination)
+    color_scale <- scale_color_viridis_c(option = "plasma")
+  } else if (color_by %in% colnames(scores_long)) {
+    color_aes <- aes(color = .data[[color_by]])
+    color_scale <- if (is.numeric(scores_long[[color_by]])) {
+      scale_color_viridis_c(option = "plasma")
+    } else {
+      scale_color_brewer(palette = "Set1")
+    }
+  } else {
+    warning("color_by '", color_by, "' not found, using contamination")
+    color_aes <- aes(color = contamination)
+    color_scale <- scale_color_viridis_c(option = "plasma")
+  }
+  
+  # Faceted plot
+  p <- ggplot(scores_long, aes(reference_score, contamination, label = sample_id)) +
+    geom_point(color_aes, size = 2) +
+    geom_hline(yintercept = threshold, linetype = "dashed", color = "red", linewidth = 0.5) +
+    ggrepel::geom_text_repel(size = 2.5, max.overlaps = 10) +
+    color_scale +
+    facet_wrap(~cell_type, scales = "free_y") +
+    labs(
+      x = "Platelet reference score",
+      y = "Contamination ratio",
+      title = "Leukocyte Contamination by Cell Type",
+      subtitle = paste0("Reference: ", paste(reference, collapse = ", ")),
+      color = color_by %||% "Contamination"
+    )
+  
+  list(
+    plot = p,
+    scores = scores_df %>% dplyr::select(sample_id, composite, dplyr::all_of(names(contaminants)), refence_score),
+    flagged = scores_df$sample_id[composite > threshold]
+  )
 }
