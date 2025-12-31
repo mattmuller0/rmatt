@@ -11,7 +11,7 @@ plot_heatmap(
   normalize = "vst",
   width = unit(max(4, min(20, 0.2 * ncol(dds))), "cm"),
   height = unit(max(4, min(20, 0.5 * length(intersect(genes, rownames(dds))))), "cm"),
-  show_row_names = ifelse(length(genes) <= 50, TRUE, FALSE),
+  show_row_names = ifelse(length(genes) <= 40, TRUE, FALSE),
   show_column_names = ifelse(ncol(dds) <= 20, TRUE, FALSE),
   ...
 )
@@ -29,7 +29,7 @@ plot_heatmap(
 
 \item{height}{Height of the heatmap (default: 4 + 0.1 * length(intersect(genes, rownames(dds))))}
 
-\item{...}{Additional arguments to pass to ComplexHeatmap}
+\item{...}{Additional arguments to pass to ComplexHeatmap::Heatmap}
 }
 \value{
 ComplexHeatmap object of gene heatmap
