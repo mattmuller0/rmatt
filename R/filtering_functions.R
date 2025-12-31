@@ -192,8 +192,12 @@ filter_expression <- function(
 detect_contamination <- function(
     dds,
     contaminants = list(
-      WBC = "PTPRC", T_cell = c("CD3E", "CD3D"), B_cell = "CD19",
-      Monocyte = "CD14", Neutrophil = c("FCGR3B", "CSF3R")
+    WBC = "PTPRC",
+    T_cell = c("CD3E", "CD3D"),
+    B_cell = c("CD19", "CD79A"),
+    Monocyte = c("CD14", "FCGR1A"),
+    Neutrophil = c("FCGR3B", "CSF3R", "CEACAM8"),
+    Erythrocyte = c("HBA1", "HBA2", "HBB")
     ),
     reference = c("ITGA2B", "ITGB3", "GP1BA", "PF4", "PPBP", "TUBB1"),
     normalize = c("mor", "vst", "vsd", "log2", "log2-mor", "rld", "rlog", "cpm", "rpkm", "tmm", "rank", "none"),
@@ -258,18 +262,18 @@ detect_contamination <- function(
   # Determine color aesthetic
   if (is.null(color_by)) {
     color_aes <- aes(color = contamination)
-    color_scale <- scale_color_viridis_c(option = "plasma")
+    color_scale <- ggplot2::scale_color_viridis_c(option = "plasma")
   } else if (color_by %in% colnames(scores_long)) {
     color_aes <- aes(color = .data[[color_by]])
     color_scale <- if (is.numeric(scores_long[[color_by]])) {
-      scale_color_viridis_c(option = "plasma")
+      ggplot2::scale_color_viridis_c(option = "plasma")
     } else {
-      scale_color_brewer(palette = "Set1")
+      ggplot2::scale_color_brewer(palette = "Set1")
     }
   } else {
     warning("color_by '", color_by, "' not found, using contamination")
     color_aes <- aes(color = contamination)
-    color_scale <- scale_color_viridis_c(option = "plasma")
+    color_scale <- ggplot2::scale_color_viridis_c(option = "plasma")
   }
   
   # Faceted plot
@@ -289,7 +293,7 @@ detect_contamination <- function(
   
   list(
     plot = p,
-    scores = scores_df %>% dplyr::select(sample_id, composite, dplyr::all_of(names(contaminants)), refence_score),
+    scores = scores_df %>% dplyr::select(sample_id, composite, dplyr::all_of(names(contaminants)), reference_score),
     flagged = scores_df$sample_id[composite > threshold]
   )
 }
