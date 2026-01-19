@@ -187,7 +187,7 @@ filter_expression <- function(
 #' @param agg_method Aggregation method for multiple genes
 #' @param threshold Threshold for flagging contaminated samples
 #' @param color_by Column name to color points by (default: contamination score)
-#' @return List with plot, scores data.frame, and flagged sample IDs
+#' @return List with plot, scores data.frame, and flagged samples by contaminant type
 #' @export
 detect_contamination <- function(
     dds,
@@ -209,6 +209,7 @@ detect_contamination <- function(
   agg_method <- match.arg(agg_method)
   counts <- normalize_counts(dds, normalize)
   
+
   # Filter to available genes
   contaminants <- lapply(contaminants, intersect, rownames(counts))
   contaminants <- contaminants[lengths(contaminants) > 0]
@@ -229,29 +230,24 @@ detect_contamination <- function(
   # Calculate scores
   ref_score <- agg(reference)
   contam_ratios <- sapply(contaminants, function(g) agg(g) / (ref_score + 1e-6))
-  composite <- exp(rowMeans(log(contam_ratios + 1e-6)))
   
   # Wide format scores
   scores_df <- data.frame(
     sample_id = colnames(counts),
     reference_score = ref_score,
-    composite = composite,
     contam_ratios,
     as.data.frame(SummarizedExperiment::colData(dds))
   )
   
   # Create facet labels with genes
-  facet_labels <- c(
-    composite = "Composite",
-    sapply(names(contaminants), function(ct) {
-      paste0(ct, " (", paste(contaminants[[ct]], collapse = ", "), ")")
-    })
-  )
+  facet_labels <- sapply(names(contaminants), function(ct) {
+    paste0(ct, " (", paste(contaminants[[ct]], collapse = ", "), ")")
+  })
   
   # Long format for plotting
   scores_long <- tidyr::pivot_longer(
     scores_df,
-    cols = c("composite", names(contaminants)),
+    cols = dplyr::all_of(names(contaminants)),
     names_to = "cell_type",
     values_to = "contamination"
   ) %>%
@@ -291,9 +287,15 @@ detect_contamination <- function(
       color = color_by %||% "Contamination"
     )
   
+  # Flag samples per contaminant type
+  flagged <- lapply(names(contaminants), function(ct) {
+    scores_df$sample_id[scores_df[[ct]] > threshold]
+  })
+  names(flagged) <- names(contaminants)
+  
   list(
     plot = p,
-    scores = scores_df %>% dplyr::select(sample_id, composite, dplyr::all_of(names(contaminants)), reference_score),
-    flagged = scores_df$sample_id[composite > threshold]
+    scores = scores_df %>% dplyr::select(sample_id, dplyr::all_of(names(contaminants)), reference_score),
+    flagged = flagged
   )
 }

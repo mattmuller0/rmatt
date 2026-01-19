@@ -11,6 +11,9 @@ inst/doc/*
 vignettes/*.html
 vignettes/*.pdf
 
+# ignore R package build files
+*.pdf
+
 # ignore OS X Finder files
 *.DS_Store
 

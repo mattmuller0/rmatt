@@ -18,6 +18,7 @@ plot_forest(
   ylab = NULL,
   vline = 1,
   log_scale = ifelse(vline == 1, TRUE, FALSE),
+  clip = c(0, 20),
   show_table = FALSE,
   p.value = "p.value"
 )
