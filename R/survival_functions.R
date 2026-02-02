@@ -176,12 +176,13 @@ survival_analysis <- function(
 #' @param condition character, condition(s) to make survival curves for. Can be single or multiple conditions.
 #' @param controls character, controls to include in the model. Default is NULL.
 #' @return data.frame, hazard ratios for the condition(s).
-#' @importFrom survival coxph
+#' @importFrom survival coxph cox.zph
 #' @importFrom broom tidy
 #' @keywords internal
 hazards.internal <- function(cs, data, condition, controls) {
   # Univariate analysis: each condition separately
   results_list <- list()
+  zph_list <- list()
 
   for (cond in condition) {
     fmla <- as.formula(sprintf(
@@ -190,6 +191,28 @@ hazards.internal <- function(cs, data, condition, controls) {
       paste0(c(cond, controls), collapse = " + ")
     ))
     coxmodel <- do.call(coxph, list(fmla, data = data))
+
+    # Test proportional hazards assumption
+    zph_test <- tryCatch(
+      {
+        survival::cox.zph(coxmodel)
+      },
+      error = function(e) {
+        warning(sprintf("cox.zph test failed for %s: %s", cond, e$message))
+        return(NULL)
+      }
+    )
+
+    # Extract global test p-value
+    zph_pvalue <- if (!is.null(zph_test)) {
+      # Get the GLOBAL row from the cox.zph test
+      zph_test$table["GLOBAL", "p"]
+    } else {
+      NA
+    }
+
+    # Store zph p-value for this condition
+    zph_list[[cond]] <- zph_pvalue
 
     # Extract results for this condition
     o <- tidy(coxmodel)
@@ -209,7 +232,8 @@ hazards.internal <- function(cs, data, condition, controls) {
   o$ci.lower <- exp(o$estimate - 1.96 * o$std.error)
   o$n_total <- nrow(data)
   o$n_event <- sum(data[[cs$censor]] == 1)
-  o <- o[, c("censor", "condition", "term", "n_total", "n_event", "hazard.ratio", "ci.lower", "ci.upper", "p.value")]
+  o$zph <- sapply(o$condition, function(x) zph_list[[x]])
+  o <- o[, c("censor", "condition", "term", "n_total", "n_event", "hazard.ratio", "ci.lower", "ci.upper", "p.value", "zph")]
 
   return(o)
 }
