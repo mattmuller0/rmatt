@@ -94,6 +94,89 @@ detect_gene_id_type <- function(geneList, strip = TRUE) {
   return(type)
 }
 
+#' Fetch Gene Coordinates from Bioconductor
+#' @description Function to fetch gene coordinates from Bioconductor based on gene symbols and genome build.
+#' @param genes Character vector of gene symbols
+#' @param genome_build Genome build (default: "hg38")
+#' @return Data frame with gene, chr, start, end columns
+#' @importFrom dplyr filter distinct select inner_join bind_rows
+#' @importFrom AnnotationDbi select
+#' @importFrom GenomicFeatures genes
+#' @importFrom glue glue
+#' @export
+fetch_gene_coordinates <- function(genes, key = "SYMBOL", genome_build = "hg38", filter_chromosomes = "^chr([1-9]|1[0-9]|2[0-2]|X|Y)$") {
+    # Check for required packages
+    if (!requireNamespace("org.Hs.eg.db", quietly = TRUE)) {
+        stop("Package 'org.Hs.eg.db' is required. Install with BiocManager::install('org.Hs.eg.db')")
+    }
+    
+    txdb_pkg <- switch(
+        genome_build,
+        "hg38" = "TxDb.Hsapiens.UCSC.hg38.knownGene",
+        "hg19" = "TxDb.Hsapiens.UCSC.hg19.knownGene",
+        stop(glue("Unsupported genome build: {genome_build}"))
+    )
+    
+    if (!requireNamespace(txdb_pkg, quietly = TRUE)) {
+        stop(glue("Package '{txdb_pkg}' is required. Install with BiocManager::install('{txdb_pkg}')"))
+    }
+    
+    message(glue("Fetching coordinates for {length(genes)} genes using {genome_build}..."))
+    
+    # Map symbols to Entrez IDs
+    key_to_entrez <- AnnotationDbi::select(
+        org.Hs.eg.db::org.Hs.eg.db,
+        keys = genes,
+        columns = c("ENTREZID", key),
+        keytype = key
+    ) %>%
+        filter(!is.na(ENTREZID)) %>%
+        distinct(ENTREZID, .keep_all = TRUE)
+    
+    # Get gene ranges from TxDb
+    txdb <- get(txdb_pkg, envir = asNamespace(txdb_pkg))
+    gene_ranges <- GenomicFeatures::genes(txdb)
+    
+    # Filter to our genes
+    matched_ranges <- gene_ranges[names(gene_ranges) %in% symbol_to_entrez$ENTREZID]
+    
+    # Convert to data frame
+    coords_df <- as.data.frame(matched_ranges) %>%
+        rownames_to_column("ENTREZID") %>%
+        select(ENTREZID, chr = seqnames, start, end) %>%
+        inner_join(key_to_entrez, by = "ENTREZID") %>%
+        select(gene = !!sym(key), chr, start, end)
+
+    # Filter to standard chromosomes
+    chromosomes <- unique(as.character(coords_df$chr))
+    standard_chromosomes <- chromosomes[grepl(filter_chromosomes, chromosomes)]
+    if (length(standard_chromosomes) == 0) {
+        warning(glue("No standard chromosomes found for genome build '{genome_build}'"))
+        standard_chroms <- chromosomes
+    }
+
+    # Filter to standard chromosomes
+    coords_df <- coords_df %>%
+        filter(as.character(chr) %in% standard_chromosomes)
+    
+    # Add missing genes as NA
+    missing <- setdiff(genes, coords_df$gene)
+    if (length(missing) > 0) {
+        missing_df <- data.frame(
+            gene = missing,
+            chr = NA_character_,
+            start = NA_integer_,
+            end = NA_integer_
+        )
+        coords_df <- bind_rows(coords_df, missing_df)
+    }
+
+    # Make the chr a factor with standard order
+    coords_df$chr <- factor(coords_df$chr, levels = standard_chromosomes)
+    
+    return(coords_df)
+}
+
 #' Function to normalize dds object and return counts
 #' @description Function to normalize DESeq2 dds object and return counts.
 #' @param dds DESeq2 or SummarizedExperiment object
