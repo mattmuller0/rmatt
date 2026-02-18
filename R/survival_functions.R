@@ -184,6 +184,15 @@ hazards.internal <- function(cs, data, condition, controls) {
   results_list <- list()
   zph_list <- list()
 
+  # Clean data - remove NA values right before model fitting
+  cols_to_check <- c(condition, cs$censor, cs$time, controls)
+  cols_to_check <- cols_to_check[cols_to_check %in% colnames(data)]
+  na_count <- sum(!complete.cases(data[, cols_to_check]))
+  if (na_count > 0) {
+    warning(sprintf("Removing %d rows with NA values", na_count))
+    data <- data[complete.cases(data[, cols_to_check]), ]
+  }
+
   for (cond in condition) {
     fmla <- as.formula(sprintf(
       "survival::Surv(%s, %s) ~ %s",
@@ -285,14 +294,6 @@ hazard_ratios_table <- function(
     "Time variables not found in data" = all(time_vars %in% colnames(data)),
     "Condition must be numeric for per_sd" = !per_sd || all(sapply(condition, function(x) is.numeric(data[[x]])))
   )
-
-  # Clean data
-  cols_to_check <- c(condition, censors, controls)
-  na_count <- sum(!complete.cases(data[, cols_to_check]))
-  if (na_count > 0) {
-    warning(sprintf("Removing %d rows with NA values", na_count))
-    data <- data[complete.cases(data[, cols_to_check]), ]
-  }
 
   # Standardize condition if requested
   if (per_sd) {
