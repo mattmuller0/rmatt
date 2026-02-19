@@ -288,14 +288,17 @@ detect_contamination <- function(
     )
   
   # Flag samples per contaminant type
-  flagged <- lapply(names(contaminants), function(ct) {
+  flagged <- sapply(names(contaminants), function(ct) {
     scores_df$sample_id[scores_df[[ct]] > threshold]
   })
   names(flagged) <- names(contaminants)
+
+  scores_out <- scores_df %>% 
+    dplyr::select(sample_id, dplyr::all_of(names(contaminants)), reference_score)
   
   list(
     plot = p,
-    scores = scores_df %>% dplyr::select(sample_id, dplyr::all_of(names(contaminants)), reference_score),
+    scores = scores_out,
     flagged = flagged
   )
 }

@@ -7,18 +7,18 @@
 hazards.internal(cs, data, condition, controls)
 }
 \arguments{
-\item{cs}{list, list of censors and time variables.}
+\item{cs}{list, list with censor and time variable names.}
 
 \item{data}{data.frame, data to make survival curves from.}
 
-\item{condition}{character, condition(s) to make survival curves for. Can be single or multiple conditions.}
+\item{condition}{character, a single condition to fit the model for.}
 
 \item{controls}{character, controls to include in the model. Default is NULL.}
 }
 \value{
-data.frame, hazard ratios for the condition(s).
+data.frame, hazard ratios for the condition.
 }
 \description{
-Internal function to calculate hazard ratios for multiple conditions using univariate analyses.
+Internal function to calculate hazard ratios for a single condition.
 }
 \keyword{internal}
