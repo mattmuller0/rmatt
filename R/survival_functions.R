@@ -170,46 +170,64 @@ survival_analysis <- function(
 }
 
 #' @title Internal Hazard Ratios Helper
-#' @description Internal function to calculate hazard ratios for multiple conditions using univariate analyses.
-#' @param cs list, list of censors and time variables.
+#' @description Internal function to calculate hazard ratios for a single condition.
+#' @param cs list, list with censor and time variable names.
 #' @param data data.frame, data to make survival curves from.
-#' @param condition character, condition(s) to make survival curves for. Can be single or multiple conditions.
+#' @param condition character, a single condition to fit the model for.
 #' @param controls character, controls to include in the model. Default is NULL.
-#' @return data.frame, hazard ratios for the condition(s).
-#' @importFrom survival coxph
+#' @return data.frame, hazard ratios for the condition.
+#' @importFrom survival coxph cox.zph
 #' @importFrom broom tidy
 #' @keywords internal
 hazards.internal <- function(cs, data, condition, controls) {
-  # Univariate analysis: each condition separately
-  results_list <- list()
+  stopifnot("condition must be a single character value" = length(condition) == 1)
 
-  for (cond in condition) {
-    fmla <- as.formula(sprintf(
-      "survival::Surv(%s, %s) ~ %s",
-      cs$time, cs$censor,
-      paste0(c(cond, controls), collapse = " + ")
-    ))
-    coxmodel <- do.call(coxph, list(fmla, data = data))
-
-    # Extract results for this condition
-    o <- tidy(coxmodel)
-    o <- subset(o, grepl(cond, term))
-    o$condition <- cond
-
-    results_list[[cond]] <- o
+  # Clean data - remove NA values right before model fitting
+  cols_to_check <- c(condition, cs$censor, cs$time, controls)
+  cols_to_check <- cols_to_check[cols_to_check %in% colnames(data)]
+  na_count <- sum(!complete.cases(data[, cols_to_check]))
+  if (na_count > 0) {
+    warning(sprintf("Removing %d rows with NA values", na_count))
+    data <- data[complete.cases(data[, cols_to_check]), ]
   }
 
-  # Combine results
-  o <- do.call(rbind, results_list)
+  fmla <- as.formula(sprintf(
+    "survival::Surv(%s, %s) ~ %s",
+    cs$time, cs$censor,
+    paste0(c(condition, controls), collapse = " + ")
+  ))
+  coxmodel <- do.call(coxph, list(fmla, data = data))
 
-  # Add common columns
+  # Test proportional hazards assumption
+  zph_test <- tryCatch(
+    {
+      survival::cox.zph(coxmodel)
+    },
+    error = function(e) {
+      warning(sprintf("cox.zph test failed for %s: %s", condition, e$message))
+      return(NULL)
+    }
+  )
+
+  # Extract global test p-value
+  zph_pvalue <- if (!is.null(zph_test)) {
+    zph_test$table["GLOBAL", "p"]
+  } else {
+    NA
+  }
+
+  # Extract and annotate results
+  o <- tidy(coxmodel)
+  o <- subset(o, grepl(condition, term))
+  o$condition <- condition
   o$censor <- cs$censor
   o$hazard.ratio <- exp(o$estimate)
   o$ci.upper <- exp(o$estimate + 1.96 * o$std.error)
   o$ci.lower <- exp(o$estimate - 1.96 * o$std.error)
   o$n_total <- nrow(data)
   o$n_event <- sum(data[[cs$censor]] == 1)
-  o <- o[, c("censor", "condition", "term", "n_total", "n_event", "hazard.ratio", "ci.lower", "ci.upper", "p.value")]
+  o$zph <- zph_pvalue
+  o <- o[, c("censor", "condition", "term", "n_total", "n_event", "hazard.ratio", "ci.lower", "ci.upper", "p.value", "zph")]
 
   return(o)
 }
@@ -261,14 +279,6 @@ hazard_ratios_table <- function(
     "Time variables not found in data" = all(time_vars %in% colnames(data)),
     "Condition must be numeric for per_sd" = !per_sd || all(sapply(condition, function(x) is.numeric(data[[x]])))
   )
-
-  # Clean data
-  cols_to_check <- c(condition, censors, controls)
-  na_count <- sum(!complete.cases(data[, cols_to_check]))
-  if (na_count > 0) {
-    warning(sprintf("Removing %d rows with NA values", na_count))
-    data <- data[complete.cases(data[, cols_to_check]), ]
-  }
 
   # Standardize condition if requested
   if (per_sd) {
@@ -379,9 +389,11 @@ hazard_ratios_table <- function(
   # Calculate hazard ratios (always univariate)
   if (verbose && length(condition) > 1) message("Performing univariate analysis for multiple conditions")
 
-  # Univariate analysis: each condition separately
+  # Loop over each censor x condition combination
   purrr::map_dfr(seq_len(nrow(censors_df)), function(i) {
     cs <- list(censor = censors_df$censor[i], time = censors_df$time[i])
-    hazards.internal(cs, data, condition, controls)
+    purrr::map_dfr(condition, function(cond) {
+      hazards.internal(cs, data, cond, controls)
+    })
   })
 }
