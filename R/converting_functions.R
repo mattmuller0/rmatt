@@ -100,7 +100,6 @@ detect_gene_id_type <- function(geneList, strip = TRUE) {
 #' @param genome_build Genome build (default: "hg38")
 #' @return Data frame with gene, chr, start, end columns
 #' @importFrom dplyr filter distinct select inner_join bind_rows
-#' @importFrom AnnotationDbi select
 #' @importFrom glue glue
 #' @export
 fetch_gene_coordinates <- function(genes, key = "SYMBOL", genome_build = "hg38", filter_chromosomes = "^chr([1-9]|1[0-9]|2[0-2]|X|Y)$") {
