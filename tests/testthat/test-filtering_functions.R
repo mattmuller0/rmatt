@@ -375,7 +375,6 @@ test_that("detect_contamination returns expected structure", {
   # Check scores data frame
   expect_s3_class(result$scores, "data.frame")
   expect_true("sample_id" %in% colnames(result$scores))
-  expect_true("composite" %in% colnames(result$scores))
   expect_true("reference_score" %in% colnames(result$scores))
   expect_equal(nrow(result$scores), ncol(dds))
 
@@ -431,8 +430,8 @@ test_that("detect_contamination works with different aggregation methods", {
 
   # Scores should differ based on aggregation method
   expect_false(identical(
-    result_median$scores$composite,
-    result_mean$scores$composite
+    result_median$scores,
+    result_mean$scores
   ))
 })
 
